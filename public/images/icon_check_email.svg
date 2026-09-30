@@ -1,0 +1,64 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 160 140" width="130" height="114" fill="none">
+  <defs>
+    <!-- Envelope Shadow -->
+    <filter id="softShadow" x="-10%" y="-10%" width="120%" height="120%" filterUnits="userSpaceOnUse">
+      <feDropShadow dx="0" dy="8" stdDeviation="6" flood-color="#1e3a8a" flood-opacity="0.16"/>
+    </filter>
+    <!-- Envelope Gradient -->
+    <linearGradient id="envBodyGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FFFFFF"/>
+      <stop offset="100%" stop-color="#E2F0FD"/>
+    </linearGradient>
+    <!-- Envelope Flap Gradient -->
+    <linearGradient id="envFlapGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+      <stop offset="0%" stop-color="#C2E0FC"/>
+      <stop offset="100%" stop-color="#D9ECFE"/>
+    </linearGradient>
+    <!-- Gold Arrow Gradient -->
+    <linearGradient id="goldArrowGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#FBBF24"/>
+      <stop offset="40%" stop-color="#F59E0B"/>
+      <stop offset="100%" stop-color="#D97706"/>
+    </linearGradient>
+    <filter id="arrowShadow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="4" stdDeviation="4" flood-color="#92400e" flood-opacity="0.3"/>
+    </filter>
+  </defs>
+
+  <!-- Back swoop of 3D gold arrow -->
+  <path d="M 52 35 C 65 18 105 14 122 30 C 138 45 136 76 118 92" 
+        stroke="#F59E0B" stroke-width="13" stroke-linecap="round" fill="none" opacity="0.45" />
+
+  <!-- Envelope Container with Shadow -->
+  <g filter="url(#softShadow)">
+    <!-- Back Interior of Envelope -->
+    <polygon points="28,45 80,82 132,45 132,108 28,108" fill="#B3D7F8" stroke="#7CB6EC" stroke-width="2.5" stroke-linejoin="round"/>
+
+    <!-- Paper Letter Sticking Out with @ -->
+    <g>
+      <rect x="38" y="24" width="84" height="60" rx="6" fill="#FFFFFF" stroke="#8DC2F4" stroke-width="2.5"/>
+      <!-- Soft letter lines -->
+      <line x1="48" y1="36" x2="68" y2="36" stroke="#CFE4FA" stroke-width="2.5" stroke-linecap="round"/>
+      <line x1="48" y1="44" x2="64" y2="44" stroke="#CFE4FA" stroke-width="2.5" stroke-linecap="round"/>
+      <!-- Large @ sign -->
+      <text x="80" y="58" font-family="'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif" font-size="34" font-weight="900" fill="#0284C7" text-anchor="middle">@</text>
+    </g>
+
+    <!-- Envelope Front Body & Flaps -->
+    <!-- Left Flap -->
+    <polygon points="28,45 80,85 28,108" fill="url(#envFlapGrad)" stroke="#67A6E3" stroke-width="2" stroke-linejoin="round"/>
+    <!-- Right Flap -->
+    <polygon points="132,45 80,85 132,108" fill="url(#envFlapGrad)" stroke="#67A6E3" stroke-width="2" stroke-linejoin="round"/>
+    <!-- Bottom Flap -->
+    <polygon points="28,108 80,72 132,108" fill="url(#envBodyGrad)" stroke="#5A9EE0" stroke-width="2.5" stroke-linejoin="round"/>
+  </g>
+
+  <!-- Front Curved 3D Gold Arrow Swooping Around -->
+  <g filter="url(#arrowShadow)">
+    <path d="M 126 50 C 142 75 125 110 88 116 C 62 120 42 110 38 100" 
+          stroke="url(#goldArrowGrad)" stroke-width="12" stroke-linecap="round" fill="none"/>
+    <!-- Arrowhead pointing forward/left -->
+    <polygon points="32,95 48,93 42,108" fill="#D97706"/>
+    <polygon points="32,95 46,94 40,106" fill="url(#goldArrowGrad)"/>
+  </g>
+</svg>
