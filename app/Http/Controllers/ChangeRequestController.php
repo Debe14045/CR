@@ -374,6 +374,11 @@ class ChangeRequestController extends Controller
 
         $changeRequest->load(['client', 'solutionPaper.pegawai', 'invoices.creator']);
         $user = auth()->user();
+
+        if ($user?->isPmh()) {
+            return view('pmhead.review', compact('changeRequest'));
+        }
+
         $isClient = $user?->isClient();
         $pegawais = Pegawai::where('is_active', true)->get();
 

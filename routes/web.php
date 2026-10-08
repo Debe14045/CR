@@ -105,4 +105,20 @@ Route::middleware('auth')->group(function () {
             Route::get('/change-requests/{changeRequest}/invoice', 'downloadInvoice')->name('change-requests.invoice');
         });
     });
+
+    // Profile Route (Pengaturan)
+    Route::get('/profile', [\App\Http\Controllers\PMHead\PMHeadController::class, 'profile'])->name('profile');
+    Route::post('/profile/password', [\App\Http\Controllers\PMHead\PMHeadController::class, 'updatePassword'])->name('profile.password');
+
+    // Modul PM Head (Sesuai Desain Figma)
+    Route::middleware('role:pmh,admin')->prefix('pm-head')->name('pmh.')->group(function () {
+        Route::get('/change-requests', [\App\Http\Controllers\PMHead\PMHeadController::class, 'semuaCr'])->name('change-requests');
+        Route::get('/persetujuan', [\App\Http\Controllers\PMHead\PMHeadController::class, 'persetujuan'])->name('persetujuan');
+        Route::get('/development', [\App\Http\Controllers\PMHead\PMHeadController::class, 'development'])->name('development');
+        Route::get('/golive', [\App\Http\Controllers\PMHead\PMHeadController::class, 'golive'])->name('golive');
+        Route::get('/outstanding-payment', [\App\Http\Controllers\PMHead\PMHeadController::class, 'outstandingPayment'])->name('outstanding-payment');
+        Route::get('/outstanding-payment/export', [\App\Http\Controllers\PMHead\PMHeadController::class, 'exportPayment'])->name('outstanding-payment.export');
+        Route::get('/review/{changeRequest}', [\App\Http\Controllers\PMHead\PMHeadController::class, 'review'])->name('review');
+        Route::post('/review/{changeRequest}/decision', [\App\Http\Controllers\PMHead\PMHeadController::class, 'submitDecision'])->name('decision');
+    });
 });

@@ -234,6 +234,11 @@ class ChangeRequest extends Model
         return $this->isPmhApproved() && ! in_array($this->status, ['ditolak', 'revision_needed'], true);
     }
 
+    public function getNamaPmAttribute(): string
+    {
+        return $this->owner_cr ?: ($this->main_desk ?: 'Danendra dada');
+    }
+
     public static function generateKode(): string
     {
         $year = date('Y');

@@ -2,7 +2,7 @@
 <html lang="id">
 <head>
     <meta charset="UTF-8">
-    <title>@yield('title', 'CR Manager • Monitoring Change Request')</title>
+    <title><?php echo $__env->yieldContent('title', 'CR Manager • Monitoring Change Request'); ?></title>
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
@@ -10,7 +10,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/css/bootstrap.min.css" rel="stylesheet">
     <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css" rel="stylesheet">
 
-    @php
+    <?php
         $roleMeta = [
             'client'   => ['brand' => '#007DFF', 'brand_dark' => '#0062CC', 'soft' => '#EFF6FF', 'border' => '#BFDBFE', 'icon' => 'bi-person-workspace', 'label' => 'Client', 'desc' => 'Pengajuan & Tracking Status'],
             'pm'       => ['brand' => '#059669', 'brand_dark' => '#047857', 'soft' => '#ECFDF5', 'border' => '#A7F3D0', 'icon' => 'bi-kanban-fill', 'label' => 'Project Manager', 'desc' => 'Verifikasi, Solution Paper, Status & BA'],
@@ -22,7 +22,7 @@
         $currentRole = auth()->user()?->role ?? 'guest';
         $rm = $roleMeta[$currentRole] ?? ['brand' => '#007DFF', 'brand_dark' => '#0062CC', 'soft' => '#EFF6FF', 'border' => '#BFDBFE', 'icon' => 'bi-person', 'label' => 'Tamu', 'desc' => 'Akses Publik'];
         $currentRouteName = Route::currentRouteName() ?? '';
-    @endphp
+    ?>
 
     <style>
         /* ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -54,10 +54,10 @@
             --line-soft:        #F1F5F9;
 
             /* Role accent */
-            --brand:        {{ $rm['brand'] }};
-            --brand-dark:   {{ $rm['brand_dark'] }};
-            --brand-soft:   {{ $rm['soft'] }};
-            --brand-border: {{ $rm['border'] }};
+            --brand:        <?php echo e($rm['brand']); ?>;
+            --brand-dark:   <?php echo e($rm['brand_dark']); ?>;
+            --brand-soft:   <?php echo e($rm['soft']); ?>;
+            --brand-border: <?php echo e($rm['border']); ?>;
 
             /* Typography */
             --muted:   #64748B;
@@ -1297,101 +1297,99 @@
         }
     </style>
 </head>
-<body class="role-{{ $currentRole }}">
+<body class="role-<?php echo e($currentRole); ?>">
 
 <div class="app-shell">
 
-    {{-- ══════════════════════════════════════
-         SIDEBAR (Figma #02376A Dark Royal Navy)
-    ══════════════════════════════════════ --}}
-    @auth
+    
+    <?php if(auth()->guard()->check()): ?>
     <aside class="app-sidebar" id="appSidebar" role="navigation" aria-label="Navigasi Utama" style="background: #02376A; border-right: 1px solid rgba(255,255,255,0.06); width: 235px;">
 
-        {{-- Brand / Logo (Figma: ITPI PT. ITPI Technology) --}}
+        
         <div class="sidebar-header" style="padding: 1.35rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.06);">
-            <a class="sidebar-brand d-flex align-items-center gap-2 text-decoration-none" href="{{ route('change-requests.index') }}">
-                <img src="{{ asset('images/itpi_logo_white_tight.png') }}" alt="ITPI" style="height: 34px; width: auto; object-fit: contain;">
+            <a class="sidebar-brand d-flex align-items-center gap-2 text-decoration-none" href="<?php echo e(route('change-requests.index')); ?>">
+                <img src="<?php echo e(asset('images/itpi_logo_white_tight.png')); ?>" alt="ITPI" style="height: 34px; width: auto; object-fit: contain;">
                 <div style="color: #FFFFFF; font-weight: 800; font-size: 0.95rem; letter-spacing: -0.01em; white-space: nowrap;">
                     PT. ITPI Technology
                 </div>
             </a>
         </div>
 
-        {{-- Navigation --}}
+        
         <nav class="sidebar-nav" style="padding: 1.1rem 0.85rem;">
 
-            {{-- MENU Header --}}
+            
             <span class="nav-section-label" data-i18n="menu_header" style="font-size: 0.72rem; font-weight: 700; letter-spacing: 0.1em; color: rgba(255,255,255,0.7); padding: 0.2rem 0.75rem 0.6rem; text-transform: uppercase; display: block;">
                 MENU
             </span>
 
-            @if ($currentRole === 'pmh')
-                {{-- ══ PM HEAD DEDICATED SIDEBAR (FIGMA EXACT) ══ --}}
-                @php
+            <?php if($currentRole === 'pmh'): ?>
+                
+                <?php
                     $isPmhDashboardActive = request()->routeIs('pmh.dashboard') || ($currentRouteName === 'change-requests.index' && (!request()->filled('view') || request('view') === 'dashboard') && !request()->filled('search') && !request()->filled('status'));
                     $isPmhReview = request()->routeIs('pmh.review');
                     $isPmhCrGroupActive = request()->routeIs('pmh.change-requests') || request()->routeIs('pmh.persetujuan') || request()->routeIs('pmh.development') || request()->routeIs('pmh.golive') || $isPmhReview;
-                @endphp
+                ?>
 
-                {{-- 1. Dashboard --}}
-                <a href="{{ route('change-requests.index') }}"
-                   class="sidebar-link {{ $isPmhDashboardActive ? 'active' : '' }}"
-                   style="position: relative; border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; {{ $isPmhDashboardActive ? 'background: #0063D7 !important; color: #FFFFFF !important;' : '' }}">
+                
+                <a href="<?php echo e(route('change-requests.index')); ?>"
+                   class="sidebar-link <?php echo e($isPmhDashboardActive ? 'active' : ''); ?>"
+                   style="position: relative; border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; <?php echo e($isPmhDashboardActive ? 'background: #0063D7 !important; color: #FFFFFF !important;' : ''); ?>">
                     <i class="bi bi-grid-fill nav-icon" style="font-size: 1.05rem;"></i>
                     <span class="fw-semibold">Dashboard</span>
                 </a>
 
-                {{-- 2. Change Request Accordion --}}
+                
                 <div class="nav-group-toggle open"
                      id="crGroupToggle"
                      role="button"
                      onclick="this.classList.toggle('open'); document.getElementById('crGroupBody').classList.toggle('open');"
                      aria-expanded="true"
-                     style="border-radius: 9999px; padding: 0.65rem 1.15rem; font-size: 0.92rem; display: flex; align-items: center; gap: 0.75rem; color: #FFFFFF; margin-top: 0.35rem; {{ $isPmhCrGroupActive ? 'background: #0063D7 !important;' : 'background: transparent;' }}">
+                     style="border-radius: 9999px; padding: 0.65rem 1.15rem; font-size: 0.92rem; display: flex; align-items: center; gap: 0.75rem; color: #FFFFFF; margin-top: 0.35rem; <?php echo e($isPmhCrGroupActive ? 'background: #0063D7 !important;' : 'background: transparent;'); ?>">
                     <i class="bi bi-file-earmark-text nav-icon" style="font-size: 1.05rem; opacity: 1;"></i>
                     <span class="fw-bold" style="letter-spacing: -0.01em;">Change Request</span>
                     <i class="bi bi-chevron-down toggle-chevron ms-auto" style="font-size: 0.8rem; font-weight: 700; opacity: 0.95;"></i>
                 </div>
 
                 <div class="nav-group-body sidebar-sub open" id="crGroupBody" style="padding-left: 0.45rem; display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.35rem;">
-                    {{-- Semua CR / Total CR --}}
-                    @php
+                    
+                    <?php
                         $isSemuaCr = request()->routeIs('pmh.change-requests') || (request()->routeIs('change-requests.index') && request('view') === 'total');
-                    @endphp
-                    <a href="{{ route('pmh.change-requests') }}"
-                       class="sidebar-link {{ $isSemuaCr ? 'active' : '' }}"
-                       style="border-radius: 9999px; padding: 0.62rem 1.15rem; font-size: 0.9rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; {{ $isSemuaCr ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent; color: rgba(255,255,255,0.85);' }}">
-                        @if($isSemuaCr)
+                    ?>
+                    <a href="<?php echo e(route('pmh.change-requests')); ?>"
+                       class="sidebar-link <?php echo e($isSemuaCr ? 'active' : ''); ?>"
+                       style="border-radius: 9999px; padding: 0.62rem 1.15rem; font-size: 0.9rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; <?php echo e($isSemuaCr ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent; color: rgba(255,255,255,0.85);'); ?>">
+                        <?php if($isSemuaCr): ?>
                             <span style="width: 8px; height: 8px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 10px #00B4FF;"></span>
-                        @endif
+                        <?php endif; ?>
                         <i class="bi bi-file-earmark-text nav-icon" style="font-size: 1.05rem; color: #FFFFFF; opacity: 1;"></i>
                         <span class="fw-bold" style="color: #FFFFFF; letter-spacing: -0.01em;">Semua CR</span>
                     </a>
 
-                    {{-- Butuh Persetujuan --}}
-                    <a href="{{ route('pmh.persetujuan') }}"
-                       class="sidebar-link {{ request()->routeIs('pmh.persetujuan') ? 'active' : '' }}"
-                       style="border-radius: 9999px; padding: 0.55rem 1.15rem; font-size: 0.86rem; color: rgba(255,255,255,0.85); display: flex; align-items: center; gap: 0.65rem; {{ request()->routeIs('pmh.persetujuan') ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent;' }}">
-                        @if(request()->routeIs('pmh.persetujuan'))
+                    
+                    <a href="<?php echo e(route('pmh.persetujuan')); ?>"
+                       class="sidebar-link <?php echo e(request()->routeIs('pmh.persetujuan') ? 'active' : ''); ?>"
+                       style="border-radius: 9999px; padding: 0.55rem 1.15rem; font-size: 0.86rem; color: rgba(255,255,255,0.85); display: flex; align-items: center; gap: 0.65rem; <?php echo e(request()->routeIs('pmh.persetujuan') ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent;'); ?>">
+                        <?php if(request()->routeIs('pmh.persetujuan')): ?>
                             <span style="width: 8px; height: 8px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 10px #00B4FF;"></span>
-                        @endif
+                        <?php endif; ?>
                         <i class="bi bi-file-earmark-check nav-icon" style="font-size: 0.95rem;"></i>
                         <span>Butuh Persetujuan</span>
                     </a>
 
-                    {{-- Development CR --}}
-                    <a href="{{ route('pmh.development') }}"
-                       class="sidebar-link {{ request()->routeIs('pmh.development') ? 'active' : '' }}"
-                       style="border-radius: 9999px; padding: 0.55rem 1.15rem; font-size: 0.86rem; color: rgba(255,255,255,0.85); display: flex; align-items: center; gap: 0.65rem; {{ request()->routeIs('pmh.development') ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent;' }}">
-                        @if(request()->routeIs('pmh.development'))
+                    
+                    <a href="<?php echo e(route('pmh.development')); ?>"
+                       class="sidebar-link <?php echo e(request()->routeIs('pmh.development') ? 'active' : ''); ?>"
+                       style="border-radius: 9999px; padding: 0.55rem 1.15rem; font-size: 0.86rem; color: rgba(255,255,255,0.85); display: flex; align-items: center; gap: 0.65rem; <?php echo e(request()->routeIs('pmh.development') ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent;'); ?>">
+                        <?php if(request()->routeIs('pmh.development')): ?>
                             <span style="width: 8px; height: 8px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 10px #00B4FF;"></span>
-                        @endif
+                        <?php endif; ?>
                         <i class="bi bi-bar-chart-line nav-icon" style="font-size: 0.95rem;"></i>
                         <span>Development CR</span>
                     </a>
 
-                    {{-- Detail CR (Visible when reviewing a CR) --}}
-                    @if($isPmhReview)
+                    
+                    <?php if($isPmhReview): ?>
                     <a href="javascript:void(0)"
                        class="sidebar-link active"
                        style="border-radius: 9999px; padding: 0.55rem 1.15rem; font-size: 0.86rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; background: #0063D7 !important;">
@@ -1399,18 +1397,18 @@
                         <i class="bi bi-file-earmark-text nav-icon" style="font-size: 0.95rem;"></i>
                         <span class="fw-bold">Detail CR</span>
                     </a>
-                    @endif
+                    <?php endif; ?>
                 </div>
 
-                {{-- 3. Outstanding Payment --}}
-                <a href="{{ route('pmh.outstanding-payment') }}"
-                   class="sidebar-link {{ request()->routeIs('pmh.outstanding-payment') ? 'active' : '' }}"
-                   style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; margin-top: 0.35rem; {{ request()->routeIs('pmh.outstanding-payment') ? 'background: #0063D7 !important; color: #FFFFFF !important;' : '' }}">
+                
+                <a href="<?php echo e(route('pmh.outstanding-payment')); ?>"
+                   class="sidebar-link <?php echo e(request()->routeIs('pmh.outstanding-payment') ? 'active' : ''); ?>"
+                   style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; margin-top: 0.35rem; <?php echo e(request()->routeIs('pmh.outstanding-payment') ? 'background: #0063D7 !important; color: #FFFFFF !important;' : ''); ?>">
                     <i class="bi bi-wallet2 nav-icon" style="font-size: 1.05rem;"></i>
                     <span class="fw-semibold">Outstanding Payment</span>
                 </a>
 
-                {{-- 4. Notifikasi --}}
+                
                 <a href="javascript:void(0)"
                    class="sidebar-link d-flex align-items-center justify-content-between"
                    onclick="const toastEl = document.getElementById('notifToast'); if(toastEl){ new bootstrap.Toast(toastEl).show(); }"
@@ -1421,78 +1419,78 @@
                     </span>
                 </a>
 
-                {{-- 5. Pengaturan (Profile) --}}
-                <a href="{{ route('profile') }}"
-                   class="sidebar-link {{ request()->routeIs('profile') ? 'active' : '' }}"
-                   style="border-radius: 10px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem; {{ request()->routeIs('profile') ? 'background: #0063D7 !important; color: #FFFFFF !important;' : '' }}">
+                
+                <a href="<?php echo e(route('profile')); ?>"
+                   class="sidebar-link <?php echo e(request()->routeIs('profile') ? 'active' : ''); ?>"
+                   style="border-radius: 10px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem; <?php echo e(request()->routeIs('profile') ? 'background: #0063D7 !important; color: #FFFFFF !important;' : ''); ?>">
                     <i class="bi bi-gear nav-icon" style="font-size: 1.05rem;"></i>
                     <span class="fw-medium">Pengaturan</span>
                 </a>
 
-            @else
-                {{-- ══ STANDARD ROLE SIDEBAR (CLIENT, PM, FINANCE, ADMIN) ══ --}}
-                {{-- 1. Dashboard --}}
-                @php
+            <?php else: ?>
+                
+                
+                <?php
                     $isDashboardActive = ($currentRouteName === 'change-requests.index' && (!request()->filled('view') || request('view') === 'dashboard') && !request()->filled('search') && !request()->filled('status'));
                     $isCrShow = request()->routeIs('change-requests.show');
                     $isCrGroupActive = $isCrShow || (request()->routeIs('change-requests.*') && !$isDashboardActive);
                     $isSemuaCrActive = $isCrShow || request('view') === 'total' || ($currentRouteName === 'change-requests.index' && !$isDashboardActive && !request()->filled('status') && $currentRouteName !== 'change-requests.create');
-                @endphp
-                <a href="{{ route('change-requests.index') }}"
-                   class="sidebar-link {{ $isDashboardActive ? 'active' : '' }}"
-                   style="position: relative; border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; {{ $isDashboardActive ? 'background: #0063D7 !important; color: #FFFFFF !important;' : '' }}">
+                ?>
+                <a href="<?php echo e(route('change-requests.index')); ?>"
+                   class="sidebar-link <?php echo e($isDashboardActive ? 'active' : ''); ?>"
+                   style="position: relative; border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; <?php echo e($isDashboardActive ? 'background: #0063D7 !important; color: #FFFFFF !important;' : ''); ?>">
                     <i class="bi bi-grid-fill nav-icon" style="font-size: 1.05rem;"></i>
                     <span class="fw-semibold" data-i18n="nav_dashboard">Dashboard</span>
                 </a>
 
-                {{-- 2. Change Request (Accordion Group) --}}
+                
                 <div class="nav-group-toggle open"
                      id="crGroupToggle"
                      role="button"
                      onclick="this.classList.toggle('open'); document.getElementById('crGroupBody').classList.toggle('open');"
                      aria-expanded="true"
-                     style="border-radius: 9999px; padding: 0.65rem 1.15rem; font-size: 0.92rem; display: flex; align-items: center; gap: 0.75rem; color: #FFFFFF; margin-top: 0.35rem; {{ $isCrGroupActive ? 'background: #0063D7 !important;' : 'background: transparent;' }}">
+                     style="border-radius: 9999px; padding: 0.65rem 1.15rem; font-size: 0.92rem; display: flex; align-items: center; gap: 0.75rem; color: #FFFFFF; margin-top: 0.35rem; <?php echo e($isCrGroupActive ? 'background: #0063D7 !important;' : 'background: transparent;'); ?>">
                     <i class="bi bi-file-earmark-text nav-icon" style="font-size: 1.05rem; opacity: 1;"></i>
                     <span class="fw-bold" data-i18n="nav_cr" style="letter-spacing: -0.01em;">Change Request</span>
                     <i class="bi bi-chevron-down toggle-chevron ms-auto" style="font-size: 0.8rem; font-weight: 700; opacity: 0.95;"></i>
                 </div>
 
                 <div class="nav-group-body sidebar-sub open" id="crGroupBody" style="padding-left: 0.45rem; display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.35rem;">
-                    {{-- Semua CR --}}
-                    <a href="{{ route('change-requests.index', ['view' => 'total']) }}"
-                       class="sidebar-link {{ $isSemuaCrActive ? 'active' : '' }}"
-                       style="border-radius: 9999px; padding: 0.62rem 1.15rem; font-size: 0.9rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; {{ $isSemuaCrActive ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent; color: rgba(255,255,255,0.85);' }}">
-                        @if($isSemuaCrActive)
+                    
+                    <a href="<?php echo e(route('change-requests.index', ['view' => 'total'])); ?>"
+                       class="sidebar-link <?php echo e($isSemuaCrActive ? 'active' : ''); ?>"
+                       style="border-radius: 9999px; padding: 0.62rem 1.15rem; font-size: 0.9rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; <?php echo e($isSemuaCrActive ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent; color: rgba(255,255,255,0.85);'); ?>">
+                        <?php if($isSemuaCrActive): ?>
                             <span style="width: 8px; height: 8px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 10px #00B4FF;"></span>
-                        @endif
+                        <?php endif; ?>
                         <i class="bi bi-file-earmark-text nav-icon" style="font-size: 1.05rem; color: #FFFFFF; opacity: 1;"></i>
                         <span class="fw-bold" data-i18n="nav_all_cr" style="color: #FFFFFF; letter-spacing: -0.01em;">Semua CR</span>
                     </a>
 
-                    {{-- Ajukan CR --}}
-                    <a href="{{ route('change-requests.create') }}"
-                       class="sidebar-link {{ $currentRouteName === 'change-requests.create' ? 'active' : '' }}"
-                       style="border-radius: 9999px; padding: 0.55rem 1.15rem; font-size: 0.86rem; color: rgba(255,255,255,0.85); display: flex; align-items: center; gap: 0.65rem; {{ $currentRouteName === 'change-requests.create' ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent;' }}">
-                        @if($currentRouteName === 'change-requests.create')
+                    
+                    <a href="<?php echo e(route('change-requests.create')); ?>"
+                       class="sidebar-link <?php echo e($currentRouteName === 'change-requests.create' ? 'active' : ''); ?>"
+                       style="border-radius: 9999px; padding: 0.55rem 1.15rem; font-size: 0.86rem; color: rgba(255,255,255,0.85); display: flex; align-items: center; gap: 0.65rem; <?php echo e($currentRouteName === 'change-requests.create' ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent;'); ?>">
+                        <?php if($currentRouteName === 'change-requests.create'): ?>
                             <span style="width: 8px; height: 8px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 10px #00B4FF;"></span>
-                        @endif
+                        <?php endif; ?>
                         <i class="bi bi-pencil-square nav-icon" style="font-size: 0.95rem;"></i>
                         <span data-i18n="nav_submit_cr">Ajukan CR</span>
                     </a>
 
-                    {{-- Draft CR --}}
-                    <a href="{{ route('change-requests.index', ['status' => 'diajukan']) }}"
-                       class="sidebar-link {{ request('status') === 'diajukan' ? 'active' : '' }}"
-                       style="border-radius: 9999px; padding: 0.55rem 1.15rem; font-size: 0.86rem; color: rgba(255,255,255,0.85); display: flex; align-items: center; gap: 0.65rem; {{ request('status') === 'diajukan' ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent;' }}">
-                        @if(request('status') === 'diajukan')
+                    
+                    <a href="<?php echo e(route('change-requests.index', ['status' => 'diajukan'])); ?>"
+                       class="sidebar-link <?php echo e(request('status') === 'diajukan' ? 'active' : ''); ?>"
+                       style="border-radius: 9999px; padding: 0.55rem 1.15rem; font-size: 0.86rem; color: rgba(255,255,255,0.85); display: flex; align-items: center; gap: 0.65rem; <?php echo e(request('status') === 'diajukan' ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent;'); ?>">
+                        <?php if(request('status') === 'diajukan'): ?>
                             <span style="width: 8px; height: 8px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 10px #00B4FF;"></span>
-                        @endif
+                        <?php endif; ?>
                         <i class="bi bi-bar-chart-line nav-icon" style="font-size: 0.95rem;"></i>
                         <span data-i18n="nav_draft_cr">Draft CR</span>
                     </a>
                 </div>
 
-                {{-- 3. Notifikasi --}}
+                
                 <a href="javascript:void(0)"
                    class="sidebar-link d-flex align-items-center justify-content-between"
                    onclick="const toastEl = document.getElementById('notifToast'); if(toastEl){ new bootstrap.Toast(toastEl).show(); }"
@@ -1503,77 +1501,75 @@
                     </span>
                 </a>
 
-                {{-- 4. Pengaturan --}}
-                @if ($currentRole === 'admin')
-                    <div class="nav-group-toggle {{ str_starts_with($currentRouteName, 'master.') ? 'open' : '' }}"
+                
+                <?php if($currentRole === 'admin'): ?>
+                    <div class="nav-group-toggle <?php echo e(str_starts_with($currentRouteName, 'master.') ? 'open' : ''); ?>"
                          id="settingsGroupToggle"
                          role="button"
                          onclick="this.classList.toggle('open'); document.getElementById('settingsGroupBody').classList.toggle('open');"
-                         aria-expanded="{{ str_starts_with($currentRouteName, 'master.') ? 'true' : 'false' }}"
+                         aria-expanded="<?php echo e(str_starts_with($currentRouteName, 'master.') ? 'true' : 'false'); ?>"
                          style="border-radius: 10px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem;">
                         <i class="bi bi-gear nav-icon" style="font-size: 1.05rem;"></i>
                         <span class="fw-medium" data-i18n="nav_settings">Pengaturan</span>
                         <i class="bi bi-chevron-down toggle-chevron ms-auto" style="font-size: 0.75rem; opacity: 0.6;"></i>
                     </div>
 
-                    <div class="nav-group-body sidebar-sub {{ str_starts_with($currentRouteName, 'master.') ? 'open' : '' }}" id="settingsGroupBody" style="padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.3rem;">
-                        <a href="{{ route('master.clients.index') }}"
-                           class="sidebar-link {{ str_starts_with($currentRouteName, 'master.clients') ? 'active' : '' }}"
+                    <div class="nav-group-body sidebar-sub <?php echo e(str_starts_with($currentRouteName, 'master.') ? 'open' : ''); ?>" id="settingsGroupBody" style="padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.3rem;">
+                        <a href="<?php echo e(route('master.clients.index')); ?>"
+                           class="sidebar-link <?php echo e(str_starts_with($currentRouteName, 'master.clients') ? 'active' : ''); ?>"
                            style="border-radius: 8px; padding: 0.45rem 0.75rem; font-size: 0.84rem;">
                             <i class="bi bi-buildings nav-icon"></i>
                             <span data-i18n="master_clients">Master Client</span>
                         </a>
-                        <a href="{{ route('master.pegawai.index') }}"
-                           class="sidebar-link {{ str_starts_with($currentRouteName, 'master.pegawai') ? 'active' : '' }}"
+                        <a href="<?php echo e(route('master.pegawai.index')); ?>"
+                           class="sidebar-link <?php echo e(str_starts_with($currentRouteName, 'master.pegawai') ? 'active' : ''); ?>"
                            style="border-radius: 8px; padding: 0.45rem 0.75rem; font-size: 0.84rem;">
                             <i class="bi bi-person-badge nav-icon"></i>
                             <span data-i18n="master_pegawai">Master Pegawai</span>
                         </a>
-                        <a href="{{ route('master.status.index') }}"
-                           class="sidebar-link {{ str_starts_with($currentRouteName, 'master.status') ? 'active' : '' }}"
+                        <a href="<?php echo e(route('master.status.index')); ?>"
+                           class="sidebar-link <?php echo e(str_starts_with($currentRouteName, 'master.status') ? 'active' : ''); ?>"
                            style="border-radius: 8px; padding: 0.45rem 0.75rem; font-size: 0.84rem;">
                             <i class="bi bi-list-check nav-icon"></i>
                             <span data-i18n="master_status">Master Status</span>
                         </a>
                     </div>
-                @else
-                    <a href="{{ $currentRole === 'client' ? route('client.profile') : route('profile') }}"
-                       class="sidebar-link {{ $currentRouteName === 'client.profile' || $currentRouteName === 'profile' ? 'active' : '' }}"
+                <?php else: ?>
+                    <a href="<?php echo e($currentRole === 'client' ? route('client.profile') : route('profile')); ?>"
+                       class="sidebar-link <?php echo e($currentRouteName === 'client.profile' || $currentRouteName === 'profile' ? 'active' : ''); ?>"
                        style="border-radius: 10px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem;">
                         <i class="bi bi-gear nav-icon" style="font-size: 1.05rem;"></i>
                         <span class="fw-medium" data-i18n="nav_settings">Pengaturan</span>
                     </a>
-                @endif
-            @endif
+                <?php endif; ?>
+            <?php endif; ?>
 
         </nav>
 
     </aside>
 
-    {{-- Sidebar overlay (mobile) --}}
+    
     <div class="sidebar-overlay" id="sidebarOverlay"></div>
-    @endauth
+    <?php endif; ?>
 
-    {{-- ══════════════════════════════════════
-         MAIN WRAPPER
-    ══════════════════════════════════════ --}}
+    
     <div class="main-wrapper" id="mainWrapper">
 
-        {{-- ── Topbar (Figma Exact Header) ── --}}
-        @auth
+        
+        <?php if(auth()->guard()->check()): ?>
         <header class="main-topbar" style="background: #F0F3F6; border-bottom: 1px solid #E2E8F0; height: 72px; padding: 0 2rem; display: flex; align-items: center; justify-content: space-between; position: sticky; top: 0; z-index: 1020;">
-            {{-- Mobile hamburger --}}
+            
             <button class="topbar-hamburger me-2 d-lg-none" id="sidebarToggleBtn" type="button" aria-label="Buka/Tutup Sidebar">
                 <i class="bi bi-list"></i>
             </button>
 
-            @if(!request()->routeIs('change-requests.show'))
-            {{-- Search Bar (Figma Exact: White Pill with magnifying glass: "Search task or CR number...") --}}
-            <form method="GET" action="{{ route('change-requests.index') }}" class="m-0" style="flex: 1; max-width: 360px;">
+            <?php if(!request()->routeIs('change-requests.show')): ?>
+            
+            <form method="GET" action="<?php echo e(route('change-requests.index')); ?>" class="m-0" style="flex: 1; max-width: 360px;">
                 <input type="hidden" name="view" value="total">
                 <div style="position: relative; display: flex; align-items: center;">
                     <i class="bi bi-search" style="position: absolute; left: 16px; color: #94A3B8; font-size: 0.9rem; pointer-events: none;"></i>
-                    <input type="text" name="search" value="{{ request('search') }}"
+                    <input type="text" name="search" value="<?php echo e(request('search')); ?>"
                            placeholder="Search task or CR number..."
                            data-i18n-placeholder="search_placeholder"
                            class="topbar-search-input"
@@ -1582,14 +1578,14 @@
                            onblur="this.style.borderColor='#E2E8F0'; this.style.boxShadow='none';">
                 </div>
             </form>
-            @else
+            <?php else: ?>
             <div style="flex: 1;"></div>
-            @endif
+            <?php endif; ?>
 
-            {{-- Right Actions: Language + Inbox + Notification Bell + Divider + User Profile --}}
+            
             <div class="d-flex align-items-center gap-3">
                 
-                {{-- Language Selector Pill (ID with Globe) --}}
+                
                 <div class="dropdown">
                     <button class="d-flex align-items-center gap-1 px-2 py-1 rounded-pill border-0 bg-white"
                             id="langDropdown" data-bs-toggle="dropdown" aria-expanded="false"
@@ -1614,7 +1610,7 @@
                     </ul>
                 </div>
 
-                {{-- Inbox Button with Red Notification Dot --}}
+                
                 <div class="dropdown">
                     <button class="btn p-0 position-relative d-flex align-items-center justify-content-center border-0 bg-transparent"
                             type="button" id="inboxDropdown" data-bs-toggle="dropdown" aria-expanded="false"
@@ -1642,7 +1638,7 @@
                     </ul>
                 </div>
 
-                {{-- Notification Bell with Red Notification Dot --}}
+                
                 <div class="dropdown">
                     <button class="btn p-0 position-relative d-flex align-items-center justify-content-center border-0 bg-transparent" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false"
                             style="width: 36px; height: 36px; color: #475569; font-size: 1.15rem;">
@@ -1675,7 +1671,7 @@
                     </ul>
                 </div>
 
-                {{-- User Profile (Totok Antok with TA Avatar & Dropdown matching Figma Image 2) --}}
+                
                 <div class="dropdown">
                     <div class="d-flex align-items-center gap-2 ps-1 cursor-pointer" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
                         <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm"
@@ -1684,22 +1680,23 @@
                         </div>
                         <div style="line-height: 1.25;" class="d-none d-sm-block text-start">
                             <div class="fw-bold text-dark text-truncate d-flex align-items-center gap-1" style="font-size: 0.86rem; font-weight: 700; letter-spacing: -0.01em; color: #0F172A;">
-                                <span>{{ auth()->check() ? auth()->user()->name : 'Totok Antok' }}</span>
+                                <span><?php echo e(auth()->check() ? auth()->user()->name : 'Totok Antok'); ?></span>
                                 <i class="bi bi-chevron-down" style="font-size: 0.75rem; color: #64748B;"></i>
                             </div>
                             <div class="text-muted text-truncate" style="font-size: 0.72rem; color: #64748B;">
-                                {{ auth()->check() ? (auth()->user()->isPmh() ? 'PMH' : (auth()->user()->isPm() ? 'PM' : (auth()->user()->isClient() ? 'KLIEN' : ucfirst(auth()->user()->role)))) : 'KLIEN' }}
+                                <?php echo e(auth()->check() ? (auth()->user()->isPmh() ? 'PMH' : (auth()->user()->isPm() ? 'PM' : (auth()->user()->isClient() ? 'KLIEN' : ucfirst(auth()->user()->role)))) : 'KLIEN'); ?>
+
                             </div>
                         </div>
                     </div>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2 p-2" style="border-radius: 12px; min-width: 170px;" aria-labelledby="userMenuDropdown">
                         <li class="px-3 py-2 border-bottom mb-1">
-                            <div class="fw-bold small text-dark">{{ auth()->check() ? auth()->user()->name : 'Totok Antok' }}</div>
-                            <div class="text-muted" style="font-size: 0.72rem;">{{ auth()->check() ? (auth()->user()->email ?? 'totok.antok@gmail.com') : 'totok.antok@gmail.com' }}</div>
+                            <div class="fw-bold small text-dark"><?php echo e(auth()->check() ? auth()->user()->name : 'Totok Antok'); ?></div>
+                            <div class="text-muted" style="font-size: 0.72rem;"><?php echo e(auth()->check() ? (auth()->user()->email ?? 'totok.antok@gmail.com') : 'totok.antok@gmail.com'); ?></div>
                         </li>
                         <li>
-                            <form method="POST" action="{{ route('logout') }}" class="m-0">
-                                @csrf
+                            <form method="POST" action="<?php echo e(route('logout')); ?>" class="m-0">
+                                <?php echo csrf_field(); ?>
                                 <button type="submit" class="dropdown-item py-2 px-3 small text-danger d-flex align-items-center gap-2 fw-semibold">
                                     <i class="bi bi-box-arrow-right fs-6 text-danger"></i> Logout
                                 </button>
@@ -1709,51 +1706,51 @@
                 </div>
             </div>
         </header>
-        @endauth
+        <?php endif; ?>
 
-        {{-- ── Flash Messages ── --}}
-        @if (session('success') || session('error'))
+        
+        <?php if(session('success') || session('error')): ?>
             <div style="padding: 1rem 1.75rem 0;" class="d-print-none">
-                @if (session('success'))
+                <?php if(session('success')): ?>
                     <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 mb-0" role="alert">
                         <i class="bi bi-check-circle-fill fs-5"></i>
-                        <div>{{ session('success') }}</div>
+                        <div><?php echo e(session('success')); ?></div>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
-                @endif
-                @if (session('error'))
+                <?php endif; ?>
+                <?php if(session('error')): ?>
                     <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 mb-0" role="alert">
                         <i class="bi bi-exclamation-triangle-fill fs-5"></i>
-                        <div>{{ session('error') }}</div>
+                        <div><?php echo e(session('error')); ?></div>
                         <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
                     </div>
-                @endif
+                <?php endif; ?>
             </div>
-        @endif
+        <?php endif; ?>
 
-        {{-- ── Main Content ── --}}
+        
         <main class="main-content" id="mainContent">
-            @yield('content')
+            <?php echo $__env->yieldContent('content'); ?>
         </main>
 
-        {{-- ── Footer ── --}}
-        @auth
-        @if(!request()->routeIs('change-requests.show'))
+        
+        <?php if(auth()->guard()->check()): ?>
+        <?php if(!request()->routeIs('change-requests.show')): ?>
         <footer class="main-footer d-print-none">
             <div>
-                &copy; {{ date('Y') }} <strong>PT ITPI Digital Solutions</strong> &middot; CR Manager v2
+                &copy; <?php echo e(date('Y')); ?> <strong>PT ITPI Digital Solutions</strong> &middot; CR Manager v2
             </div>
             <div class="d-flex gap-3 text-muted align-items-center">
                 <span><i class="bi bi-shield-check text-success me-1"></i>End-to-End Workflow Active</span>
             </div>
         </footer>
-        @endif
-        @endauth
-    </div>{{-- /.main-wrapper --}}
+        <?php endif; ?>
+        <?php endif; ?>
+    </div>
 
-</div>{{-- /.app-shell --}}
+</div>
 
-{{-- Global Toast --}}
+
 <div class="toast-container-fixed">
     <div id="appToast" class="toast align-items-center text-bg-dark border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true">
         <div class="d-flex">
@@ -2347,6 +2344,7 @@
     }
 </script>
 
-@stack('scripts')
+<?php echo $__env->yieldPushContent('scripts'); ?>
 </body>
 </html>
+<?php /**PATH C:\CR\resources\views/layouts/app.blade.php ENDPATH**/ ?>
