@@ -855,7 +855,6 @@
                         <a href="{{ route('change-requests.index') }}" class="btn-nav-register">
                             Dashboard <i class="bi bi-arrow-right"></i>
                         </a>
-                        <a href="{{ route('logout') }}" class="btn-nav-login" style="color: #EF4444;" title="Keluar">Keluar</a>
                     @else
                         <a href="{{ route('login') }}" class="btn-nav-login">Masuk</a>
                         <a href="{{ route('register') }}" class="btn-nav-register">

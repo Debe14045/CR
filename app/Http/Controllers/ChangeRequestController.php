@@ -84,32 +84,25 @@ class ChangeRequestController extends Controller
 
         $changeRequests = $query->latest()->paginate(15)->withQueryString();
 
-        // Metrics for Figma Dashboard (4 Cards: 4, 4, 4, 4 matching Figma mockup exactly)
+        // Metrics for Figma Dashboard (4 Cards: Semua CR, Butuh Persetujuan, Development, GO LIVE)
         $cardQuery = ChangeRequest::query();
         if ($role === 'client') {
             $cardQuery->where('user_id', $user->id);
         }
-        $figmaTotalCr = $request->has('real') ? (clone $cardQuery)->count() : 4;
-        $figmaNeedApprovalCr = $request->has('real') ? (clone $cardQuery)->whereIn('status', ['awaiting_pm', 'diajukan', 'awaiting_pmh'])->count() : 4;
-        $figmaDevCr = $request->has('real') ? (clone $cardQuery)->whereIn('status', ['development', 'dikerjakan', 'analisa'])->count() : 4;
-        $figmaUatCr = $request->has('real') ? (clone $cardQuery)->whereIn('status', ['uat', 'sit'])->count() : 4;
-        $figmaGoLiveCr = $request->has('real') ? (clone $cardQuery)->whereIn('status', ['golive', 'selesai', 'invoicing'])->count() : 4;
+        $figmaTotalCr = (clone $cardQuery)->count();
+        $figmaNeedApprovalCr = (clone $cardQuery)->whereIn('status', ['awaiting_pm', 'diajukan', 'awaiting_pmh'])->count();
+        $figmaDevCr = (clone $cardQuery)->whereIn('status', ['development', 'dikerjakan'])->count();
+        $figmaUatCr = (clone $cardQuery)->whereIn('status', ['uat', 'sit'])->count();
+        $figmaGoLiveCr = (clone $cardQuery)->whereIn('status', ['golive', 'selesai', 'invoicing'])->count();
 
-        // Status breakdown counts for Donut Chart & Progress bars (Total 5: 2, 0, 1, 0, 0, 2 matching Figma)
-        $statusCounts = $request->has('real') ? [
+        // Status breakdown counts for Donut Chart & Progress bars
+        $statusCounts = [
             'analisis'  => (clone $cardQuery)->whereIn('status', ['analisa', 'dianalisis', 'awaiting_pm', 'diajukan', 'awaiting_pmh'])->count(),
             'develop'   => (clone $cardQuery)->whereIn('status', ['development', 'dikerjakan'])->count(),
             'sit'       => (clone $cardQuery)->where('status', 'sit')->count(),
             'uat'       => (clone $cardQuery)->where('status', 'uat')->count(),
             'deploying' => (clone $cardQuery)->whereIn('status', ['training', 'awaiting_golive_validation'])->count(),
             'golive'    => (clone $cardQuery)->whereIn('status', ['golive', 'selesai', 'invoicing'])->count(),
-        ] : [
-            'analisis'  => 2,
-            'develop'   => 0,
-            'sit'       => 1,
-            'uat'       => 0,
-            'deploying' => 0,
-            'golive'    => 2,
         ];
         $totalStatusItems = array_sum($statusCounts) ?: 1;
 
@@ -136,23 +129,77 @@ class ChangeRequestController extends Controller
             'golive' => $figmaGoLiveCr,
         ];
 
+        // ── Data Request dari PM (Hari Ini, Kemarin, dan Hari-hari Sebelumnya) ──
+        $today = Carbon::today();
+        $yesterday = Carbon::yesterday();
+        $pmRequestsToday = ChangeRequest::whereDate('created_at', $today)->count();
+        $pmRequestsYesterday = ChangeRequest::whereDate('created_at', $yesterday)->count();
+
+        // 7 Hari Terakhir untuk grafik garis / area request harian dari PM
+        $dailyTrend = [];
+        for ($i = 6; $i >= 0; $i--) {
+            $d = Carbon::today()->subDays($i);
+            $count = ChangeRequest::whereDate('created_at', $d)->count();
+            $dailyTrend[] = [
+                'date' => $d->format('Y-m-d'),
+                'label' => $i === 0 ? 'Hari Ini' : ($i === 1 ? 'Kemarin' : $d->translatedFormat('d M')),
+                'short_label' => $d->format('d/m'),
+                'count' => $count,
+            ];
+        }
+
+        // Jika tidak ada data dalam 7 hari terakhir kalender hari ini, ambil 7 tanggal transaksi terakhir dari database agar grafik dinamis & akurat
+        $totalDailyCount = array_sum(array_column($dailyTrend, 'count'));
+        if ($totalDailyCount === 0) {
+            $lastCrDate = ChangeRequest::latest('created_at')->value('created_at');
+            if ($lastCrDate) {
+                $refDate = Carbon::parse($lastCrDate);
+                $dailyTrend = [];
+                for ($i = 6; $i >= 0; $i--) {
+                    $d = (clone $refDate)->subDays($i);
+                    $c = ChangeRequest::whereDate('created_at', $d->toDateString())->count();
+                    $dailyTrend[] = [
+                        'date' => $d->format('Y-m-d'),
+                        'label' => $i === 0 ? 'Hari Ini' : ($i === 1 ? 'Kemarin' : $d->format('d/m')),
+                        'short_label' => $d->format('d/m'),
+                        'count' => $c,
+                    ];
+                }
+                $pmRequestsToday = ChangeRequest::whereDate('created_at', $refDate->toDateString())->count();
+                $pmRequestsYesterday = ChangeRequest::whereDate('created_at', (clone $refDate)->subDay()->toDateString())->count();
+            }
+        }
+
+        // Notifikasi Terkini Dinamis dari Database untuk Dashboard
+        $notifPendingCount = ChangeRequest::whereIn('status', ['awaiting_pmh', 'diajukan', 'analisa', 'dianalisis'])->count();
+        $notifNeedVerifCount = ChangeRequest::whereIn('status', ['diajukan', 'analisa', 'dianalisis'])->count();
+        $notifDevCount = ChangeRequest::whereIn('status', ['development', 'dikerjakan', 'uat', 'sit'])->count();
+        $notifGoLiveCount = ChangeRequest::whereIn('status', ['golive', 'selesai', 'validated'])->count();
+
         return view('cr.index', [
-            'changeRequests'  => $changeRequests,
-            'viewMode'        => $viewMode,
-            'figmaTotalCr'        => $figmaTotalCr,
-            'figmaNeedApprovalCr' => $figmaNeedApprovalCr,
-            'figmaDevCr'          => $figmaDevCr,
-            'figmaUatCr'      => $figmaUatCr,
-            'figmaGoLiveCr'   => $figmaGoLiveCr,
-            'statusCounts'    => $statusCounts,
-            'totalStatusItems'=> $totalStatusItems,
-            'statistik'       => $statistik,
-            'statusList'      => ChangeRequest::statusList(),
-            'ongoingTotal'    => $ongoingTotal,
-            'maxStat'         => $maxStat ?: 1,
-            'totalBiaya'      => $totalBiaya,
-            'user'            => $user,
-            'roleMetrics'     => $roleMetrics,
+            'changeRequests'       => $changeRequests,
+            'viewMode'             => $viewMode,
+            'figmaTotalCr'         => $figmaTotalCr,
+            'figmaNeedApprovalCr'  => $figmaNeedApprovalCr,
+            'figmaDevCr'           => $figmaDevCr,
+            'figmaUatCr'           => $figmaUatCr,
+            'figmaGoLiveCr'        => $figmaGoLiveCr,
+            'pmRequestsToday'      => $pmRequestsToday,
+            'pmRequestsYesterday'  => $pmRequestsYesterday,
+            'dailyTrend'           => $dailyTrend,
+            'statusCounts'         => $statusCounts,
+            'totalStatusItems'     => $totalStatusItems,
+            'statistik'            => $statistik,
+            'statusList'           => ChangeRequest::statusList(),
+            'ongoingTotal'         => $ongoingTotal,
+            'maxStat'              => $maxStat ?: 1,
+            'totalBiaya'           => $totalBiaya,
+            'user'                 => $user,
+            'roleMetrics'          => $roleMetrics,
+            'notifPendingCount'    => $notifPendingCount,
+            'notifNeedVerifCount'  => $notifNeedVerifCount,
+            'notifDevCount'        => $notifDevCount,
+            'notifGoLiveCount'     => $notifGoLiveCount,
         ]);
     }
 

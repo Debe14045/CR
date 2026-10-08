@@ -212,7 +212,7 @@
         </div>
     </div>
 
-    {{-- Figma Footer Pagination Bar --}}
+    {{-- Figma Footer Pagination Bar (Sinkron Dinamis) --}}
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 pt-2 text-muted" style="font-size: 0.82rem; font-weight: 600;">
         <div>
             TOTAL DATA: <span class="text-dark">{{ $totalData }}</span>
@@ -220,20 +220,16 @@
         <div class="d-flex align-items-center gap-3">
             <div class="d-flex align-items-center gap-2">
                 <span>ROWS PER PAGE</span>
-                <select class="form-select form-select-sm" style="width: 70px; border-radius: 6px; font-size: 0.82rem; border-color: #CBD5E1;">
-                    <option selected>10</option>
-                    <option>25</option>
-                    <option>50</option>
-                </select>
+                <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 0.82rem; border-color: #CBD5E1 !important;">10</span>
             </div>
             <div>
-                PAGE 1 OF 5
+                PAGE 1 OF 1
             </div>
             <div class="btn-group btn-group-sm">
-                <button type="button" class="btn btn-outline-secondary px-2 py-1"><i class="bi bi-chevron-double-left"></i></button>
-                <button type="button" class="btn btn-outline-secondary px-2 py-1"><i class="bi bi-chevron-left"></i></button>
-                <button type="button" class="btn btn-outline-secondary px-2 py-1"><i class="bi bi-chevron-right"></i></button>
-                <button type="button" class="btn btn-outline-secondary px-2 py-1"><i class="bi bi-chevron-double-right"></i></button>
+                <button type="button" class="btn btn-outline-secondary px-2 py-1 disabled"><i class="bi bi-chevron-double-left"></i></button>
+                <button type="button" class="btn btn-outline-secondary px-2 py-1 disabled"><i class="bi bi-chevron-left"></i></button>
+                <button type="button" class="btn btn-outline-secondary px-2 py-1 disabled"><i class="bi bi-chevron-right"></i></button>
+                <button type="button" class="btn btn-outline-secondary px-2 py-1 disabled"><i class="bi bi-chevron-double-right"></i></button>
             </div>
         </div>
     </div>

@@ -1,49 +1,48 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', $pageTitle . ' • PM Head Monitoring CR'); ?>
 
-@section('title', $pageTitle . ' • PM Head Monitoring CR')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="page-shell pb-5">
 
-    {{-- Page Header --}}
+    
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-3">
         <div>
             <h1 class="fw-bold mb-1" style="color: #0F172A; font-size: 1.85rem; font-weight: 800; letter-spacing: -0.02em;">
-                {{ $pageTitle }}
+                <?php echo e($pageTitle); ?>
+
             </h1>
             <p class="text-muted mb-0" style="font-size: 0.86rem; color: #64748B;">Pantau seluruh permintaan perubahan Anda</p>
         </div>
     </div>
 
-    {{-- Segmented Tabs (Semua CR | CR Aktif | CR Selesai) --}}
-    @php
+    
+    <?php
         $currentRoute = Route::currentRouteName();
-    @endphp
+    ?>
     <div class="d-flex align-items-center mb-4" style="border: 1.5px solid #CBD5E1; border-radius: 12px; overflow: hidden; max-width: 680px; background: #F8FAFC;">
-        <a href="{{ route($currentRoute, array_merge(request()->query(), ['tab' => 'semua'])) }}"
+        <a href="<?php echo e(route($currentRoute, array_merge(request()->query(), ['tab' => 'semua']))); ?>"
            class="text-decoration-none py-2 px-4 text-center fw-bold transition-all"
-           style="flex: 1; font-size: 0.88rem; {{ ($activeTab ?? 'semua') === 'semua' ? 'background: #0063D7; color: #FFFFFF;' : 'color: #334155; background: transparent;' }}">
+           style="flex: 1; font-size: 0.88rem; <?php echo e(($activeTab ?? 'semua') === 'semua' ? 'background: #0063D7; color: #FFFFFF;' : 'color: #334155; background: transparent;'); ?>">
             Semua CR
         </a>
-        <a href="{{ route($currentRoute, array_merge(request()->query(), ['tab' => 'aktif'])) }}"
+        <a href="<?php echo e(route($currentRoute, array_merge(request()->query(), ['tab' => 'aktif']))); ?>"
            class="text-decoration-none py-2 px-4 text-center fw-bold transition-all border-start border-end"
-           style="flex: 1; font-size: 0.88rem; border-color: #CBD5E1 !important; {{ ($activeTab ?? '') === 'aktif' ? 'background: #0063D7; color: #FFFFFF;' : 'color: #334155; background: transparent;' }}">
+           style="flex: 1; font-size: 0.88rem; border-color: #CBD5E1 !important; <?php echo e(($activeTab ?? '') === 'aktif' ? 'background: #0063D7; color: #FFFFFF;' : 'color: #334155; background: transparent;'); ?>">
             CR Aktif
         </a>
-        <a href="{{ route($currentRoute, array_merge(request()->query(), ['tab' => 'selesai'])) }}"
+        <a href="<?php echo e(route($currentRoute, array_merge(request()->query(), ['tab' => 'selesai']))); ?>"
            class="text-decoration-none py-2 px-4 text-center fw-bold transition-all"
-           style="flex: 1; font-size: 0.88rem; {{ ($activeTab ?? '') === 'selesai' ? 'background: #0063D7; color: #FFFFFF;' : 'color: #334155; background: transparent;' }}">
+           style="flex: 1; font-size: 0.88rem; <?php echo e(($activeTab ?? '') === 'selesai' ? 'background: #0063D7; color: #FFFFFF;' : 'color: #334155; background: transparent;'); ?>">
             CR Selesai
         </a>
     </div>
 
-    {{-- Search & Status Filter Bar --}}
+    
     <div class="d-flex justify-content-between align-items-center gap-3 mb-4 flex-wrap">
-        <form method="GET" action="{{ route($currentRoute) }}" class="m-0" style="flex: 1; max-width: 440px;">
-            <input type="hidden" name="tab" value="{{ $activeTab ?? 'semua' }}">
+        <form method="GET" action="<?php echo e(route($currentRoute)); ?>" class="m-0" style="flex: 1; max-width: 440px;">
+            <input type="hidden" name="tab" value="<?php echo e($activeTab ?? 'semua'); ?>">
             <div style="position: relative; display: flex; align-items: center;">
                 <i class="bi bi-search" style="position: absolute; left: 16px; color: #94A3B8; font-size: 0.9rem; pointer-events: none;"></i>
-                <input type="text" name="search" value="{{ request('search') }}"
+                <input type="text" name="search" value="<?php echo e(request('search')); ?>"
                        placeholder="Search task or CR number..."
                        class="form-control"
                        style="background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 9999px; padding: 0.55rem 1rem 0.55rem 2.6rem; font-size: 0.88rem; color: #1E293B;">
@@ -51,7 +50,7 @@
         </form>
 
         <div class="dropdown">
-            @php
+            <?php
                 $statusDisplay = match(strtolower(request('status', ''))) {
                     'diajukan', 'awaiting_pm', 'persetujuan' => 'Diajukan',
                     'analisa', 'analysis' => 'Analysis',
@@ -59,23 +58,23 @@
                     'golive', 'go-live' => 'Go Live',
                     default => request('status') ? ucfirst(str_replace('_', ' ', request('status'))) : 'Semua Status'
                 };
-            @endphp
+            ?>
             <button class="btn btn-white bg-white dropdown-toggle px-3 py-2 d-flex align-items-center gap-2 shadow-sm"
                     type="button" id="statusFilterBtn" data-bs-toggle="dropdown" aria-expanded="false"
                     style="border: 1.5px solid #CBD5E1; border-radius: 10px; font-size: 0.86rem; color: #334155;">
-                <span>{{ $statusDisplay }}</span>
+                <span><?php echo e($statusDisplay); ?></span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-1 mt-1" style="border-radius: 10px; min-width: 170px;" aria-labelledby="statusFilterBtn">
-                <li><a class="dropdown-item py-1 px-3 small" href="{{ route($currentRoute, ['tab' => $activeTab ?? 'semua', 'search' => request('search')]) }}">Semua Status</a></li>
-                <li><a class="dropdown-item py-1 px-3 small" href="{{ route($currentRoute, ['tab' => $activeTab ?? 'semua', 'status' => 'diajukan', 'search' => request('search')]) }}">Diajukan</a></li>
-                <li><a class="dropdown-item py-1 px-3 small" href="{{ route($currentRoute, ['tab' => $activeTab ?? 'semua', 'status' => 'analisa', 'search' => request('search')]) }}">Analysis</a></li>
-                <li><a class="dropdown-item py-1 px-3 small" href="{{ route($currentRoute, ['tab' => $activeTab ?? 'semua', 'status' => 'development', 'search' => request('search')]) }}">Develop</a></li>
-                <li><a class="dropdown-item py-1 px-3 small" href="{{ route($currentRoute, ['tab' => $activeTab ?? 'semua', 'status' => 'golive', 'search' => request('search')]) }}">Go Live</a></li>
+                <li><a class="dropdown-item py-1 px-3 small" href="<?php echo e(route($currentRoute, ['tab' => $activeTab ?? 'semua', 'search' => request('search')])); ?>">Semua Status</a></li>
+                <li><a class="dropdown-item py-1 px-3 small" href="<?php echo e(route($currentRoute, ['tab' => $activeTab ?? 'semua', 'status' => 'diajukan', 'search' => request('search')])); ?>">Diajukan</a></li>
+                <li><a class="dropdown-item py-1 px-3 small" href="<?php echo e(route($currentRoute, ['tab' => $activeTab ?? 'semua', 'status' => 'analisa', 'search' => request('search')])); ?>">Analysis</a></li>
+                <li><a class="dropdown-item py-1 px-3 small" href="<?php echo e(route($currentRoute, ['tab' => $activeTab ?? 'semua', 'status' => 'development', 'search' => request('search')])); ?>">Develop</a></li>
+                <li><a class="dropdown-item py-1 px-3 small" href="<?php echo e(route($currentRoute, ['tab' => $activeTab ?? 'semua', 'status' => 'golive', 'search' => request('search')])); ?>">Go Live</a></li>
             </ul>
         </div>
     </div>
 
-    {{-- PM Head CR Table (NO, NAMA PM, PEMOHON, JUDUL CR, PENGAJUAN, STATUS, PRIORITAS, AKSI) --}}
+    
     <div class="card overflow-hidden shadow-sm border-0 mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 20px; background: #FFFFFF;">
         <div class="table-responsive">
             <table class="table mb-0 align-middle" style="border-collapse: separate; border-spacing: 0;">
@@ -92,8 +91,8 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse ($changeRequests as $index => $cr)
-                        @php
+                    <?php $__empty_1 = true; $__currentLoopData = $changeRequests; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $index => $cr): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+                        <?php
                             $statusKey = strtolower($cr->status);
                             $isUrgent = in_array(strtolower($cr->prioritas ?? ''), ['kritis', 'tinggi', 'urgent']);
                             $clientCompany = $cr->client?->company ?? ($cr->klien ?: 'PT Maju Bersama');
@@ -105,88 +104,94 @@
                                 2 => '#10B981',
                                 default => '#8B5CF6',
                             };
-                        @endphp
+                        ?>
                         <tr style="border-bottom: 1px solid #F1F5F9; transition: background 0.15s ease;" onmouseover="this.style.background='#F8FAFC';" onmouseout="this.style.background='#FFFFFF';">
                             <td class="py-3 px-3 text-center fw-semibold text-secondary" style="font-size: 0.85rem;">
-                                {{ $changeRequests->firstItem() ? ($changeRequests->firstItem() + $index) : ($index + 1) }}
+                                <?php echo e($changeRequests->firstItem() ? ($changeRequests->firstItem() + $index) : ($index + 1)); ?>
+
                             </td>
                             <td class="py-3 px-3 fw-bold text-dark" style="font-size: 0.86rem;">
-                                {{ $cr->nama_pm ?: ($cr->user?->name ?: 'PM ITPI') }}
+                                <?php echo e($cr->nama_pm ?: ($cr->user?->name ?: 'PM ITPI')); ?>
+
                             </td>
                             <td class="py-3 px-3">
                                 <div class="d-flex align-items-center gap-2">
                                     <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                                         style="width: 28px; height: 28px; background: {{ $avatarBg }}; font-size: 0.7rem; flex-shrink: 0;">
-                                        {{ $initials }}
+                                         style="width: 28px; height: 28px; background: <?php echo e($avatarBg); ?>; font-size: 0.7rem; flex-shrink: 0;">
+                                        <?php echo e($initials); ?>
+
                                     </div>
                                     <span class="fw-bold text-dark" style="font-size: 0.85rem;">
-                                        {{ $clientCompany }}
+                                        <?php echo e($clientCompany); ?>
+
                                     </span>
                                 </div>
                             </td>
                             <td class="py-3 px-3">
                                 <div>
-                                    <div class="fw-semibold text-dark" style="font-size: 0.86rem; line-height: 1.35;">{{ $cr->judul }}</div>
-                                    <div class="text-muted" style="font-size: 0.74rem;">{{ $cr->proyek_terkait ?: ($cr->kode_cr ?: 'System Integration') }}</div>
+                                    <div class="fw-semibold text-dark" style="font-size: 0.86rem; line-height: 1.35;"><?php echo e($cr->judul); ?></div>
+                                    <div class="text-muted" style="font-size: 0.74rem;"><?php echo e($cr->proyek_terkait ?: ($cr->kode_cr ?: 'System Integration')); ?></div>
                                 </div>
                             </td>
                             <td class="py-3 px-3 text-center text-muted" style="font-size: 0.82rem;">
-                                {{ $cr->tanggal_pengajuan ? $cr->tanggal_pengajuan->format('d M Y') : $cr->created_at->format('d M Y') }}
+                                <?php echo e($cr->tanggal_pengajuan ? $cr->tanggal_pengajuan->format('d M Y') : $cr->created_at->format('d M Y')); ?>
+
                             </td>
                             <td class="py-3 px-3 text-center">
-                                @if (in_array($statusKey, ['diajukan', 'awaiting_pm', 'awaiting_pmh']))
+                                <?php if(in_array($statusKey, ['diajukan', 'awaiting_pm', 'awaiting_pmh'])): ?>
                                     <span class="badge fw-semibold px-2 py-1 d-inline-flex align-items-center gap-1"
                                           style="background: #FEF3C7; color: #D97706; border-radius: 999px; font-size: 0.74rem;">
                                         <span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706;"></span>
                                         Diajukan
                                     </span>
-                                @elseif (in_array($statusKey, ['analisa', 'dianalisis']))
+                                <?php elseif(in_array($statusKey, ['analisa', 'dianalisis'])): ?>
                                     <span class="badge fw-semibold px-2 py-1 d-inline-flex align-items-center gap-1"
                                           style="background: #E0F2FE; color: #0284C7; border-radius: 999px; font-size: 0.74rem;">
                                         <span style="width: 6px; height: 6px; border-radius: 50%; background: #0284C7;"></span>
                                         Analysis
                                     </span>
-                                @elseif (in_array($statusKey, ['development', 'dikerjakan']))
+                                <?php elseif(in_array($statusKey, ['development', 'dikerjakan'])): ?>
                                     <span class="badge fw-semibold px-2 py-1 d-inline-flex align-items-center gap-1"
                                           style="background: #EDE9FE; color: #7C3AED; border-radius: 999px; font-size: 0.74rem;">
                                         <span style="width: 6px; height: 6px; border-radius: 50%; background: #7C3AED;"></span>
                                         Develop
                                     </span>
-                                @elseif (in_array($statusKey, ['golive', 'selesai']))
+                                <?php elseif(in_array($statusKey, ['golive', 'selesai'])): ?>
                                     <span class="badge fw-semibold px-2 py-1 d-inline-flex align-items-center gap-1"
                                           style="background: #DCFCE7; color: #16A34A; border-radius: 999px; font-size: 0.74rem;">
                                         <span style="width: 6px; height: 6px; border-radius: 50%; background: #16A34A;"></span>
                                         Go Live
                                     </span>
-                                @else
+                                <?php else: ?>
                                     <span class="badge fw-semibold px-2 py-1 d-inline-flex align-items-center gap-1"
                                           style="background: #F1F5F9; color: #475569; border-radius: 999px; font-size: 0.74rem;">
                                         <span style="width: 6px; height: 6px; border-radius: 50%; background: #64748B;"></span>
-                                        {{ ucfirst(str_replace('_', ' ', $cr->status)) }}
+                                        <?php echo e(ucfirst(str_replace('_', ' ', $cr->status))); ?>
+
                                     </span>
-                                @endif
+                                <?php endif; ?>
                             </td>
                             <td class="py-3 px-3 text-center">
-                                @if ($isUrgent)
+                                <?php if($isUrgent): ?>
                                     <span class="badge fw-bold px-2 py-1"
                                           style="background: #FEE2E2; color: #DC2626; border-radius: 6px; font-size: 0.68rem; letter-spacing: 0.04em;">
                                         URGENT
                                     </span>
-                                @else
+                                <?php else: ?>
                                     <span class="badge fw-bold px-2 py-1"
                                           style="background: #DCFCE7; color: #16A34A; border-radius: 6px; font-size: 0.68rem; letter-spacing: 0.04em;">
                                         NORMAL
                                     </span>
-                                @endif
+                                <?php endif; ?>
                             </td>
                             <td class="py-3 px-3 text-center">
-                                <a href="{{ route('pmh.review', $cr) }}" class="btn text-white fw-bold d-inline-flex align-items-center gap-1 px-3 py-1"
+                                <a href="<?php echo e(route('pmh.review', $cr)); ?>" class="btn text-white fw-bold d-inline-flex align-items-center gap-1 px-3 py-1"
                                    style="background: #0063D7; border-radius: 8px; font-size: 0.78rem; border: none; box-shadow: 0 2px 6px rgba(0,99,215,0.25);">
                                     Review <i class="bi bi-chevron-right" style="font-size: 0.7rem;"></i>
                                 </a>
                             </td>
                         </tr>
-                    @empty
+                    <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
                         <tr>
                             <td colspan="8" class="text-center py-5 text-muted">
                                 <i class="bi bi-inbox text-secondary fs-2 d-block mb-2"></i>
@@ -194,38 +199,41 @@
                                 <div class="small">Silakan ubah filter status atau kata kunci pencarian Anda.</div>
                             </td>
                         </tr>
-                    @endforelse
+                    <?php endif; ?>
                 </tbody>
             </table>
         </div>
     </div>
 
-    {{-- Figma Footer Pagination Bar (Sinkron Dinamis dengan Data Riil) --}}
-    @php
+    
+    <?php
         $currentPage = $changeRequests->currentPage();
         $lastPage = max(1, $changeRequests->lastPage());
         $perPage = $changeRequests->perPage();
-    @endphp
+    ?>
     <div class="d-flex justify-content-between align-items-center flex-wrap gap-3 pt-2 text-muted" style="font-size: 0.82rem; font-weight: 600;">
         <div>
-            TOTAL DATA: <span class="text-dark">{{ $totalData }}</span>
+            TOTAL DATA: <span class="text-dark"><?php echo e($totalData); ?></span>
         </div>
         <div class="d-flex align-items-center gap-3">
             <div class="d-flex align-items-center gap-2">
                 <span>ROWS PER PAGE</span>
-                <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 0.82rem; border-color: #CBD5E1 !important;">{{ $perPage }}</span>
+                <span class="badge bg-light text-dark border px-2 py-1" style="font-size: 0.82rem; border-color: #CBD5E1 !important;"><?php echo e($perPage); ?></span>
             </div>
             <div>
-                PAGE {{ $currentPage }} OF {{ $lastPage }}
+                PAGE <?php echo e($currentPage); ?> OF <?php echo e($lastPage); ?>
+
             </div>
             <div class="btn-group btn-group-sm">
-                <a href="{{ $changeRequests->url(1) }}" class="btn btn-outline-secondary px-2 py-1 {{ $currentPage <= 1 ? 'disabled' : '' }}"><i class="bi bi-chevron-double-left"></i></a>
-                <a href="{{ $changeRequests->previousPageUrl() ?: 'javascript:void(0)' }}" class="btn btn-outline-secondary px-2 py-1 {{ !$changeRequests->previousPageUrl() ? 'disabled' : '' }}"><i class="bi bi-chevron-left"></i></a>
-                <a href="{{ $changeRequests->nextPageUrl() ?: 'javascript:void(0)' }}" class="btn btn-outline-secondary px-2 py-1 {{ !$changeRequests->nextPageUrl() ? 'disabled' : '' }}"><i class="bi bi-chevron-right"></i></a>
-                <a href="{{ $changeRequests->url($lastPage) }}" class="btn btn-outline-secondary px-2 py-1 {{ $currentPage >= $lastPage ? 'disabled' : '' }}"><i class="bi bi-chevron-double-right"></i></a>
+                <a href="<?php echo e($changeRequests->url(1)); ?>" class="btn btn-outline-secondary px-2 py-1 <?php echo e($currentPage <= 1 ? 'disabled' : ''); ?>"><i class="bi bi-chevron-double-left"></i></a>
+                <a href="<?php echo e($changeRequests->previousPageUrl() ?: 'javascript:void(0)'); ?>" class="btn btn-outline-secondary px-2 py-1 <?php echo e(!$changeRequests->previousPageUrl() ? 'disabled' : ''); ?>"><i class="bi bi-chevron-left"></i></a>
+                <a href="<?php echo e($changeRequests->nextPageUrl() ?: 'javascript:void(0)'); ?>" class="btn btn-outline-secondary px-2 py-1 <?php echo e(!$changeRequests->nextPageUrl() ? 'disabled' : ''); ?>"><i class="bi bi-chevron-right"></i></a>
+                <a href="<?php echo e($changeRequests->url($lastPage)); ?>" class="btn btn-outline-secondary px-2 py-1 <?php echo e($currentPage >= $lastPage ? 'disabled' : ''); ?>"><i class="bi bi-chevron-double-right"></i></a>
             </div>
         </div>
     </div>
 
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Magang_ITPI\CR\resources\views/pmhead/table_page.blade.php ENDPATH**/ ?>

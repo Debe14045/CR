@@ -120,5 +120,6 @@ Route::middleware('auth')->group(function () {
         Route::get('/outstanding-payment/export', [\App\Http\Controllers\PMHead\PMHeadController::class, 'exportPayment'])->name('outstanding-payment.export');
         Route::get('/review/{changeRequest}', [\App\Http\Controllers\PMHead\PMHeadController::class, 'review'])->name('review');
         Route::post('/review/{changeRequest}/decision', [\App\Http\Controllers\PMHead\PMHeadController::class, 'submitDecision'])->name('decision');
+        Route::get('/notifikasi', [\App\Http\Controllers\PMHead\PMHeadController::class, 'notifications'])->name('notifications');
     });
 });

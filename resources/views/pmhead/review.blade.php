@@ -31,13 +31,13 @@
     $docUrl = $changeRequest->google_drive_url ?: 'https://drive.google.com/drive/folders/abc123';
     $solutionPaperUrl = $changeRequest->solution_paper_url ?: 'https://drive.google.com/file/sp001';
 
-    $mandaysAnalisis = (int)($changeRequest->mindesk_analisis ?: 3);
-    $mandaysDev = (int)($changeRequest->mindesk_development ?: 10);
+    $mandaysAnalisis = (int)($changeRequest->mindesk_analisis ?: 2);
+    $mandaysDev = (int)($changeRequest->mindesk_development ?: ($changeRequest->estimasi_waktu ?: 8));
     $mandaysTest = (int)($changeRequest->mindesk_testing ?: 2);
     $totalMandays = $mandaysAnalisis + $mandaysDev + $mandaysTest;
 
-    $catatanCR = $changeRequest->catatan_pengajuan ?: 'Mohon diprioritaskan untuk integrasi sandbox staging sebelum tanggal 15 September agar tim QA dapat melakukan testing payment gateway secara menyeluruh. Testing account sudah kami koordinasikan dengan pihak vendor OVO.';
-    $pmVerifier = $changeRequest->nama_pm ?: 'Ricky Pratama';
+    $catatanCR = $changeRequest->catatan_pengajuan ?: ($changeRequest->pesan_client ?: 'Mohon diprioritaskan untuk integrasi sandbox staging sebelum jadwal rilis agar tim QA dapat melakukan testing secara menyeluruh.');
+    $pmVerifier = $changeRequest->nama_pm ?: ($changeRequest->user?->name ?: 'PM ITPI');
 @endphp
 
 <div class="page-shell pb-5">
@@ -64,7 +64,7 @@
                     {{ $crTitle }}
                 </h3>
                 <span class="badge px-3 py-1 fw-bold text-white" style="background: #00A3FF; border-radius: 999px; font-size: 0.72rem;">
-                    Analisa
+                    {{ ucfirst(str_replace('_', ' ', $changeRequest->status ?: 'Analisa')) }}
                 </span>
             </div>
         </div>
@@ -83,105 +83,95 @@
             </div>
             <div class="text-muted small d-flex align-items-center gap-1" style="font-size: 0.8rem;">
                 <i class="bi bi-calendar3"></i>
-                <span>Tanggal Pengajuan: <strong class="text-dark">{{ $tglHeader }}</strong></span>
+                <span>Tanggal Pengajuan: <strong class="text-dark">{{ $tglPengajuan }}</strong></span>
             </div>
         </div>
 
-        {{-- STATUS ALUR CR TRACKER (Figma 6 Steps) --}}
+        @php
+            // Calculate dynamic step progress based on actual status
+            $currentStep = match($statusKey) {
+                'diajukan' => 1,
+                'awaiting_pm', 'analisa', 'dianalisis' => 2,
+                'awaiting_pmh' => 3,
+                'validated', 'disetujui' => 4,
+                'development', 'dikerjakan', 'sit', 'uat', 'training' => 5,
+                'golive', 'selesai', 'invoicing' => 6,
+                default => 3,
+            };
+            $pctProgress = match($currentStep) {
+                1 => 17,
+                2 => 33,
+                3 => 50,
+                4 => 67,
+                5 => 83,
+                6 => 100,
+                default => 50,
+            };
+            $stepLabels = [
+                1 => ['title' => 'Diajukan', 'desc' => 'Pengajuan'],
+                2 => ['title' => 'Review PM', 'desc' => 'Analisa'],
+                3 => ['title' => 'Approval PM Head', 'desc' => 'Supervisi'],
+                4 => ['title' => 'Quotation', 'desc' => 'Penawaran'],
+                5 => ['title' => 'Development', 'desc' => 'Pengerjaan'],
+                6 => ['title' => 'Invoice & Rilis', 'desc' => 'Selesai'],
+            ];
+        @endphp
+
+        {{-- STATUS ALUR CR TRACKER (Dynamic Steps) --}}
         <div class="mb-4">
             <div class="d-flex justify-content-between align-items-center mb-2">
                 <span class="fw-bold text-uppercase" style="font-size: 0.78rem; letter-spacing: 0.04em; color: #475569;">
                     STATUS ALUR CR
                 </span>
                 <span class="text-muted small" style="font-size: 0.74rem; font-weight: 600;">
-                    Total Progres Alur: 17%
+                    Total Progres Alur: {{ $pctProgress }}%
                 </span>
             </div>
 
             <div class="row g-2">
-                {{-- Step 1: Diajukan Selesai --}}
-                <div class="col-md-2 col-6">
-                    <div class="p-2 px-3 h-100 d-flex align-items-center gap-2 rounded-3"
-                         style="background: #ECFDF5; border: 1.5px solid #A7F3D0;">
-                        <i class="bi bi-check-circle-fill text-success" style="font-size: 1rem;"></i>
-                        <div style="line-height: 1.15;">
-                            <div class="fw-bold text-dark" style="font-size: 0.78rem;">Diajukan</div>
-                            <div class="text-success small fw-semibold" style="font-size: 0.68rem;">Selesai</div>
-                        </div>
+                @for ($step = 1; $step <= 6; $step++)
+                    @php
+                        $isCompleted = $step < $currentStep;
+                        $isActive = $step === $currentStep;
+                        $stepInfo = $stepLabels[$step];
+                    @endphp
+                    <div class="col-md-2 col-6">
+                        @if ($isCompleted)
+                            <div class="p-2 px-3 h-100 d-flex align-items-center gap-2 rounded-3"
+                                 style="background: #ECFDF5; border: 1.5px solid #A7F3D0;">
+                                <i class="bi bi-check-circle-fill text-success" style="font-size: 1rem;"></i>
+                                <div style="line-height: 1.15;">
+                                    <div class="fw-bold text-dark" style="font-size: 0.78rem;">{{ $stepInfo['title'] }}</div>
+                                    <div class="text-success small fw-semibold" style="font-size: 0.68rem;">Selesai</div>
+                                </div>
+                            </div>
+                        @elseif ($isActive)
+                            <div class="p-2 px-3 h-100 d-flex align-items-center gap-2 rounded-3"
+                                 style="background: #EFF6FF; border: 2px solid #3B82F6;">
+                                <span class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white"
+                                      style="width: 20px; height: 20px; background: #0063D7; font-size: 0.68rem; flex-shrink: 0;">
+                                    {{ $step }}
+                                </span>
+                                <div style="line-height: 1.15;">
+                                    <div class="fw-bold text-primary" style="font-size: 0.78rem;">{{ $stepInfo['title'] }}</div>
+                                    <div class="text-primary small fw-semibold" style="font-size: 0.68rem;">Sedang Berjalan</div>
+                                </div>
+                            </div>
+                        @else
+                            <div class="p-2 px-3 h-100 d-flex align-items-center gap-2 rounded-3"
+                                 style="background: #F8FAFC; border: 1px solid #E2E8F0;">
+                                <span class="rounded-circle d-flex align-items-center justify-content-center text-muted"
+                                      style="width: 20px; height: 20px; background: #E2E8F0; font-size: 0.68rem; flex-shrink: 0;">
+                                    {{ $step }}
+                                </span>
+                                <div style="line-height: 1.15;">
+                                    <div class="text-muted fw-semibold" style="font-size: 0.78rem;">{{ $stepInfo['title'] }}</div>
+                                    <div class="text-muted small" style="font-size: 0.68rem;">Menunggu</div>
+                                </div>
+                            </div>
+                        @endif
                     </div>
-                </div>
-
-                {{-- Step 2: Review PM Selesai --}}
-                <div class="col-md-2 col-6">
-                    <div class="p-2 px-3 h-100 d-flex align-items-center gap-2 rounded-3"
-                         style="background: #ECFDF5; border: 1.5px solid #A7F3D0;">
-                        <i class="bi bi-check-circle-fill text-success" style="font-size: 1rem;"></i>
-                        <div style="line-height: 1.15;">
-                            <div class="fw-bold text-dark" style="font-size: 0.78rem;">Review PM</div>
-                            <div class="text-success small fw-semibold" style="font-size: 0.68rem;">Selesai</div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Step 3: Approval PM Head (Active!) --}}
-                <div class="col-md-2 col-6">
-                    <div class="p-2 px-3 h-100 d-flex align-items-center gap-2 rounded-3"
-                         style="background: #EFF6FF; border: 2px solid #3B82F6;">
-                        <span class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white"
-                              style="width: 20px; height: 20px; background: #0063D7; font-size: 0.68rem; flex-shrink: 0;">
-                            3
-                        </span>
-                        <div style="line-height: 1.15;">
-                            <div class="fw-bold text-primary" style="font-size: 0.78rem;">Approval PM Head</div>
-                            <div class="text-primary small fw-semibold" style="font-size: 0.68rem;">Sedang Berjalan</div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Step 4: Quotation Menunggu --}}
-                <div class="col-md-2 col-6">
-                    <div class="p-2 px-3 h-100 d-flex align-items-center gap-2 rounded-3"
-                         style="background: #F8FAFC; border: 1px solid #E2E8F0;">
-                        <span class="rounded-circle d-flex align-items-center justify-content-center text-muted"
-                              style="width: 20px; height: 20px; background: #E2E8F0; font-size: 0.68rem; flex-shrink: 0;">
-                            4
-                        </span>
-                        <div style="line-height: 1.15;">
-                            <div class="text-muted fw-semibold" style="font-size: 0.78rem;">Quotation</div>
-                            <div class="text-muted small" style="font-size: 0.68rem;">Menunggu</div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Step 5: Development Menunggu --}}
-                <div class="col-md-2 col-6">
-                    <div class="p-2 px-3 h-100 d-flex align-items-center gap-2 rounded-3"
-                         style="background: #F8FAFC; border: 1px solid #E2E8F0;">
-                        <span class="rounded-circle d-flex align-items-center justify-content-center text-muted"
-                              style="width: 20px; height: 20px; background: #E2E8F0; font-size: 0.68rem; flex-shrink: 0;">
-                            5
-                        </span>
-                        <div style="line-height: 1.15;">
-                            <div class="text-muted fw-semibold" style="font-size: 0.78rem;">Development</div>
-                            <div class="text-muted small" style="font-size: 0.68rem;">Menunggu</div>
-                        </div>
-                    </div>
-                </div>
-
-                {{-- Step 6: Invoice Menunggu --}}
-                <div class="col-md-2 col-6">
-                    <div class="p-2 px-3 h-100 d-flex align-items-center gap-2 rounded-3"
-                         style="background: #F8FAFC; border: 1px solid #E2E8F0;">
-                        <span class="rounded-circle d-flex align-items-center justify-content-center text-muted"
-                              style="width: 20px; height: 20px; background: #E2E8F0; font-size: 0.68rem; flex-shrink: 0;">
-                            6
-                        </span>
-                        <div style="line-height: 1.15;">
-                            <div class="text-muted fw-semibold" style="font-size: 0.78rem;">Invoice</div>
-                            <div class="text-muted small" style="font-size: 0.68rem;">Menunggu</div>
-                        </div>
-                    </div>
-                </div>
+                @endfor
             </div>
         </div>
 
@@ -266,24 +256,29 @@
 
             <div class="text-dark" style="font-size: 0.86rem; line-height: 1.65;">
                 <div class="fw-bold mb-1">1. LATAR BELAKANG &amp; TUJUAN</div>
-                <p class="text-secondary mb-3">
-                    Implementasi penambahan kanal pembayaran digital menggunakan e-wallet OVO (Push to Pay &amp; QRIS) pada modul checkout Sistem E-commerce. Hal ini bertujuan untuk menaikkan rasio konversi checkout pelanggan serta mengurangi tingkat abandoned cart pada saat proses transaksi pembelian online.
-                </p>
+                <div class="text-secondary mb-3">
+                    {!! nl2br(e($changeRequest->alasan ?: ($changeRequest->deskripsi ?: 'Implementasi penambahan modul atau fitur baru pada sistem sesuai kebutuhan operasional dan penyesuaian alur kerja terkini.'))) !!}
+                </div>
 
                 <div class="fw-bold mb-1">2. RUANG LINGKUP PERUBAHAN (SCOPE OF WORK)</div>
-                <ul class="text-secondary ps-3 mb-3" style="list-style-type: disc;">
-                    <li>Penambahan opsi pembayaran OVO Wallet pada step 3 (Metode Pembayaran) di aplikasi Web dan Mobile.</li>
-                    <li>Integrasi Webhook Callback Service untuk konfirmasi status settlement secara real-time.</li>
-                    <li>Penyelarasan modul rekonsiliasi harian dan penyesuaian laporan keuangan di portal admin.</li>
-                    <li>Penambahan unit test coverage dan staging automated testing minimum 85%.</li>
-                </ul>
+                <div class="text-secondary mb-3">
+                    @if ($changeRequest->deskripsi && $changeRequest->deskripsi !== $changeRequest->alasan)
+                        {!! nl2br(e($changeRequest->deskripsi)) !!}
+                    @else
+                        <ul class="text-secondary ps-3 mb-0" style="list-style-type: disc;">
+                            <li>Penyesuaian modul transaksi dan antarmuka pengguna pada sistem aplikasi.</li>
+                            <li>Integrasi layanan backend, API endpoint, dan penyesuaian skema database.</li>
+                            <li>Pengujian fungsional unit testing, staging, serta verifikasi keamanan data.</li>
+                        </ul>
+                    @endif
+                </div>
 
                 <div class="fw-bold mb-2">3. DAMPAK TEKNIS &amp; DEPENDENCIES</div>
                 <div class="p-3 rounded-3" style="background: #FFFBEB; border: 1.5px solid #FDE68A;">
                     <div class="d-flex align-items-start gap-2">
                         <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #D97706; font-size: 0.95rem; flex-shrink: 0;"></i>
                         <div style="font-size: 0.82rem; color: #92400E; font-weight: 500;">
-                            <strong>Catatan Dependensi:</strong> Membutuhkan integrasi API Gateway credentials (Client ID &amp; Secret Key) production dari pihak Payment Aggregator sebelum tanggal 18 Sep 2026.
+                            <strong>Catatan Dependensi &amp; Solusi:</strong> {{ $changeRequest->solution_paper_note ?: ($changeRequest->pesan_client ?: 'Membutuhkan koordinasi kredensial staging/production dari PIC teknis serta pengujian menyeluruh sebelum rilis.') }}
                         </div>
                     </div>
                 </div>
