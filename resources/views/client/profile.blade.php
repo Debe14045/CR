@@ -1,139 +1,163 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
-@section('title', 'Profil Klien • CR Manager')
+@section('title', 'Profile • Kelola Informasi Akun')
 
 @section('content')
-<div class="page-shell">
+@php
+    $profileName      = $user->name ?? '-';
+    $profileRoleBadge = ucfirst($user->role ?? 'Pengguna');
+    $profileEmail     = $user->email ?? '-';
+    
+    $profileCompany   = $clientRecord->company ?? '- (Internal/Belum diset)';
+    $profileInitial   = $clientRecord->nickname ?? '-';
+    $profileJobTitle  = $clientRecord->jabatan ?? '-';
+    $profilePhone     = $clientRecord->phone ?? '-';
 
-    {{-- Header --}}
-    <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
+    $projects = [];
+    if (isset($recentCRs)) {
+        foreach ($recentCRs as $cr) {
+            $statusStr = ucfirst(str_replace('_', ' ', $cr->status));
+            $color = '#94A3B8';
+            if (in_array($cr->status, ['draft', 'diajukan'])) $color = '#F59E0B'; // yellow/amber
+            elseif (in_array($cr->status, ['development', 'testing', 'uat'])) $color = '#3B82F6'; // blue
+            elseif ($cr->status === 'selesai' || $cr->status === 'golive') $color = '#10B981'; // green
+
+            $projects[] = [
+                'name' => $cr->judul,
+                'status' => $statusStr,
+                'color' => $color,
+                'weight' => '600'
+            ];
+        }
+    }
+    
+    if (empty($projects)) {
+        $projects = [
+            ['name' => 'Belum ada Change Request yang terkait.', 'status' => 'Kosong', 'color' => '#94A3B8', 'weight' => '500'],
+        ];
+    }
+@endphp
+
+{{-- ══════════════════════════════════════════════════════════════
+     PROFILE VIEW — NATIVE MODULAR HTML / CSS / BLADE COMPONENTS
+     Structured cleanly:
+     - ProfileHeader
+     - AccountInformationCard
+     - SecurityCard
+     - PreferencesCard
+     - ProjectsCard
+     All styling configured via CSS: width, height, padding,
+     margin, gap, border (#BAE6FD), border-radius, typography,
+     colors, and alignment strictly matching Figma reference.
+══════════════════════════════════════════════════════════════ --}}
+<div class="profile-page-container" style="max-width: 960px; padding: 6px 0 40px; font-family: 'Plus Jakarta Sans', -apple-system, BlinkMacSystemFont, sans-serif;">
+
+    @if(isset($errors) && $errors->any())
+    <div style="background:#FEE2E2;color:#991B1B;border-radius:10px;padding:12px 16px;margin-bottom:20px;font-size:0.85rem;border:1px solid #FECACA;">
+        <ul style="margin:0;padding-left:18px;">@foreach($errors->all() as $e)<li>{{ $e }}</li>@endforeach</ul>
+    </div>
+    @endif
+
+    {{-- Component 1: ProfileHeader --}}
+    <x-profile.profile-header
+        :name="$profileName"
+        :roleBadge="$profileRoleBadge"
+        title="Profile"
+        subtitle="Kelola informasi akun dan preferensi Anda."
+    />
+
+    {{-- Component Row: AccountInformationCard & SecurityCard --}}
+    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+        {{-- Component 2: AccountInformationCard --}}
         <div>
-            <div class="d-flex align-items-center gap-2 mb-1">
-                <a href="{{ route('change-requests.index') }}" class="text-decoration-none text-muted small">
-                    <i class="bi bi-arrow-left"></i> <span data-i18n="back_to_cr">Kembali ke Daftar CR</span>
-                </a>
-                <span class="text-muted small">&bull;</span>
-                <span class="text-primary small fw-semibold text-uppercase" data-i18n="client_profile_badge">Profil Instansi Klien</span>
-            </div>
-            <h3 class="fw-bold mb-0 text-dark" data-i18n="client_profile_title">Data Profil &amp; Master Klien</h3>
-            <p class="text-muted small mb-0" data-i18n="client_profile_subtitle">
-                Informasi identitas instansi rekanan serta data 3 Person in Charge (PIC) penanggung jawab.
-            </p>
+            <x-profile.account-information-card
+                :name="$profileName"
+                :company="$profileCompany"
+                :initial="$profileInitial"
+                :jobTitle="$profileJobTitle"
+                :email="$profileEmail"
+                :phone="$profilePhone"
+            />
         </div>
+
+        {{-- Component 3: SecurityCard --}}
         <div>
-            <a href="{{ route('change-requests.create') }}" class="btn text-white fw-semibold px-3 py-2"
-               style="background: #10B981; border-radius: 8px; font-size: 0.85rem; border: none; box-shadow: 0 2px 8px rgba(16,185,129,0.3);">
-                <i class="bi bi-plus-lg me-1"></i> <span data-i18n="btn_new_cr">Ajukan CR Baru</span>
-            </a>
+            <x-profile.security-card :actionRoute="route('profile.password')" />
         </div>
     </div>
 
-    {{-- Card 1: Data Instansi Perusahaan --}}
-    <div class="card p-4 shadow-sm border-0 mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 16px; background: #FFFFFF;">
-        <div class="d-flex align-items-center justify-content-between mb-3 pb-2 border-bottom">
-            <div class="d-flex align-items-center gap-3">
-                <div class="rounded-3 d-flex align-items-center justify-content-center text-white fw-bold"
-                     style="width: 52px; height: 52px; background: linear-gradient(135deg, #0284C7 0%, #0369A1 100%); font-size: 1.25rem;">
-                    {{ strtoupper(substr($clientRecord?->company ?? $user->company ?? $user->name, 0, 2)) }}
-                </div>
-                <div>
-                    <h5 class="fw-bold text-dark mb-0">{{ $clientRecord?->company ?? $user->company ?? 'PT Rekanan Klien' }}</h5>
-                    <div class="text-muted small">
-                        <span data-i18n="initial_label">Inisial / Kode:</span> <span class="badge bg-primary-subtle text-primary fw-bold">{{ $clientRecord?->nickname ?? 'CLN' }}</span>
-                        &bull; <span data-i18n="status_partner">Status Kerjasama:</span> <span class="badge bg-success-subtle text-success"><i class="bi bi-check-circle me-1"></i>Aktif</span>
-                    </div>
-                </div>
-            </div>
-            <span class="badge bg-light text-muted border px-3 py-2" style="font-size: 0.78rem;">
-                <i class="bi bi-shield-check text-success me-1"></i> <span data-i18n="verified_account">Akun Terverifikasi</span>
-            </span>
-        </div>
-
-        <div class="row g-3 pt-2">
-            <div class="col-md-4">
-                <div class="text-muted small fw-semibold mb-1" style="font-size: 0.75rem;" data-i18n="pic_main_name">NAMA KLIEN / PIC UTAMA</div>
-                <div class="fw-bold text-dark fs-6">{{ $user->name }}</div>
-            </div>
-            <div class="col-md-4">
-                <div class="text-muted small fw-semibold mb-1" style="font-size: 0.75rem;" data-i18n="email_contact">EMAIL TERDAFTAR</div>
-                <div class="fw-bold text-dark fs-6">{{ $user->email }}</div>
-            </div>
-            <div class="col-md-4">
-                <div class="text-muted small fw-semibold mb-1" style="font-size: 0.75rem;" data-i18n="phone_contact">NOMOR TELEPON / WA</div>
-                <div class="fw-bold text-dark fs-6">{{ $clientRecord?->phone ?? $user->phone ?? '+62 812-3456-7890' }}</div>
-            </div>
-            <div class="col-12 mt-3">
-                <div class="text-muted small fw-semibold mb-1" style="font-size: 0.75rem;" data-i18n="office_address">ALAMAT KANTOR OPERASIONAL</div>
-                <div class="text-secondary small">{{ $clientRecord?->address ?? 'Gedung Cyber 2 Lantai 12, Jl. H. R. Rasuna Said, Jakarta Selatan, DKI Jakarta 12950' }}</div>
-            </div>
-        </div>
+    {{-- Component 4: PreferencesCard --}}
+    <div style="margin-bottom: 16px;">
+        <x-profile.preferences-card currentLanguage="Indonesia" />
     </div>
 
-    {{-- Card 2: 3 PIC Khusus Master Client --}}
-    <div class="card p-4 shadow-sm border-0 mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 16px; background: #FFFFFF;">
-        <div class="mb-3">
-            <h6 class="fw-bold text-dark mb-1" data-i18n="three_pic_title">Daftar 3 PIC Resmi Master Client</h6>
-            <p class="text-muted small mb-0" data-i18n="three_pic_desc">
-                PIC penanggung jawab komunikasi lintas divisi untuk administrasi dan eskalasi pengerjaan Change Request.
-            </p>
-        </div>
-
-        <div class="row g-3">
-            {{-- PIC Marketing --}}
-            <div class="col-md-4">
-                <div class="card p-3 h-100 border-0 shadow-none" style="background: #F0F9FF; border: 1.5px solid #BAE6FD !important; border-radius: 12px;">
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <div class="rounded-2 d-flex align-items-center justify-content-center text-white" style="width: 32px; height: 32px; background: #0284C7;">
-                            <i class="bi bi-megaphone-fill" style="font-size: 0.9rem;"></i>
-                        </div>
-                        <div class="fw-bold text-dark" style="font-size: 0.9rem;" data-i18n="pic_marketing_title">PIC Marketing</div>
-                    </div>
-                    <div class="fw-bold text-dark fs-6 mb-1">{{ $clientRecord?->pic_marketing_name ?? 'Budi Santoso' }}</div>
-                    <div class="small text-muted mb-1"><i class="bi bi-telephone me-1"></i>{{ $clientRecord?->pic_marketing_phone ?? '081234567891' }}</div>
-                    <div class="small text-muted mb-2"><i class="bi bi-envelope me-1"></i>{{ $clientRecord?->pic_marketing_email ?? 'marketing@client.com' }}</div>
-                    <div class="small text-secondary mt-auto pt-2 border-top border-light-subtle" style="font-size: 0.76rem;">
-                        {{ $clientRecord?->pic_marketing_desc ?? 'Koordinasi penawaran harga & scope komersial.' }}
-                    </div>
-                </div>
-            </div>
-
-            {{-- PIC IT / Technical --}}
-            <div class="col-md-4">
-                <div class="card p-3 h-100 border-0 shadow-none" style="background: #EEF2FF; border: 1.5px solid #C7D2FE !important; border-radius: 12px;">
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <div class="rounded-2 d-flex align-items-center justify-content-center text-white" style="width: 32px; height: 32px; background: #4F46E5;">
-                            <i class="bi bi-code-slash" style="font-size: 0.9rem;"></i>
-                        </div>
-                        <div class="fw-bold text-dark" style="font-size: 0.9rem;" data-i18n="pic_it_title">PIC IT / Technical</div>
-                    </div>
-                    <div class="fw-bold text-dark fs-6 mb-1">{{ $clientRecord?->pic_it_name ?? 'Agus Prasetyo' }}</div>
-                    <div class="small text-muted mb-1"><i class="bi bi-telephone me-1"></i>{{ $clientRecord?->pic_it_phone ?? '081234567892' }}</div>
-                    <div class="small text-muted mb-2"><i class="bi bi-envelope me-1"></i>{{ $clientRecord?->pic_it_email ?? 'it@client.com' }}</div>
-                    <div class="small text-secondary mt-auto pt-2 border-top border-light-subtle" style="font-size: 0.76rem;">
-                        {{ $clientRecord?->pic_it_desc ?? 'Verifikasi teknis, integrasi API, SIT, & UAT.' }}
-                    </div>
-                </div>
-            </div>
-
-            {{-- PIC Procurement --}}
-            <div class="col-md-4">
-                <div class="card p-3 h-100 border-0 shadow-none" style="background: #FFFBEB; border: 1.5px solid #FDE68A !important; border-radius: 12px;">
-                    <div class="d-flex align-items-center gap-2 mb-2">
-                        <div class="rounded-2 d-flex align-items-center justify-content-center text-white" style="width: 32px; height: 32px; background: #D97706;">
-                            <i class="bi bi-cart-check-fill" style="font-size: 0.9rem;"></i>
-                        </div>
-                        <div class="fw-bold text-dark" style="font-size: 0.9rem;" data-i18n="pic_proc_title">PIC Procurement</div>
-                    </div>
-                    <div class="fw-bold text-dark fs-6 mb-1">{{ $clientRecord?->pic_procurement_name ?? 'Dewi Lestari' }}</div>
-                    <div class="small text-muted mb-1"><i class="bi bi-telephone me-1"></i>{{ $clientRecord?->pic_procurement_phone ?? '081234567893' }}</div>
-                    <div class="small text-muted mb-2"><i class="bi bi-envelope me-1"></i>{{ $clientRecord?->pic_procurement_email ?? 'procurement@client.com' }}</div>
-                    <div class="small text-secondary mt-auto pt-2 border-top border-light-subtle" style="font-size: 0.76rem;">
-                        {{ $clientRecord?->pic_procurement_desc ?? 'Administrasi kontrak, Purchase Order (PO), & invoice.' }}
-                    </div>
-                </div>
-            </div>
-        </div>
+    {{-- Component 5: ProjectsCard --}}
+    <div>
+        <x-profile.projects-card :projects="$projects" />
     </div>
 
 </div>
+
+<script>
+/* ── Language selector (profile preference card) ── */
+function profileSetLang(label, code) {
+    var lbl = document.getElementById('profileCurrentLangLabel');
+    if (lbl) lbl.textContent = label;
+
+    var ckId = document.getElementById('profLangCheckId');
+    var ckEn = document.getElementById('profLangCheckEn');
+    if (ckId) ckId.classList.toggle('d-none', code !== 'id');
+    if (ckEn) ckEn.classList.toggle('d-none', code !== 'en');
+
+    /* sync global i18n system if available */
+    if (typeof window.setAppLanguage === 'function') {
+        window.setAppLanguage(code);
+    }
+
+    /* close Bootstrap dropdown programmatically */
+    var btn = document.getElementById('profileLangDropBtn');
+    if (btn && window.bootstrap) {
+        var dd = bootstrap.Dropdown.getInstance(btn);
+        if (dd) dd.hide();
+    }
+}
+
+/* ── Email notification toggle: persist state ── */
+(function () {
+    var toggle = document.getElementById('profileEmailNotifSwitch');
+    if (!toggle) return;
+
+    var saved = localStorage.getItem('profEmailNotif');
+    if (saved !== null) {
+        toggle.checked = (saved === '1');
+        toggle.style.backgroundColor = toggle.checked ? '#0D3F8F' : '';
+        toggle.style.borderColor     = toggle.checked ? '#0D3F8F' : '';
+    }
+
+    toggle.addEventListener('change', function () {
+        localStorage.setItem('profEmailNotif', this.checked ? '1' : '0');
+        this.style.backgroundColor = this.checked ? '#0D3F8F' : '';
+        this.style.borderColor     = this.checked ? '#0D3F8F' : '';
+    });
+})();
+
+/* ── Password form: lightweight client-side guard ── */
+(function () {
+    var form = document.getElementById('profilePwForm');
+    if (!form) return;
+    form.addEventListener('submit', function (e) {
+        var oldPw = document.getElementById('profOldPw').value.trim();
+        var newPw = document.getElementById('profNewPw').value.trim();
+        if (!oldPw) {
+            e.preventDefault();
+            document.getElementById('profOldPw').focus();
+            return;
+        }
+        if (!newPw || newPw.length < 6) {
+            e.preventDefault();
+            document.getElementById('profNewPw').focus();
+        }
+    });
+})();
+</script>
 @endsection

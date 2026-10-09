@@ -292,7 +292,7 @@ class ChangeRequestFeatureTest extends TestCase
         $response->assertSee('Detail Change Request');
         $response->assertSee('Melihat Data Lengkap CR');
         $response->assertSee('PROGRESS PENGERJAAN');
-        $response->assertSee('Training');
+        $response->assertSee('Pelatihan');
         $response->assertSee('INFORMASI CR');
         $response->assertSee('DOKUMEN');
         $response->assertSee('Detail Deskripsi CR');
@@ -484,7 +484,7 @@ class ChangeRequestFeatureTest extends TestCase
         $response->assertSee('E-Cooper');
         $response->assertSee('Data Integration');
         $response->assertSee('CR Owner');
-        $response->assertSee('CR Name');
+        $response->assertSee('Nama CR');
         $response->assertSee('tinyMCE');
         $response->assertSee('Klik untuk upload PDF');
         $response->assertSee('Prioritas CR');
@@ -528,4 +528,55 @@ class ChangeRequestFeatureTest extends TestCase
             'status' => 'diajukan',
         ]);
     }
+
+    public function test_draft_cr_view_and_actions(): void
+    {
+        $client = User::factory()->create(['role' => 'client', 'name' => 'Totok Antok']);
+
+        // 1. Visit Draft page
+        $res = $this->actingAs($client)->get(route('change-requests.index', ['view' => 'draft']));
+        $res->assertStatus(200);
+        $res->assertSee('DRAFT CR');
+        $res->assertSee('Pantau seluruh permintaan perubahan Anda');
+
+        // Check seeded demo drafts
+        $this->assertDatabaseHas('change_requests', ['status' => 'draft', 'kode_cr' => 'CR-DRAFT-001']);
+
+        $draft = ChangeRequest::where('status', 'draft')->first();
+
+        // 2. Client can review draft
+        $resReview = $this->actingAs($client)->get(route('change-requests.show', $draft));
+        $resReview->assertStatus(200);
+
+        // 3. Client can open edit draft form
+        $resEdit = $this->actingAs($client)->get(route('change-requests.edit', $draft));
+        $resEdit->assertStatus(200);
+
+        // 4. Client can delete draft
+        $resDelete = $this->actingAs($client)->delete(route('change-requests.destroy', $draft));
+        $resDelete->assertRedirect(route('change-requests.index', ['view' => 'draft']));
+        $this->assertDatabaseMissing('change_requests', ['id' => $draft->id]);
+    }
+
+    public function test_pm_dashboard_matches_figma_layout(): void
+    {
+        $pm = User::factory()->create(['role' => 'pm', 'name' => 'Totok Antok']);
+
+        $res = $this->actingAs($pm)->get(route('change-requests.index'));
+        $res->assertStatus(200);
+        $res->assertSee('DASHBOARD');
+        $res->assertSee('Pantau seluruh permintaan perubahan Anda');
+        $res->assertSee('Ajukan CR Baru');
+        $res->assertSee('Semua CR');
+        $res->assertSee('Butuh Persetujuan');
+        $res->assertSee('Development');
+        $res->assertSee('GO LIVE');
+        $res->assertSee('Tren CR Bulanan (Diagram Batang)');
+        $res->assertSee('NOTIFIKASI');
+        $res->assertSee('3 Perubahan Ruang Lingkup CR menunggu persetujuan &gt; 14 hari', false);
+        $res->assertSee('8 CR Baru Menunggu Verifikasi Kebutuhan');
+        $res->assertSee('5 Masukan Pengguna UAT butuh tindak lanjut');
+        $res->assertSee('Draft CR');
+    }
 }
+

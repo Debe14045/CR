@@ -22,7 +22,7 @@ class UserSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'pm@itpi.test'],
             [
-                'name' => 'PM Demo',
+                'name' => 'Totok Antok',
                 'password' => Hash::make('password'),
                 'role' => User::ROLE_PM,
             ]

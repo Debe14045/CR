@@ -394,6 +394,12 @@
                         <div>{{ $errors->first() }}</div>
                     </div>
                 @endif
+                @if (session('error'))
+                    <div class="alert-box alert-error">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        <div>{{ session('error') }}</div>
+                    </div>
+                @endif
 
                 <form method="POST" action="{{ route('register') }}">
                     @csrf

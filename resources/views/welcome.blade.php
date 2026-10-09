@@ -850,17 +850,10 @@
 
                 <!-- Right Actions: Masuk & Buat Akun -->
                 <div class="nav-auth-actions">
-                    @auth
-                        <a href="{{ route('login') }}" class="btn-nav-login">Masuk</a>
-                        <a href="{{ route('change-requests.index') }}" class="btn-nav-register">
-                            Dashboard <i class="bi bi-arrow-right"></i>
-                        </a>
-                    @else
-                        <a href="{{ route('login') }}" class="btn-nav-login">Masuk</a>
-                        <a href="{{ route('register') }}" class="btn-nav-register">
-                            Buat Akun <i class="bi bi-arrow-right"></i>
-                        </a>
-                    @endauth
+                    <a href="{{ route('login') }}" class="btn-nav-login">Masuk</a>
+                    <a href="{{ route('register') }}" class="btn-nav-register">
+                        Buat Akun <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
             </div>
         </div>

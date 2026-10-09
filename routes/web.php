@@ -5,6 +5,7 @@ use App\Http\Controllers\ChangeRequestController;
 use App\Http\Controllers\MasterClientController;
 use App\Http\Controllers\MasterPegawaiController;
 use App\Http\Controllers\MasterStatusController;
+use App\Http\Controllers\NotificationController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -12,14 +13,14 @@ Route::get('/', function () {
     return view('welcome');
 });
 
-// Always accessible login view
+// Always accessible auth views
 Route::get('/login', [AuthController::class, 'showLoginForm'])->name('login');
+Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
+Route::post('/register', [AuthController::class, 'register']);
 Route::match(['get', 'post'], '/logout', [AuthController::class, 'logout'])->name('logout');
 
 Route::middleware('guest')->group(function () {
     Route::post('/login', [AuthController::class, 'login']);
-    Route::get('/register', [AuthController::class, 'showRegisterForm'])->name('register');
-    Route::post('/register', [AuthController::class, 'register']);
 
     // Real OTP Email Verification Code Login
     Route::get('/auth/otp', [AuthController::class, 'showOtpForm'])->name('auth.otp');
@@ -42,6 +43,15 @@ Route::middleware('guest')->group(function () {
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
     Route::get('/dashboard', fn () => redirect()->route('change-requests.index'));
+
+    // Notification Center Routes
+    Route::get('/notifications', [NotificationController::class, 'index'])->name('notifications.index');
+    Route::get('/notifications/{id}/go', [NotificationController::class, 'go'])->name('notifications.go');
+    Route::post('/notifications/mark-all-read', [NotificationController::class, 'markAllRead'])->name('notifications.markAllRead');
+    Route::post('/notifications/clear-read', [NotificationController::class, 'clearRead'])->name('notifications.clearRead');
+    Route::post('/notifications/{id}/read', [NotificationController::class, 'markAsRead'])->name('notifications.markAsRead');
+    Route::delete('/notifications/{id}', [NotificationController::class, 'destroy'])->name('notifications.destroy');
+    Route::get('/api/notifications/recent', [NotificationController::class, 'apiRecent'])->name('notifications.apiRecent');
 
     // Master Data for Admin (Client, Pegawai, Status)
     Route::middleware('role:admin')->prefix('master')->name('master.')->group(function () {
@@ -74,8 +84,12 @@ Route::middleware('auth')->group(function () {
         });
 
         // 3. Client Messaging & Quotation & Profile & Minor Edit
+        Route::middleware('auth')->group(function () {
+            Route::get('/profile', 'profile')->name('profile.index');
+            Route::post('/profile/password', 'updatePassword')->name('profile.password');
+        });
+
         Route::middleware('role:client')->group(function () {
-            Route::get('/client/profile', 'profile')->name('client.profile');
             Route::put('/change-requests/{changeRequest}/client-edit', 'clientMinorEdit')->name('change-requests.client.edit');
             Route::post('/change-requests/{changeRequest}/message', 'sendClientMessage')->name('change-requests.message');
             Route::post('/change-requests/{changeRequest}/quotation/approve', 'approveQuotationClient')->name('change-requests.quotation.client');
@@ -85,15 +99,15 @@ Route::middleware('auth')->group(function () {
             Route::post('/change-requests/{changeRequest}/quotation/approve-tp', 'approveQuotationTp')->name('change-requests.quotation.tp');
         });
 
-        // 4. Change Request Details & Attachments
+        // 4. Change Request Details, Deletion & Attachments
         Route::get('/change-requests/{changeRequest}', 'show')->name('change-requests.show');
+        Route::delete('/change-requests/{changeRequest}', 'destroy')->name('change-requests.destroy');
         Route::get('/change-requests/{changeRequest}/initial-file', 'downloadInitialAttachment')->name('change-requests.initial-file');
 
-        // 5. Internal Editing (PM, PMH, Finance, Admin)
-        Route::middleware('role:pm,pmh,presales,finance,admin')->group(function () {
+        // 5. Editing (Draft for Client, Verification/Validation for PM, PMH, Finance, Admin)
+        Route::middleware('role:client,pm,pmh,presales,finance,admin')->group(function () {
             Route::get('/change-requests/{changeRequest}/edit', 'edit')->name('change-requests.edit');
             Route::put('/change-requests/{changeRequest}', 'update')->name('change-requests.update');
-            Route::delete('/change-requests/{changeRequest}', 'destroy')->name('change-requests.destroy');
             Route::post('/change-requests/{changeRequest}/sequential-status', 'updateSequentialStatus')->name('change-requests.sequential-status');
         });
 

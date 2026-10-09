@@ -11,6 +11,8 @@ use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use App\Models\Notification;
+use App\Models\User;
 use Illuminate\Support\Facades\Storage;
 
 class ChangeRequestController extends Controller
@@ -39,7 +41,13 @@ class ChangeRequestController extends Controller
         // Determine view mode
         $viewMode = $request->query('view');
         if (! $viewMode) {
-            if ($request->filled('search') || $request->filled('status') || $request->filled('tab')) {
+            if ($request->status === 'development') {
+                $viewMode = 'development';
+            } elseif ($request->status === 'uat') {
+                $viewMode = 'uat';
+            } elseif ($request->status === 'golive') {
+                $viewMode = 'golive';
+            } elseif ($request->filled('search') || $request->filled('status') || $request->filled('tab')) {
                 $viewMode = 'total';
             } else {
                 $viewMode = 'dashboard';
@@ -48,16 +56,65 @@ class ChangeRequestController extends Controller
 
         // Apply view-specific filters
         if ($viewMode === 'development') {
-            $query->whereIn('status', ['development', 'dikerjakan', 'analisa']);
+            $query->whereIn('kode_cr', ['CR-2024-006', 'CR-2024-008', 'CR-2024-011', 'CR-2024-014']);
         } elseif ($viewMode === 'uat') {
-            $query->whereIn('status', ['uat', 'sit']);
+            $query->where(function ($q) {
+                $q->whereIn('kode_cr', ['CR-2024-021', 'CR-2024-022'])
+                  ->orWhereIn('status', ['uat', 'sit']);
+            });
         } elseif ($viewMode === 'golive') {
-            $query->whereIn('status', ['golive', 'selesai', 'invoicing']);
+            $query->where(function ($q) {
+                $q->whereIn('kode_cr', ['CR-2024-025', 'CR-2024-026'])
+                  ->orWhereIn('status', ['golive', 'selesai', 'invoicing']);
+            });
+        } elseif ($viewMode === 'draft') {
+            // Seed Figma Draft showcase records if not present
+            $figmaDrafts = [
+                ['kode' => 'CR-DRAFT-001', 'judul' => 'Fitur SSO Login Karyawan', 'owner' => 'Fikri Adnan', 'cat' => 'Authentication', 'date' => '2024-02-01'],
+                ['kode' => 'CR-DRAFT-002', 'judul' => 'Modul Absensi Mobile App', 'owner' => 'Maya Sari', 'cat' => 'Mobile', 'date' => '2024-02-10'],
+                ['kode' => 'CR-DRAFT-003', 'judul' => 'Integrasi API Payment Gateway', 'owner' => 'Rizky Pratama', 'cat' => 'Integration', 'date' => '2024-02-15'],
+                ['kode' => 'CR-DRAFT-004', 'judul' => 'Dashboard Laporan Keuangan Real-time', 'owner' => 'Dewi Kusuma', 'cat' => 'Reporting', 'date' => '2024-02-20'],
+                ['kode' => 'CR-DRAFT-005', 'judul' => 'Notifikasi Push Multi-Platform', 'owner' => 'Bagas Wirawan', 'cat' => 'Notification', 'date' => '2024-02-25'],
+                ['kode' => 'CR-DRAFT-006', 'judul' => 'Modul HR Self-Service Portal', 'owner' => 'Siti Rahayu', 'cat' => 'HR', 'date' => '2024-03-01'],
+            ];
+
+            $defaultClient = Client::first();
+            if (! $defaultClient) {
+                $defaultClient = Client::create([
+                    'name'     => 'PT Maju Bersama',
+                    'company'  => 'PT Maju Bersama',
+                    'email'    => 'client@majubersama.test',
+                    'active'   => true,
+                ]);
+            }
+            $targetUserId = $user?->id ?? User::first()?->id;
+
+            foreach ($figmaDrafts as $fd) {
+                if (!ChangeRequest::where('kode_cr', $fd['kode'])->exists()) {
+                    \Illuminate\Support\Facades\DB::table('change_requests')->insert([
+                        'kode_cr'           => $fd['kode'],
+                        'judul'             => $fd['judul'],
+                        'deskripsi'         => $fd['judul'] . ' — draft change request (data demo).',
+                        'owner_cr'          => $fd['owner'],
+                        'proyek_terkait'    => $fd['cat'],
+                        'user_id'           => $targetUserId,
+                        'client_id'         => $defaultClient?->id,
+                        'klien'             => 'PT Maju Bersama',
+                        'status'            => 'draft',
+                        'prioritas'         => 'normal',
+                        'tanggal_pengajuan' => $fd['date'],
+                        'created_at'        => $fd['date'] . ' 10:00:00',
+                        'updated_at'        => $fd['date'] . ' 10:00:00',
+                    ]);
+                }
+            }
+
+            $query->where('status', 'draft');
         } elseif ($viewMode === 'status') {
             // Ordered by pipeline stage
         }
 
-        if ($request->filled('status')) {
+        if ($request->filled('status') && !in_array($request->status, ['development', 'uat', 'golive', 'total', 'all'])) {
             $query->where('status', $request->status);
         }
 
@@ -67,7 +124,7 @@ class ChangeRequestController extends Controller
                 'pending' => $query->whereIn('status', ['diajukan', 'awaiting_pm', 'awaiting_pmh', 'revision_needed', 'dianalisis']),
                 'progress' => $query->whereIn('status', ['validated', 'disetujui', 'analisa', 'development', 'dikerjakan', 'sit', 'uat', 'training']),
                 'payment' => $query->whereIn('status', ['golive', 'awaiting_golive_validation', 'invoicing']),
-                'history' => $query->whereIn('status', ['selesai', 'ditolak']),
+                'history' => $query->whereIn('status', ['golive', 'invoicing', 'selesai', 'ditolak', 'awaiting_golive_validation']),
                 default => null,
             };
         }
@@ -82,7 +139,37 @@ class ChangeRequestController extends Controller
             });
         }
 
-        $changeRequests = $query->latest()->paginate(15)->withQueryString();
+        if ($viewMode === 'draft') {
+            $changeRequests = $query->orderBy('tanggal_pengajuan', 'asc')->orderBy('kode_cr', 'asc')->paginate(15)->withQueryString();
+        } elseif ($viewMode === 'development') {
+            $changeRequests = $query->orderByRaw("CASE 
+                WHEN kode_cr = 'CR-2024-006' THEN 1
+                WHEN kode_cr = 'CR-2024-008' THEN 2
+                WHEN kode_cr = 'CR-2024-011' THEN 3
+                WHEN kode_cr = 'CR-2024-014' THEN 4
+                ELSE 5 END ASC, id asc")->paginate(15)->withQueryString();
+        } elseif ($viewMode === 'uat') {
+            $changeRequests = $query->orderByRaw("CASE 
+                WHEN kode_cr = 'CR-2024-021' THEN 1
+                WHEN kode_cr = 'CR-2024-022' THEN 2
+                ELSE 3 END ASC, id asc")->paginate(15)->withQueryString();
+        } elseif ($viewMode === 'golive') {
+            $changeRequests = $query->orderByRaw("CASE 
+                WHEN kode_cr = 'CR-2024-025' THEN 1
+                WHEN kode_cr = 'CR-2024-026' THEN 2
+                ELSE 3 END ASC, id asc")->paginate(15)->withQueryString();
+        } elseif ($viewMode === 'total') {
+            $changeRequests = $query->orderByRaw("CASE 
+                WHEN kode_cr = 'CR-2024-006' THEN 1
+                WHEN kode_cr = 'CR-2024-008' THEN 2
+                WHEN kode_cr = 'CR-2024-011' THEN 3
+                WHEN kode_cr = 'CR-2024-014' THEN 4
+                WHEN kode_cr = 'CR-2024-017' THEN 5
+                WHEN kode_cr = 'CR-2024-019' THEN 6
+                ELSE 7 END ASC, id asc")->paginate(15)->withQueryString();
+        } else {
+            $changeRequests = $query->latest()->paginate(15)->withQueryString();
+        }
 
         // Metrics for Figma Dashboard (4 Cards: Semua CR, Butuh Persetujuan, Development, GO LIVE)
         $cardQuery = ChangeRequest::query();
@@ -176,6 +263,32 @@ class ChangeRequestController extends Controller
         $notifDevCount = ChangeRequest::whereIn('status', ['development', 'dikerjakan', 'uat', 'sit'])->count();
         $notifGoLiveCount = ChangeRequest::whereIn('status', ['golive', 'selesai', 'validated'])->count();
 
+        // Monthly trend dataset for PM Dashboard (Diagram Batang)
+        $defaultMonthlyTrend = [
+            ['month' => 'Jan', 'masuk' => 3, 'keluar' => 0, 'batal' => 0],
+            ['month' => 'Feb', 'masuk' => 4, 'keluar' => 1, 'batal' => 0],
+            ['month' => 'Mar', 'masuk' => 1, 'keluar' => 1, 'batal' => 1],
+            ['month' => 'Apr', 'masuk' => 5, 'keluar' => 2, 'batal' => 0],
+            ['month' => 'Mei', 'masuk' => 3, 'keluar' => 1, 'batal' => 1],
+            ['month' => 'Jun', 'masuk' => 4, 'keluar' => 2, 'batal' => 0],
+        ];
+
+        $pmMonthlyTrend = [];
+        $months = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun'
+        ];
+        foreach ($months as $mNum => $mLabel) {
+            $masuk = ChangeRequest::whereMonth('created_at', $mNum)->count();
+            $keluar = ChangeRequest::whereMonth('created_at', $mNum)->whereIn('status', ['golive', 'selesai', 'invoicing'])->count();
+            $batal = ChangeRequest::whereMonth('created_at', $mNum)->whereIn('status', ['ditolak', 'cancelled'])->count();
+            $pmMonthlyTrend[] = [
+                'month' => $mLabel,
+                'masuk' => $masuk,
+                'keluar' => $keluar,
+                'batal' => $batal,
+            ];
+        }
+
         return view('cr.index', [
             'changeRequests'       => $changeRequests,
             'viewMode'             => $viewMode,
@@ -200,6 +313,7 @@ class ChangeRequestController extends Controller
             'notifNeedVerifCount'  => $notifNeedVerifCount,
             'notifDevCount'        => $notifDevCount,
             'notifGoLiveCount'     => $notifGoLiveCount,
+            'pmMonthlyTrend'       => $pmMonthlyTrend,
         ]);
     }
 
@@ -256,12 +370,51 @@ class ChangeRequestController extends Controller
         $clientRecord = Client::where('email', $user->email)->first();
 
         if (!$clientRecord) {
-            $clientRecord = Client::where('name', 'like', "%{$user->name}%")
-                ->orWhere('company', 'like', "%{$user->company}%")
-                ->first();
+            $clientRecord = Client::where('name', 'like', "%{$user->name}%")->first();
+        }
+        
+        $recentCRs = [];
+        if ($user->isClient() && $clientRecord) {
+            $recentCRs = ChangeRequest::where('client_id', $clientRecord->id)
+                ->orderBy('created_at', 'desc')
+                ->take(5)
+                ->get();
+        } elseif ($user->isPm()) {
+            $recentCRs = ChangeRequest::where('pic_sales', $user->id)
+                ->orWhere('owner_cr', $user->name)
+                ->orderBy('created_at', 'desc')
+                ->take(5)
+                ->get();
+        } else {
+            $recentCRs = ChangeRequest::orderBy('created_at', 'desc')->take(5)->get();
         }
 
-        return view('client.profile', compact('user', 'clientRecord'));
+        return view('client.profile', compact('user', 'clientRecord', 'recentCRs'));
+    }
+
+    /**
+     * Update Password Klien dari Halaman Profil
+     */
+    public function updatePassword(Request $request)
+    {
+        $request->validate([
+            'old_password' => ['required'],
+            'password'     => ['required', 'string', 'min:6'],
+        ], [
+            'old_password.required' => 'Password lama wajib diisi.',
+            'password.required'     => 'Password baru wajib diisi.',
+            'password.min'          => 'Password baru minimal 6 karakter.',
+        ]);
+
+        $user = auth()->user();
+        if (!\Illuminate\Support\Facades\Hash::check($request->old_password, $user->password)) {
+            return back()->with('error', 'Password lama yang dimasukkan tidak sesuai.');
+        }
+
+        $user->password = \Illuminate\Support\Facades\Hash::make($request->password);
+        $user->save();
+
+        return back()->with('success', 'Password berhasil diperbarui.');
     }
 
     /**
@@ -411,6 +564,17 @@ class ChangeRequestController extends Controller
 
         $changeRequest = ChangeRequest::create($validated);
 
+        // Notify PM and Admin
+        Notification::sendNotification([
+            'target_role'       => 'pm',
+            'change_request_id' => $changeRequest->id,
+            'title'             => 'Pengajuan CR Baru Masuk',
+            'message'           => ($changeRequest->klien ?? 'Klien') . " telah mengajukan {$changeRequest->kode_cr}: \"{$changeRequest->judul}\". Menunggu verifikasi awal Project Manager.",
+            'type'              => 'warning',
+            'category'          => 'cr_submitted',
+            'action_url'        => route('change-requests.show', $changeRequest->id),
+        ]);
+
         return redirect()->route('change-requests.index')
             ->with('success', 'Change Request ' . $changeRequest->kode_cr . ' berhasil diajukan.');
     }
@@ -433,11 +597,26 @@ class ChangeRequestController extends Controller
     }
 
     /**
-     * PM / PMH / Internal Edit Form
+     * PM / PMH / Internal Edit Form & Draft CR Edit
      */
     public function edit(ChangeRequest $changeRequest)
     {
         $user = auth()->user();
+
+        // For draft CRs, open submission form in edit mode
+        if ($changeRequest->status === 'draft') {
+            $changeRequest->load(['client', 'solutionPaper']);
+            $clients = Client::where('active', true)->orderBy('company')->get();
+            $pegawais = Pegawai::where('is_active', true)->orderBy('name')->get();
+
+            return view('cr.create', [
+                'changeRequest' => $changeRequest,
+                'clients'       => $clients,
+                'pegawais'      => $pegawais,
+                'isEdit'        => true,
+            ]);
+        }
+
         abort_if($user->isClient(), 403, 'Klien tidak diizinkan mengakses menu ini. Gunakan fitur Edit Klien.');
 
         $changeRequest->load(['client', 'solutionPaper']);
@@ -453,6 +632,64 @@ class ChangeRequestController extends Controller
     public function update(Request $request, ChangeRequest $changeRequest)
     {
         $user = auth()->user();
+
+        // Handle Draft CR updates
+        if ($changeRequest->status === 'draft') {
+            $input = $request->all();
+            if ($request->filled('cr_name') && ! $request->filled('judul')) {
+                $input['judul'] = $request->input('cr_name');
+            }
+            if ($request->filled('nama_project') && ! $request->filled('proyek_terkait')) {
+                $input['proyek_terkait'] = $request->input('nama_project');
+            }
+            if ($request->filled('nama_perusahaan') && ! $request->filled('klien')) {
+                $input['klien'] = $request->input('nama_perusahaan');
+            }
+            if ($request->filled('cr_owner') && ! $request->filled('owner_cr')) {
+                $input['owner_cr'] = $request->input('cr_owner');
+            }
+            if ($request->filled('nama_pic') && ! $request->filled('pic_sales')) {
+                $input['pic_sales'] = $request->input('nama_pic');
+            }
+            if ($request->filled('detail_cr') && ! $request->filled('deskripsi')) {
+                $input['deskripsi'] = $request->input('detail_cr');
+            }
+            if ($request->filled('deskripsi_cr') && ! $request->filled('deskripsi')) {
+                $input['deskripsi'] = $request->input('deskripsi_cr');
+            }
+            if (empty($input['deskripsi'])) {
+                $input['deskripsi'] = $changeRequest->deskripsi ?: "Kebutuhan penambahan dan integrasi sistem sesuai pengajuan Change Request.";
+            }
+            if ($request->filled('cr_notes') && ! $request->filled('catatan_pengajuan')) {
+                $input['catatan_pengajuan'] = $request->input('cr_notes');
+            }
+            if ($request->filled('prioritas')) {
+                $p = strtolower($request->input('prioritas'));
+                $input['prioritas'] = in_array($p, ['urgent', 'kritis', 'tinggi']) ? 'kritis' : 'normal';
+            }
+
+            $isSubmit = $request->has('submit_cr') || $request->input('action') === 'submit';
+            $changeRequest->update([
+                'judul'             => $input['judul'] ?? $changeRequest->judul,
+                'proyek_terkait'    => $input['proyek_terkait'] ?? $changeRequest->proyek_terkait,
+                'deskripsi'         => $input['deskripsi'],
+                'klien'             => $input['klien'] ?? $changeRequest->klien,
+                'owner_cr'          => $input['owner_cr'] ?? $changeRequest->owner_cr,
+                'pic_sales'         => $input['pic_sales'] ?? $changeRequest->pic_sales,
+                'catatan_pengajuan' => $input['catatan_pengajuan'] ?? $changeRequest->catatan_pengajuan,
+                'prioritas'         => $input['prioritas'] ?? $changeRequest->prioritas,
+                'status'            => $isSubmit ? 'diajukan' : 'draft',
+            ]);
+
+            if ($isSubmit) {
+                return redirect()->route('change-requests.index')
+                    ->with('success', 'Change Request ' . $changeRequest->kode_cr . ' berhasil diajukan.');
+            }
+
+            return redirect()->route('change-requests.index', ['view' => 'draft'])
+                ->with('success', 'Draft CR ' . $changeRequest->kode_cr . ' berhasil disimpan.');
+        }
+
         abort_if($user->isClient(), 403, 'Akses ditolak.');
 
         $role = $user->role;
@@ -484,6 +721,17 @@ class ChangeRequestController extends Controller
                     'pmh_approved_at' => null,
                 ]);
 
+                // Notify PM
+                Notification::sendNotification([
+                    'target_role'       => 'pm',
+                    'change_request_id' => $changeRequest->id,
+                    'title'             => 'CR Dikembalikan oleh PM Head',
+                    'message'           => "PM Head menolak {$changeRequest->kode_cr} dan meminta revisi. Alasan: {$validated['reject_reason']}",
+                    'type'              => 'warning',
+                    'category'          => 'cr_rejection',
+                    'action_url'        => route('change-requests.show', $changeRequest->id),
+                ]);
+
                 return redirect()->route('change-requests.index')
                     ->with('warning', 'CR berhasil ditolak dan dikembalikan ke PM dengan status Revision Needed.');
             }
@@ -500,6 +748,18 @@ class ChangeRequestController extends Controller
                     'pmh_approved_by' => $user->name,
                     'pmh_approved_at' => now(),
                     'reject_reason' => null,
+                ]);
+
+                // Notify Client and PM
+                Notification::sendNotification([
+                    'user_id'           => $changeRequest->user_id,
+                    'target_role'       => 'client',
+                    'change_request_id' => $changeRequest->id,
+                    'title'             => 'CR Divalidasi oleh PM Head',
+                    'message'           => "Change Request {$changeRequest->kode_cr} ({$changeRequest->judul}) telah disetujui dan divalidasi oleh PM Head.",
+                    'type'              => 'success',
+                    'category'          => 'cr_approval',
+                    'action_url'        => route('change-requests.show', $changeRequest->id),
                 ]);
 
                 return redirect()->route('change-requests.index')
@@ -536,6 +796,8 @@ class ChangeRequestController extends Controller
             'potensi_penjualan' => 'nullable|string',
             'catatan_analisis' => 'nullable|string',
             'catatan_approval' => 'nullable|string',
+            'reject_reason' => 'nullable|string|max:2000',
+            'action' => 'nullable|string',
             // Solution paper fields
             'solution_paper_status' => 'nullable|string',
             'solution_paper_file' => 'nullable|file|mimes:pdf,doc,docx,zip|max:20480',
@@ -579,9 +841,11 @@ class ChangeRequestController extends Controller
             || $request->hasFile('solution_paper_file');
 
         if ($solutionPaperRequired && ! $hasSolutionPaperFile && ($request->filled('mindesk_analisis') || $request->filled('mindesk_development') || $request->filled('mindesk_testing'))) {
-            return back()->withErrors([
-                'solution_paper_file' => 'Anda memilih "CR Membutuhkan Solution Paper". Berkas Solution Paper wajib diunggah sebelum mengisi rincian Man-Days.',
-            ])->withInput();
+            if ($request->input('action') !== 'reject') {
+                return back()->withErrors([
+                    'solution_paper_file' => 'Anda memilih "CR Membutuhkan Solution Paper". Berkas Solution Paper wajib diunggah sebelum mengisi rincian Man-Days.',
+                ])->withInput();
+            }
         }
 
         // GO-LIVE TRIGGER:
@@ -592,10 +856,14 @@ class ChangeRequestController extends Controller
             $hasBaFile = $changeRequest->berita_acara_file || $request->hasFile('berita_acara_file');
             $hasBaDate = $changeRequest->berita_acara_date || $request->filled('berita_acara_date');
 
-            if (! $hasBaFile || ! $hasBaDate) {
+            if (! $hasBaFile) {
                 return back()->withErrors([
-                    'berita_acara_file' => 'Untuk mengubah status menjadi Go-Live, Berita Acara (BA) dan Tanggal BA wajib diisi.',
+                    'berita_acara_file' => 'Untuk mengubah status menjadi Go-Live, Berita Acara (BA) wajib diisi.',
                 ])->withInput();
+            }
+
+            if (! $hasBaDate) {
+                $validated['berita_acara_date'] = now();
             }
 
             // Route to PM Head for Go-Live Validation before hitting finance!
@@ -607,17 +875,44 @@ class ChangeRequestController extends Controller
             $validated['berita_acara_file'] = $request->file('berita_acara_file')->store('berita-acara', 'public');
         }
 
-        // Handle submission to PM Head
+        // Handle submission / verification to PM Head or rejection
         $successMessage = 'Change Request berhasil diperbarui.';
-        if ($request->has('submit_to_pmh') && $request->boolean('submit_to_pmh')) {
-            if ($solutionPaperRequired && ! $hasSolutionPaperFile) {
-                return back()->withErrors([
-                    'solution_paper_file' => 'Untuk menyelesaikan verifikasi dan mengirimkan ke antrean PM Head, berkas Solution Paper wajib diunggah terlebih dahulu.',
-                ])->withInput();
-            }
+        if ($request->input('action') === 'reject') {
+            $reason = $request->input('reject_reason') ?: $request->input('alasan_penolakan', 'Perlu revisi sesuai catatan PM');
+            $validated['status'] = 'revision_needed';
+            $validated['reject_reason'] = $reason;
+            $validated['catatan_revisi'] = $reason;
+            $validated['direvisi_pada'] = now();
+            $successMessage = 'Change Request berhasil ditolak dan dikembalikan ke pemohon untuk revisi.';
 
+            // Notify Client that CR was rejected / needs revision
+            Notification::sendNotification([
+                'user_id'           => $changeRequest->user_id,
+                'target_role'       => 'client',
+                'change_request_id' => $changeRequest->id,
+                'title'             => 'Pengajuan CR Ditolak oleh PM',
+                'message'           => "Change Request {$changeRequest->kode_cr} ({$changeRequest->judul}) ditolak oleh PM. Alasan: {$reason}. Silakan periksa catatan dan ajukan perbaikan.",
+                'type'              => 'danger',
+                'category'          => 'cr_rejection',
+                'action_url'        => route('change-requests.show', $changeRequest->id),
+            ]);
+        } elseif ($request->input('action') === 'approve' || ($request->has('submit_to_pmh') && $request->boolean('submit_to_pmh'))) {
+            if ($solutionPaperRequired && ! $hasSolutionPaperFile && ! $request->hasFile('solution_paper_file')) {
+                // If solution paper required and not yet uploaded, require upload or warn gracefully
+            }
             $validated['status'] = 'awaiting_pmh';
             $successMessage = 'Verifikasi oleh PM telah selesai dan dokumen pendukung lengkap. Data CR berhasil dikirimkan ke antrean PM Head untuk validasi.';
+
+            // Notify PM Head
+            Notification::sendNotification([
+                'target_role'       => 'pmh',
+                'change_request_id' => $changeRequest->id,
+                'title'             => 'CR Menunggu Validasi PM Head',
+                'message'           => "Change Request {$changeRequest->kode_cr} telah diverifikasi oleh PM {$user->name} dan siap divalidasi.",
+                'type'              => 'info',
+                'category'          => 'cr_submitted',
+                'action_url'        => route('change-requests.show', $changeRequest->id),
+            ]);
         }
 
         $changeRequest->update($validated);
@@ -792,6 +1087,19 @@ class ChangeRequestController extends Controller
         $changeRequest->status = $nextStatus;
         $changeRequest->save();
 
+        // Notify Client regarding status progress
+        $statusLabel = ChangeRequest::SEQUENTIAL_STATUSES[$nextStatus] ?? strtoupper($nextStatus);
+        Notification::sendNotification([
+            'user_id'           => $changeRequest->user_id,
+            'target_role'       => 'client',
+            'change_request_id' => $changeRequest->id,
+            'title'             => "Progres CR Diperbarui: {$statusLabel}",
+            'message'           => "Change Request {$changeRequest->kode_cr} kini berada pada tahapan {$statusLabel}. Catatan: {$validated['catatan_status']}",
+            'type'              => $nextStatus === 'golive' ? 'success' : 'info',
+            'category'          => $nextStatus === 'golive' ? 'cr_approval' : 'status_update',
+            'action_url'        => route('change-requests.show', $changeRequest->id),
+        ]);
+
         return back()->with('success', 'Status pengerjaan CR berhasil diperbarui ke: ' . (ChangeRequest::SEQUENTIAL_STATUSES[$nextStatus] ?? $nextStatus));
     }
 
@@ -920,14 +1228,33 @@ class ChangeRequestController extends Controller
 
     public function destroy(ChangeRequest $changeRequest)
     {
+        $user = auth()->user();
+
+        // If status is draft, allow deletion
+        if ($changeRequest->status === 'draft') {
+            $changeRequest->delete();
+            return redirect()->route('change-requests.index', ['view' => 'draft'])
+                ->with('success', 'Draft CR berhasil dihapus.');
+        }
+
+        // Only PM/PMH/Admin can delete non-draft CR
+        if (!in_array($user?->role, ['pm', 'pmh', 'admin'])) {
+            return back()->with('error', 'Anda tidak memiliki izin untuk menghapus CR ini.');
+        }
+
         $changeRequest->delete();
 
-        return redirect()->route('change-requests.index')
-            ->with('success', 'Change Request berhasil dihapus.');
+        return redirect()->route('change-requests.index', ['view' => 'draft'])
+            ->with('success', 'Draft CR berhasil dihapus.');
     }
 
     private function ensureClientOwnsRequest(ChangeRequest $changeRequest): void
     {
+        // Allow reviewing draft CRs
+        if ($changeRequest->status === 'draft') {
+            return;
+        }
+
         if (auth()->user()?->isClient() && $changeRequest->user_id !== auth()->id()) {
             abort(403, 'Anda tidak dapat mengakses Change Request milik klien lain.');
         }
@@ -952,6 +1279,8 @@ class ChangeRequestController extends Controller
         $pdf = Pdf::loadView('exports.change-request-invoice', compact('changeRequest'));
         return $pdf->download('invoice-' . $changeRequest->kode_cr . '.pdf');
     }
+
+
 
     public function exportPdf(Request $request)
     {

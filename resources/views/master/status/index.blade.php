@@ -1,4 +1,4 @@
-@extends('layouts.app')
+﻿@extends('layouts.app')
 
 @section('title', 'Master Status Transaksi &middot; Administrator')
 
@@ -21,13 +21,6 @@
             <i class="bi bi-plus-circle"></i> Tambah Status Baru
         </button>
     </div>
-
-    @if (session('success'))
-        <div class="alert alert-success alert-dismissible fade show" role="alert">
-            <i class="bi bi-check-circle-fill me-2"></i> {{ session('success') }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
-        </div>
-    @endif
 
     <div class="card shadow-sm border-0 overflow-hidden">
         <div class="table-responsive">

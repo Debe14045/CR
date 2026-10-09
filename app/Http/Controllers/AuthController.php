@@ -58,21 +58,37 @@ class AuthController extends Controller
 
     public function register(Request $request)
     {
+        $passwordRules = ['required', 'string', 'min:6'];
+        if ($request->filled('password_confirmation')) {
+            $passwordRules[] = 'confirmed';
+        }
+
         $validated = $request->validate([
             'name'     => ['required', 'string', 'max:255'],
-            'company'  => ['required', 'string', 'max:255'],
+            'company'  => ['nullable', 'string', 'max:255'],
             'email'    => ['required', 'string', 'email', 'max:255', 'unique:users,email'],
-            'password' => ['required', 'string', 'min:8', 'confirmed'],
+            'password' => $passwordRules,
         ], [
             'name.required'      => 'Nama lengkap / PIC wajib diisi.',
-            'company.required'   => 'Nama perusahaan wajib diisi.',
             'email.required'     => 'Alamat email wajib diisi.',
             'email.email'        => 'Format email tidak valid.',
             'email.unique'       => 'Email ini sudah terdaftar. Silakan masuk atau gunakan email lain.',
             'password.required'  => 'Password wajib diisi.',
-            'password.min'       => 'Password minimal 8 karakter.',
+            'password.min'       => 'Password minimal :min karakter.',
             'password.confirmed' => 'Konfirmasi password tidak cocok.',
         ]);
+
+        $company = $request->filled('company')
+            ? trim($request->input('company'))
+            : 'PT ' . trim($validated['name']);
+
+        // Log out existing session if any, to cleanly switch to new user
+        if (Auth::check()) {
+            Auth::logout();
+            if ($request->hasSession()) {
+                $request->session()->invalidate();
+            }
+        }
 
         $user = User::create([
             'name'              => $validated['name'],
@@ -82,17 +98,22 @@ class AuthController extends Controller
             'email_verified_at' => Carbon::now(),
         ]);
 
+        $initials = strtoupper(substr(preg_replace('/[^a-zA-Z]/', '', $user->name), 0, 2)) ?: 'CL';
+
         Client::updateOrCreate(
             ['email' => $user->email],
             [
-                'name'    => $user->name,
-                'company' => $validated['company'],
-                'active'  => true,
+                'name'     => $user->name,
+                'company'  => $company,
+                'nickname' => $initials,
+                'active'   => true,
             ]
         );
 
         Auth::login($user);
-        $request->session()->regenerate();
+        if ($request->hasSession()) {
+            $request->session()->regenerate();
+        }
 
         return redirect()->route('change-requests.index')
             ->with('success', 'Selamat datang, ' . $user->name . '! Akun Client Anda berhasil dibuat.');
