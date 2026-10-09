@@ -164,7 +164,7 @@
                 <div class="text-muted d-flex align-items-center gap-1" style="font-size: 0.8rem;">
                     <i class="bi bi-calendar4" style="color: #94A3B8;"></i>
                     <span data-i18n="label_submission_date_inline" style="color: #64748B;">Tanggal Pengajuan:</span>
-                    <strong class="text-dark" data-i18n="val_header_date">{{ $headerTanggalPengajuan }}</strong>
+                    <strong data-i18n="val_header_date" style="color: #334155; font-weight: 700;">{{ $headerTanggalPengajuan }}</strong>
                 </div>
             </div>
         </div>

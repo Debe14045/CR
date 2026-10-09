@@ -1,9 +1,7 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Detail Change Request • ' . ($changeRequest->kode_cr ?: 'CR-2026-09-0042')); ?>
 
-@section('title', 'Detail Change Request • ' . ($changeRequest->kode_cr ?: 'CR-2026-09-0042'))
-
-@section('content')
-@php
+<?php $__env->startSection('content'); ?>
+<?php
     $crTitle = $changeRequest->judul ?: 'Integrasi API Pembayaran OVO';
     $firstChar = strtoupper(substr($crTitle, 0, 1)) ?: 'I';
     $crCode = $changeRequest->kode_cr ?: 'CR-2026-09-0042';
@@ -42,7 +40,7 @@
 
     $catatanCR = $changeRequest->catatan_pengajuan ?: ($changeRequest->pesan_client ?: 'Mohon diprioritaskan untuk integrasi sandbox staging sebelum tanggal 15 September agar tim QA dapat melakukan testing payment gateway secara menyeluruh. Testing account sudah kami koordinasikan dengan pihak vendor OVO.');
     $pmVerifier = $changeRequest->nama_pm ?: ($changeRequest->user?->name ?: 'Rizky Pratama');
-@endphp
+?>
 
 <style>
     .cr-detail-container {
@@ -112,16 +110,19 @@
         <div class="d-flex align-items-center gap-3 mb-4">
             <div class="rounded-3 d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
                  style="width: 44px; height: 44px; background: #007DFF; font-size: 1.35rem; border-radius: 12px !important; flex-shrink: 0;">
-                {{ $firstChar }}
+                <?php echo e($firstChar); ?>
+
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
                 <h3 class="fw-bold mb-0" style="color: #0F172A; font-size: 1.35rem; font-weight: 800; letter-spacing: -0.015em;">
-                    {{ $crTitle }}
+                    <?php echo e($crTitle); ?>
+
                 </h3>
                 <span class="badge px-3 py-1 fw-bold text-white d-inline-flex align-items-center gap-1"
                       style="background: #00A3FF; border-radius: 999px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.02em;">
                     <span style="width: 4px; height: 4px; border-radius: 50%; background: #FFFFFF;"></span>
-                    {{ ucfirst(str_replace('_', ' ', $changeRequest->status ?: 'Analisa')) }}
+                    <?php echo e(ucfirst(str_replace('_', ' ', $changeRequest->status ?: 'Analisa'))); ?>
+
                 </span>
             </div>
         </div>
@@ -129,21 +130,22 @@
         <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 pb-4 mb-4" style="border-bottom: 1.5px solid #F1F5F9;">
             <div class="d-flex align-items-center gap-3 flex-wrap">
                 <span class="px-2.5 py-1" style="border: 1px solid #E2E8F0; border-radius: 6px; font-size: 0.76rem; font-weight: 700; color: #334155; font-family: monospace; background: #FAFAFA;">
-                    ID: &nbsp;{{ $crCode }}
+                    ID: &nbsp;<?php echo e($crCode); ?>
+
                 </span>
                 <span class="px-3 py-1 fw-semibold d-inline-flex align-items-center gap-2"
                       style="border: 1px solid #FDE68A; background: #FFFBEB; color: #B45309; border-radius: 6px; font-size: 0.76rem; font-weight: 700; letter-spacing: 0.01em;">
                     <span style="width: 7px; height: 7px; border-radius: 50%; background: #F59E0B; flex-shrink: 0;"></span>
-                    <span>{{ $statusText }}</span>
+                    <span><?php echo e($statusText); ?></span>
                 </span>
             </div>
             <div class="text-muted small d-flex align-items-center gap-1.5" style="font-size: 0.8rem; color: #64748B;">
                 <i class="bi bi-calendar3" style="font-size: 0.82rem; color: #94A3B8;"></i>
-                <span>Tanggal Pengajuan: <strong style="color: #334155; font-weight: 700;">{{ $tglHeader }}</strong></span>
+                <span>Tanggal Pengajuan: <strong style="color: #334155; font-weight: 700;"><?php echo e($tglHeader); ?></strong></span>
             </div>
         </div>
 
-        @php
+        <?php
             $currentStep = match($statusKey) {
                 'diajukan' => 1,
                 'awaiting_pm', 'analisa', 'dianalisis' => 2,
@@ -170,7 +172,7 @@
                 5 => ['title' => 'Development', 'desc' => 'Menunggu'],
                 6 => ['title' => 'Invoice', 'desc' => 'Menunggu'],
             ];
-        @endphp
+        ?>
 
         <div class="mb-4">
             <div class="d-flex justify-content-between align-items-center mb-2">
@@ -178,60 +180,62 @@
                     STATUS ALUR CR
                 </span>
                 <span class="text-muted small" style="font-size: 0.74rem; font-weight: 600; color: #64748B;">
-                    Total Progres Alur: <span style="font-weight: 700; color: #1E293B;">{{ $pctProgress }}%</span>
+                    Total Progres Alur: <span style="font-weight: 700; color: #1E293B;"><?php echo e($pctProgress); ?>%</span>
                 </span>
             </div>
 
             <div class="d-flex align-items-center gap-1 mb-3" style="border-radius: 999px; overflow: hidden;">
-                <div class="flow-bar-item {{ $currentStep > 1 ? 'completed' : ($currentStep == 1 ? 'active' : '') }}" style="border-radius: 4px;"></div>
-                <div class="flow-bar-item {{ $currentStep > 2 ? 'completed' : ($currentStep == 2 ? 'active' : '') }}" style="border-radius: 4px;"></div>
-                <div class="flow-bar-item {{ $currentStep > 3 ? 'completed' : ($currentStep == 3 ? 'active' : '') }}" style="border-radius: 4px;"></div>
-                <div class="flow-bar-item {{ $currentStep > 4 ? 'completed' : ($currentStep == 4 ? 'active' : '') }}" style="border-radius: 4px;"></div>
-                <div class="flow-bar-item {{ $currentStep > 5 ? 'completed' : ($currentStep == 5 ? 'active' : '') }}" style="border-radius: 4px;"></div>
-                <div class="flow-bar-item {{ $currentStep == 6 ? 'active' : '' }}" style="border-radius: 4px;"></div>
+                <div class="flow-bar-item <?php echo e($currentStep > 1 ? 'completed' : ($currentStep == 1 ? 'active' : '')); ?>" style="border-radius: 4px;"></div>
+                <div class="flow-bar-item <?php echo e($currentStep > 2 ? 'completed' : ($currentStep == 2 ? 'active' : '')); ?>" style="border-radius: 4px;"></div>
+                <div class="flow-bar-item <?php echo e($currentStep > 3 ? 'completed' : ($currentStep == 3 ? 'active' : '')); ?>" style="border-radius: 4px;"></div>
+                <div class="flow-bar-item <?php echo e($currentStep > 4 ? 'completed' : ($currentStep == 4 ? 'active' : '')); ?>" style="border-radius: 4px;"></div>
+                <div class="flow-bar-item <?php echo e($currentStep > 5 ? 'completed' : ($currentStep == 5 ? 'active' : '')); ?>" style="border-radius: 4px;"></div>
+                <div class="flow-bar-item <?php echo e($currentStep == 6 ? 'active' : ''); ?>" style="border-radius: 4px;"></div>
             </div>
 
             <div class="row g-2">
-                @for ($step = 1; $step <= 6; $step++)
-                    @php
+                <?php for($step = 1; $step <= 6; $step++): ?>
+                    <?php
                         $isCompleted = $step < $currentStep;
                         $isActive = $step === $currentStep;
                         $stepInfo = $stepLabels[$step];
-                    @endphp
+                    ?>
                     <div class="col-lg-2 col-md-4 col-6">
-                        @if ($isCompleted)
+                        <?php if($isCompleted): ?>
                             <div class="flow-step-box h-100" style="background: #F0FDF4; border: 1.5px solid #86EFAC;">
                                 <i class="bi bi-check-circle-fill text-success" style="font-size: 1rem; flex-shrink: 0;"></i>
                                 <div style="line-height: 1.2;">
-                                    <div class="fw-bold" style="font-size: 0.74rem; color: #0F172A;">{{ $stepInfo['title'] }}</div>
+                                    <div class="fw-bold" style="font-size: 0.74rem; color: #0F172A;"><?php echo e($stepInfo['title']); ?></div>
                                     <div class="text-success small fw-semibold" style="font-size: 0.65rem;">Selesai</div>
                                 </div>
                             </div>
-                        @elseif ($isActive)
+                        <?php elseif($isActive): ?>
                             <div class="flow-step-box h-100" style="background: #FFFFFF; border: 2px solid #0284C7; box-shadow: 0 1px 3px rgba(2,132,199,0.15);">
                                 <span class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white"
                                       style="width: 18px; height: 18px; background: #0284C7; font-size: 0.65rem; flex-shrink: 0;">
-                                    {{ $step }}
+                                    <?php echo e($step); ?>
+
                                 </span>
                                 <div style="line-height: 1.2;">
-                                    <div class="fw-bold" style="font-size: 0.74rem; color: #0284C7;">{{ $stepInfo['title'] }}</div>
+                                    <div class="fw-bold" style="font-size: 0.74rem; color: #0284C7;"><?php echo e($stepInfo['title']); ?></div>
                                     <div class="small fw-semibold" style="font-size: 0.65rem; color: #0284C7;">Sedang Berjalan</div>
                                 </div>
                             </div>
-                        @else
+                        <?php else: ?>
                             <div class="flow-step-box h-100" style="background: #FAFAFA; border: 1.5px solid #E2E8F0;">
                                 <span class="rounded-circle d-flex align-items-center justify-content-center text-muted fw-bold"
                                       style="width: 18px; height: 18px; background: #E2E8F0; font-size: 0.65rem; flex-shrink: 0; color: #94A3B8;">
-                                    {{ $step }}
+                                    <?php echo e($step); ?>
+
                                 </span>
                                 <div style="line-height: 1.2;">
-                                    <div class="fw-semibold text-muted" style="font-size: 0.74rem; color: #64748B;">{{ $stepInfo['title'] }}</div>
+                                    <div class="fw-semibold text-muted" style="font-size: 0.74rem; color: #64748B;"><?php echo e($stepInfo['title']); ?></div>
                                     <div class="text-muted small" style="font-size: 0.65rem;">Menunggu</div>
                                 </div>
                             </div>
-                        @endif
+                        <?php endif; ?>
                     </div>
-                @endfor
+                <?php endfor; ?>
             </div>
         </div>
 
@@ -244,37 +248,37 @@
                     <div class="row g-3">
                         <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">NAMA PERUSAHAAN</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;">{{ $companyName }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;"><?php echo e($companyName); ?></div>
                         </div>
                         <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">INISIAL KLIEN</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;">{{ $clientInitial }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;"><?php echo e($clientInitial); ?></div>
                         </div>
                         <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">NAMA PIC</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;">{{ $picName }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;"><?php echo e($picName); ?></div>
                         </div>
 
                         <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">NAMA PROJECT</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;">{{ $projectName }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;"><?php echo e($projectName); ?></div>
                         </div>
                         <div class="col-8">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">CR OWNER</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;">{{ $crOwner }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;"><?php echo e($crOwner); ?></div>
                         </div>
 
                         <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">TANGGAL PENGAJUAN</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;">{{ $tglPengajuan }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;"><?php echo e($tglPengajuan); ?></div>
                         </div>
                         <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">REQUEST GO-LIVE</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;">{{ $targetSelesai }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;"><?php echo e($targetSelesai); ?></div>
                         </div>
                         <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">PRIORITAS CR</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;">{{ $priority }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;"><?php echo e($priority); ?></div>
                         </div>
                     </div>
                 </div>
@@ -288,16 +292,16 @@
                     <div class="d-flex flex-column gap-3">
                         <div>
                             <div class="text-uppercase mb-1" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">DOKUMEN CR</div>
-                            <a href="{{ $docUrl }}" target="_blank" class="doc-pill-box">
+                            <a href="<?php echo e($docUrl); ?>" target="_blank" class="doc-pill-box">
                                 <i class="bi bi-file-earmark-text"></i>
-                                <span class="text-truncate">{{ $docUrl }}</span>
+                                <span class="text-truncate"><?php echo e($docUrl); ?></span>
                             </a>
                         </div>
                         <div>
                             <div class="text-uppercase mb-1" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">SOLUTION PAPER</div>
-                            <a href="{{ $solutionPaperUrl }}" target="_blank" class="doc-pill-box">
+                            <a href="<?php echo e($solutionPaperUrl); ?>" target="_blank" class="doc-pill-box">
                                 <i class="bi bi-file-earmark-code"></i>
-                                <span class="text-truncate">{{ $solutionPaperUrl }}</span>
+                                <span class="text-truncate"><?php echo e($solutionPaperUrl); ?></span>
                             </a>
                         </div>
                     </div>
@@ -317,27 +321,30 @@
             <div class="text-dark" style="font-size: 0.84rem; line-height: 1.65;">
                 <div class="fw-bold mb-1" style="color: #0F172A; font-weight: 800;">1. LATAR BELAKANG &amp; TUJUAN</div>
                 <p class="text-secondary mb-3" style="color: #475569 !important;">
-                    {!! nl2br(e($changeRequest->alasan ?: ($changeRequest->deskripsi ?: 'Implementasi penambahan kanal pembayaran digital menggunakan e-wallet OVO (Push to Pay & QRIS) pada modul checkout Sistem E-commerce. Hal ini bertujuan untuk menaikkan rasio konversi checkout pelanggan serta mengurangi tingkat abandoned cart pada saat proses transaksi pembelian online.'))) !!}
+                    <?php echo nl2br(e($changeRequest->alasan ?: ($changeRequest->deskripsi ?: 'Implementasi penambahan kanal pembayaran digital menggunakan e-wallet OVO (Push to Pay & QRIS) pada modul checkout Sistem E-commerce. Hal ini bertujuan untuk menaikkan rasio konversi checkout pelanggan serta mengurangi tingkat abandoned cart pada saat proses transaksi pembelian online.'))); ?>
+
                 </p>
 
                 <div class="fw-bold mb-1" style="color: #0F172A; font-weight: 800;">2. RUANG LINGKUP PERUBAHAN (SCOPE OF WORK)</div>
                 <div class="text-secondary mb-3" style="color: #475569 !important;">
-                    @if ($changeRequest->deskripsi && $changeRequest->deskripsi !== $changeRequest->alasan)
-                        {!! nl2br(e($changeRequest->deskripsi)) !!}
-                    @else
+                    <?php if($changeRequest->deskripsi && $changeRequest->deskripsi !== $changeRequest->alasan): ?>
+                        <?php echo nl2br(e($changeRequest->deskripsi)); ?>
+
+                    <?php else: ?>
                         <div class="ps-2">
                             <div class="mb-1">Penambahan opsi pembayaran OVO Wallet pada step 3 (Metode Pembayaran) di aplikasi Web dan Mobile.</div>
                             <div class="mb-1">Integrasi Webhook Callback Service untuk konfirmasi status settlement secara real-time.</div>
                             <div class="mb-1">Penyelarasan modul rekonsiliasi harian dan penyesuaian laporan keuangan di portal admin.</div>
                             <div>Penambahan unit test coverage dan staging automated testing minimum 85%.</div>
                         </div>
-                    @endif
+                    <?php endif; ?>
                 </div>
 
                 <div class="fw-bold mb-2" style="color: #0F172A; font-weight: 800;">3. DAMPAK TEKNIS &amp; DEPENDENCIES</div>
                 <div class="p-3" style="background: #FFFBEB; border-left: 3px solid #F59E0B; border-radius: 6px;">
                     <div style="font-size: 0.82rem; color: #92400E; font-weight: 600; line-height: 1.5;">
-                        <strong style="color: #78350F; font-weight: 800;">Catatan Dependensi:</strong> {{ $changeRequest->solution_paper_note ?: ($changeRequest->pesan_client ?: 'Membutuhkan integrasi API Gateway credentials (Client ID & Secret Key) production dari pihak Payment Aggregator sebelum tanggal 18 Sep 2026.') }}
+                        <strong style="color: #78350F; font-weight: 800;">Catatan Dependensi:</strong> <?php echo e($changeRequest->solution_paper_note ?: ($changeRequest->pesan_client ?: 'Membutuhkan integrasi API Gateway credentials (Client ID & Secret Key) production dari pihak Payment Aggregator sebelum tanggal 18 Sep 2026.')); ?>
+
                     </div>
                 </div>
             </div>
@@ -355,30 +362,30 @@
                             <div>
                                 <div class="d-flex justify-content-between small mb-1.5" style="font-size: 0.8rem;">
                                     <span style="color: #475569; font-weight: 500;">Analisis</span>
-                                    <span style="color: #0F172A; font-weight: 800;">{{ $mandaysAnalisis }} hari</span>
+                                    <span style="color: #0F172A; font-weight: 800;"><?php echo e($mandaysAnalisis); ?> hari</span>
                                 </div>
                                 <div class="progress" style="height: 6px; border-radius: 999px; background: #E0F2FE;">
-                                    <div class="progress-bar" style="width: {{ ($mandaysAnalisis / ($totalMandays ?: 1)) * 100 }}%; background: #0284C7; border-radius: 999px;"></div>
+                                    <div class="progress-bar" style="width: <?php echo e(($mandaysAnalisis / ($totalMandays ?: 1)) * 100); ?>%; background: #0284C7; border-radius: 999px;"></div>
                                 </div>
                             </div>
 
                             <div>
                                 <div class="d-flex justify-content-between small mb-1.5" style="font-size: 0.8rem;">
                                     <span style="color: #475569; font-weight: 500;">Development</span>
-                                    <span style="color: #0F172A; font-weight: 800;">{{ $mandaysDev }} hari</span>
+                                    <span style="color: #0F172A; font-weight: 800;"><?php echo e($mandaysDev); ?> hari</span>
                                 </div>
                                 <div class="progress" style="height: 6px; border-radius: 999px; background: #E0F2FE;">
-                                    <div class="progress-bar" style="width: {{ ($mandaysDev / ($totalMandays ?: 1)) * 100 }}%; background: #0284C7; border-radius: 999px;"></div>
+                                    <div class="progress-bar" style="width: <?php echo e(($mandaysDev / ($totalMandays ?: 1)) * 100); ?>%; background: #0284C7; border-radius: 999px;"></div>
                                 </div>
                             </div>
 
                             <div>
                                 <div class="d-flex justify-content-between small mb-1.5" style="font-size: 0.8rem;">
                                     <span style="color: #475569; font-weight: 500;">Testing</span>
-                                    <span style="color: #0F172A; font-weight: 800;">{{ $mandaysTest }} hari</span>
+                                    <span style="color: #0F172A; font-weight: 800;"><?php echo e($mandaysTest); ?> hari</span>
                                 </div>
                                 <div class="progress" style="height: 6px; border-radius: 999px; background: #E0F2FE;">
-                                    <div class="progress-bar" style="width: {{ ($mandaysTest / ($totalMandays ?: 1)) * 100 }}%; background: #2563EB; border-radius: 999px;"></div>
+                                    <div class="progress-bar" style="width: <?php echo e(($mandaysTest / ($totalMandays ?: 1)) * 100); ?>%; background: #2563EB; border-radius: 999px;"></div>
                                 </div>
                             </div>
                         </div>
@@ -386,7 +393,7 @@
 
                     <div class="d-flex justify-content-between align-items-center pt-3 mt-3">
                         <span style="font-size: 0.88rem; color: #475569; font-weight: 500;">Total</span>
-                        <span style="font-size: 0.95rem; color: #0F172A; font-weight: 800;">{{ $totalMandays }} hari kerja</span>
+                        <span style="font-size: 0.95rem; color: #0F172A; font-weight: 800;"><?php echo e($totalMandays); ?> hari kerja</span>
                     </div>
                 </div>
             </div>
@@ -402,7 +409,7 @@
 
                     <div class="p-4 flex-grow-1 d-flex align-items-center justify-content-center" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px;">
                         <p class="mb-0" style="font-size: 0.85rem; line-height: 1.65; color: #0C4A6E;">
-                            &ldquo;{{ $catatanCR }}&rdquo;
+                            &ldquo;<?php echo e($catatanCR); ?>&rdquo;
                         </p>
                     </div>
                 </div>
@@ -412,19 +419,26 @@
         <div class="cr-subcard p-4">
             <h5 class="fw-bold mb-1" style="font-size: 1rem; font-weight: 800; color: #0C4A6E;">Keputusan Approval</h5>
             <p class="text-muted small mb-3" style="font-size: 0.82rem; color: #64748B;">
-                PM <strong style="color: #0F172A; font-weight: 700;">{{ $pmVerifier }}</strong> sudah memverifikasi Change Request. Setujui untuk diteruskan ke Marketing.
+                PM <strong style="color: #0F172A; font-weight: 700;"><?php echo e($pmVerifier); ?></strong> sudah memverifikasi Change Request. Setujui untuk diteruskan ke Marketing.
             </p>
 
-            <form method="POST" action="{{ route('pmh.decision', $changeRequest) }}">
-                @csrf
+            <form method="POST" action="<?php echo e(route('pmh.decision', $changeRequest)); ?>">
+                <?php echo csrf_field(); ?>
                 <div class="mb-3">
                     <label class="fw-bold small mb-1" style="font-size: 0.78rem; font-weight: 700; color: #0C4A6E;">CR Notes</label>
                     <textarea name="catatan_approval" rows="4" class="form-control"
                               placeholder="Catatan tambahan, prioritas, atau informasi lain yang perlu diketahui PM..."
                               style="border-radius: 10px; border: 1.5px solid #BAE6FD; font-size: 0.86rem; padding: 0.75rem 1rem; color: #1E293B; background: #FFFFFF;"></textarea>
-                    @error('catatan_approval')
-                        <div class="text-danger small mt-1">{{ $message }}</div>
-                    @enderror
+                    <?php $__errorArgs = ['catatan_approval'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                        <div class="text-danger small mt-1"><?php echo e($message); ?></div>
+                    <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                 </div>
 
                 <div class="d-flex justify-content-end align-items-center gap-2 pt-1">
@@ -445,4 +459,6 @@
     </div>
 
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Magang_ITPI\CR\resources\views/pmhead/review.blade.php ENDPATH**/ ?>

@@ -1,8 +1,6 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Notifikasi • PM Head Monitoring CR'); ?>
 
-@section('title', 'Notifikasi • PM Head Monitoring CR')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <style>
     /* Styling Notifikasi persis sesuai design */
     .notif-container {
@@ -201,9 +199,9 @@
 
 <div class="notif-container">
 
-    {{-- Breadcrumb: Dashboard / Notifikasi --}}
+    
     <nav class="d-flex align-items-center gap-1.5 mb-2 text-muted" style="font-size: 0.78rem;">
-        <a href="{{ route('change-requests.index') }}" class="text-decoration-none d-flex align-items-center gap-1" style="color: #64748B;">
+        <a href="<?php echo e(route('change-requests.index')); ?>" class="text-decoration-none d-flex align-items-center gap-1" style="color: #64748B;">
             <i class="bi bi-house-door" style="font-size: 0.85rem;"></i>
             <span data-i18n="breadcrumb_dashboard">Dashboard</span>
         </a>
@@ -211,7 +209,7 @@
         <span style="color: #0063D7; font-weight: 600;" data-i18n="breadcrumb_notifikasi">Notifikasi</span>
     </nav>
 
-    {{-- Header Title + Button Bersihkan --}}
+    
     <div class="d-flex justify-content-between align-items-start gap-3 flex-wrap">
         <div>
             <h1 class="fw-bold mb-1" style="color: #0F172A; font-size: 1.65rem; font-weight: 800; letter-spacing: -0.02em;" data-i18n="notif_page_title">
@@ -227,15 +225,15 @@
         </button>
     </div>
 
-    {{-- Revisi 1: Divider garis abu-abu kecil di atas filter dan search bar --}}
+    
     <div class="notif-divider"></div>
 
-    {{-- Filter Toolbar: Tabs ("Semua (count)", "Belum Dibaca") & Search Input --}}
+    
     <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
         <div class="d-flex align-items-center gap-2">
             <button type="button" id="tabSemua" class="notif-tab-btn active" onclick="switchTab('semua')">
                 <span data-i18n="tab_semua">Semua</span>
-                <span class="notif-count-badge" id="badgeSemuaCount">{{ count($notifications) }}</span>
+                <span class="notif-count-badge" id="badgeSemuaCount"><?php echo e(count($notifications)); ?></span>
             </button>
             <button type="button" id="tabUnread" class="notif-tab-btn inactive" onclick="switchTab('unread')">
                 <span data-i18n="tab_belum_dibaca">Belum Dibaca</span>
@@ -251,86 +249,91 @@
         </div>
     </div>
 
-    {{-- Notification List Card --}}
+    
     <div class="notif-list-card shadow-sm mb-3" id="notifListContainer">
-        @forelse ($notifications as $n)
-            <div class="notif-row notif-item" id="{{ $n['id'] }}" data-read="{{ $n['is_read'] ? '1' : '0' }}"
-                 data-text-id="{{ strtolower($n['title_id'] . ' ' . $n['code'] . ' ' . $n['desc_id']) }}"
-                 data-text-en="{{ strtolower($n['title_en'] . ' ' . $n['code'] . ' ' . $n['desc_en']) }}">
+        <?php $__empty_1 = true; $__currentLoopData = $notifications; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $n): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); $__empty_1 = false; ?>
+            <div class="notif-row notif-item" id="<?php echo e($n['id']); ?>" data-read="<?php echo e($n['is_read'] ? '1' : '0'); ?>"
+                 data-text-id="<?php echo e(strtolower($n['title_id'] . ' ' . $n['code'] . ' ' . $n['desc_id'])); ?>"
+                 data-text-en="<?php echo e(strtolower($n['title_en'] . ' ' . $n['code'] . ' ' . $n['desc_en'])); ?>">
                 
-                {{-- Leading Circular Icon --}}
-                <div class="notif-avatar-icon" style="background: {{ $n['icon_bg'] }}; color: {{ $n['icon_color'] }};">
-                    <i class="bi {{ $n['icon'] }}"></i>
+                
+                <div class="notif-avatar-icon" style="background: <?php echo e($n['icon_bg']); ?>; color: <?php echo e($n['icon_color']); ?>;">
+                    <i class="bi <?php echo e($n['icon']); ?>"></i>
                 </div>
 
-                {{-- Content Body --}}
+                
                 <div class="flex-grow-1">
-                    {{-- Row 1: Title, Category Badge, Code Badge & Relative Time on far right --}}
+                    
                     <div class="d-flex justify-content-between align-items-start gap-2 mb-1 flex-wrap">
                         <div class="d-flex align-items-center gap-2 flex-wrap">
                             <span class="fw-bold notif-trans-title" style="font-size: 0.92rem; color: #0F172A; font-weight: 800;"
-                                  data-id="{{ $n['title_id'] }}" data-en="{{ $n['title_en'] }}">
-                                {{ $n['title_id'] }}
+                                  data-id="<?php echo e($n['title_id']); ?>" data-en="<?php echo e($n['title_en']); ?>">
+                                <?php echo e($n['title_id']); ?>
+
                             </span>
                             <span class="notif-category-pill notif-trans-category"
-                                  style="background: {{ $n['badge_bg'] }}; color: {{ $n['badge_color'] }}; border: 1px solid {{ $n['badge_border'] }};"
-                                  data-id="{{ $n['category_id'] }}" data-en="{{ $n['category_en'] }}">
-                                {{ $n['category_id'] }}
+                                  style="background: <?php echo e($n['badge_bg']); ?>; color: <?php echo e($n['badge_color']); ?>; border: 1px solid <?php echo e($n['badge_border']); ?>;"
+                                  data-id="<?php echo e($n['category_id']); ?>" data-en="<?php echo e($n['category_en']); ?>">
+                                <?php echo e($n['category_id']); ?>
+
                             </span>
                             <span class="notif-code-pill">
-                                {{ $n['code'] }}
+                                <?php echo e($n['code']); ?>
+
                             </span>
                         </div>
                         <div class="d-flex align-items-center gap-1 text-muted" style="font-size: 0.74rem; color: #64748B;">
                             <i class="bi bi-clock"></i>
-                            <span class="notif-trans-time" data-id="{{ $n['time_id'] }}" data-en="{{ $n['time_en'] }}">
-                                {{ $n['time_id'] }}
+                            <span class="notif-trans-time" data-id="<?php echo e($n['time_id']); ?>" data-en="<?php echo e($n['time_en']); ?>">
+                                <?php echo e($n['time_id']); ?>
+
                             </span>
                         </div>
                     </div>
 
-                    {{-- Row 2: Description --}}
+                    
                     <p class="mb-2 notif-trans-desc" style="font-size: 0.81rem; line-height: 1.55; color: #64748B;"
-                       data-id="{{ $n['desc_id'] }}" data-en="{{ $n['desc_en'] }}">
-                        {{ $n['desc_id'] }}
+                       data-id="<?php echo e($n['desc_id']); ?>" data-en="<?php echo e($n['desc_en']); ?>">
+                        <?php echo e($n['desc_id']); ?>
+
                     </p>
 
-                    {{-- Row 3: Buka Detail CR Button & Delete Trash Icon on bottom right --}}
+                    
                     <div class="d-flex justify-content-between align-items-center pt-1">
-                        <a href="{{ $n['url'] }}" class="btn-buka-detail">
+                        <a href="<?php echo e($n['url']); ?>" class="btn-buka-detail">
                             <span class="notif-trans-btn" data-id="Buka Detail CR" data-en="Open CR Details">Buka Detail CR</span>
                             <i class="bi bi-arrow-right" style="font-size: 0.76rem;"></i>
                         </a>
 
-                        <button type="button" class="btn-action-trash" title="Hapus Notifikasi" onclick="hapusSatuNotifikasi('{{ $n['id'] }}')">
+                        <button type="button" class="btn-action-trash" title="Hapus Notifikasi" onclick="hapusSatuNotifikasi('<?php echo e($n['id']); ?>')">
                             <i class="bi bi-trash3"></i>
                         </button>
                     </div>
                 </div>
             </div>
-        @empty
+        <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); if ($__empty_1): ?>
             <div class="text-center py-5 text-muted">
                 <i class="bi bi-bell-slash fs-2 d-block mb-2 text-secondary"></i>
                 <div class="fw-bold text-dark notif-empty-title" data-id="Tidak ada notifikasi saat ini." data-en="No notifications at this time.">Tidak ada notifikasi saat ini.</div>
                 <div class="small notif-empty-desc" data-id="Semua aktivitas Change Request Anda telah terupdate." data-en="All your Change Request activities are up to date.">Semua aktivitas Change Request Anda telah terupdate.</div>
             </div>
-        @endforelse
+        <?php endif; ?>
     </div>
 
-    {{-- Revisi 5: Footer Info format "Menampilkan 1-6 dari 6 notifikasi" --}}
-    <div class="text-muted" style="font-size: 0.75rem; color: #64748B;" id="notifFooterCount" data-total="{{ count($notifications) }}">
-        @if (count($notifications) > 0)
-            Menampilkan 1-{{ count($notifications) }} dari {{ count($notifications) }} notifikasi
-        @else
+    
+    <div class="text-muted" style="font-size: 0.75rem; color: #64748B;" id="notifFooterCount" data-total="<?php echo e(count($notifications)); ?>">
+        <?php if(count($notifications) > 0): ?>
+            Menampilkan 1-<?php echo e(count($notifications)); ?> dari <?php echo e(count($notifications)); ?> notifikasi
+        <?php else: ?>
             Menampilkan 0 dari 0 notifikasi
-        @endif
+        <?php endif; ?>
     </div>
 
 </div>
 
 <script>
     let currentFilter = 'semua';
-    const totalNotifsInitial = {{ count($notifications) }};
+    const totalNotifsInitial = <?php echo e(count($notifications)); ?>;
 
     function switchTab(tab) {
         currentFilter = tab;
@@ -499,4 +502,6 @@
         }
     });
 </script>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Magang_ITPI\CR\resources\views/pmhead/notifications.blade.php ENDPATH**/ ?>

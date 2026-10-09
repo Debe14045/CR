@@ -1391,19 +1391,25 @@
                     <span class="fw-semibold">Outstanding Payment</span>
                 </a>
 
-                {{-- 4. Notifikasi (Belum ada design, redirect ke dashboard) --}}
-                <a href="{{ route('change-requests.index') }}"
-                   class="sidebar-link d-flex align-items-center justify-content-between"
-                   style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: #FFFFFF; margin-top: 0.35rem;">
+                {{-- 4. Notifikasi --}}
+                @php
+                    $isNotifActive = request()->routeIs('pmh.notifications');
+                    $sidebarNotifCount = \App\Models\ChangeRequest::count();
+                @endphp
+                <a href="{{ route('pmh.notifications') }}"
+                   class="sidebar-link d-flex align-items-center justify-content-between {{ $isNotifActive ? 'active' : '' }}"
+                   style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: #FFFFFF; margin-top: 0.35rem; {{ $isNotifActive ? 'background: #0063D7 !important;' : '' }}">
                     <span class="d-flex align-items-center gap-2">
                         <i class="bi bi-bell nav-icon" style="font-size: 1.05rem;"></i>
                         <span class="fw-medium">Notifikasi</span>
                     </span>
-                    <span class="badge bg-danger rounded-pill" style="font-size: 0.65rem;">3</span>
+                    @if ($sidebarNotifCount > 0)
+                        <span class="badge bg-danger rounded-pill" style="font-size: 0.65rem;">{{ $sidebarNotifCount }}</span>
+                    @endif
                 </a>
 
-                {{-- 5. Pengaturan (Belum ada design, redirect ke dashboard) --}}
-                <a href="{{ route('change-requests.index') }}"
+                {{-- 5. Pengaturan (Masuk ke Profil Saya) --}}
+                <a href="{{ route('profile') }}"
                    class="sidebar-link"
                    style="border-radius: 10px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem;">
                     <i class="bi bi-gear nav-icon" style="font-size: 1.05rem;"></i>
@@ -1517,7 +1523,7 @@
                         </a>
                     </div>
                 @else
-                    <a href="{{ route('change-requests.index') }}"
+                    <a href="{{ route('profile') }}"
                        class="sidebar-link"
                        style="border-radius: 10px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem;">
                         <i class="bi bi-gear nav-icon" style="font-size: 1.05rem;"></i>
@@ -1615,7 +1621,7 @@
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-3 mt-2" style="width: 320px; border-radius: 14px;" aria-labelledby="notifDropdown">
                         <li class="d-flex justify-content-between align-items-center mb-2">
                             <span class="fw-bold small text-dark" data-i18n="notif_incoming">Notifikasi Masuk</span>
-                            <span class="badge bg-danger-subtle text-danger rounded-pill" style="font-size: 0.68rem;" data-i18n="notif_badge">3 Baru</span>
+                            <span class="badge bg-danger-subtle text-danger rounded-pill" style="font-size: 0.68rem;">{{ \App\Models\ChangeRequest::count() }} Baru</span>
                         </li>
                         <li class="mb-2">
                             <div class="p-2 rounded-2" style="background: #FEF2F2; border-left: 3px solid #EF4444;">
@@ -1979,7 +1985,17 @@
             'h3_background_purpose': '1. LATAR BELAKANG & TUJUAN',
             'h3_scope_of_work': '2. RUANG LINGKUP PERUBAHAN (SCOPE OF WORK)',
             'h3_technical_impact': '3. DAMPAK TEKNIS & DEPENDENCIES',
-            'user_role_label': 'Klien'
+            'user_role_label': 'Klien',
+
+            // Notifikasi Page
+            'notif_page_title': 'Notifikasi',
+            'notif_page_subtitle': 'Pemberitahuan pembaruan status, persetujuan, dan aktivitas Change Request Anda.',
+            'btn_bersihkan': 'Bersihkan',
+            'tab_semua': 'Semua',
+            'tab_belum_dibaca': 'Belum Dibaca',
+            'placeholder_search_notif': 'Cari notifikasi / kode CR...',
+            'breadcrumb_dashboard': 'Dashboard',
+            'breadcrumb_notifikasi': 'Notifikasi'
         },
         en: {
             // Sidebar & Navigation
@@ -2001,6 +2017,16 @@
             'inbox_new_badge': '2 New',
             'notif_badge': '3 New',
             'notif_incoming': 'Incoming Notifications',
+
+            // Notifikasi Page
+            'notif_page_title': 'Notifications',
+            'notif_page_subtitle': 'Notifications of status updates, approvals, and your Change Request activities.',
+            'btn_bersihkan': 'Clear All',
+            'tab_semua': 'All',
+            'tab_belum_dibaca': 'Unread',
+            'placeholder_search_notif': 'Search notification / CR code...',
+            'breadcrumb_dashboard': 'Dashboard',
+            'breadcrumb_notifikasi': 'Notifications',
 
             // Dashboard Header & Cards
             'dashboard_title': 'DASHBOARD',

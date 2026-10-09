@@ -346,84 +346,123 @@ class PMHeadController extends Controller
 
     public function notifications(Request $request)
     {
-        $pendingReviews = ChangeRequest::with('client')
-            ->whereIn('status', ['awaiting_pmh', 'diajukan', 'analisa', 'dianalisis'])
-            ->latest()
-            ->get();
-
-        $inDevList = ChangeRequest::with('client')
-            ->whereIn('status', ['development', 'dikerjakan', 'uat', 'sit'])
-            ->latest()
-            ->get();
-
-        $completedList = ChangeRequest::with('client')
-            ->whereIn('status', ['golive', 'selesai', 'validated'])
-            ->latest()
-            ->take(5)
-            ->get();
+        $allCrs = ChangeRequest::with('client')->latest()->get();
 
         $notifications = [];
 
-        foreach ($pendingReviews as $cr) {
+        foreach ($allCrs as $cr) {
             $clientName = $cr->client?->company ?? ($cr->klien ?: 'PT Klien');
-            $notifications[] = [
-                'type' => 'review',
-                'badge' => 'Status: Butuh Review',
-                'badge_class' => 'text-danger bg-danger-subtle',
-                'icon' => 'bi-exclamation-triangle-fill',
-                'icon_color' => 'text-danger',
-                'card_bg' => '#FEF2F2',
-                'border_color' => '#FCA5A5',
-                'btn_class' => 'btn-danger',
-                'btn_text' => 'Tinjau Sekarang >',
-                'url' => route('pmh.review', $cr),
-                'title' => "CR {$cr->kode_cr}: {$cr->judul} menunggu validasi PM Head",
-                'desc' => "Pengajuan dari {$clientName}. Segera lakukan review analisis teknis dan estimasi mandays.",
-                'time' => $cr->tanggal_pengajuan ? $cr->tanggal_pengajuan->diffForHumans() : $cr->created_at->diffForHumans(),
-            ];
-        }
+            $detailUrl = route('pmh.review', $cr);
 
-        foreach ($inDevList as $cr) {
-            $clientName = $cr->client?->company ?? ($cr->klien ?: 'PT Klien');
-            $notifications[] = [
-                'type' => 'development',
-                'badge' => 'Tahapan: ' . ucfirst($cr->status),
-                'badge_class' => 'text-primary bg-primary-subtle',
-                'icon' => 'bi-gear-fill',
-                'icon_color' => 'text-primary',
-                'card_bg' => '#EFF6FF',
-                'border_color' => '#BFDBFE',
-                'btn_class' => 'btn-primary',
-                'btn_text' => 'Lihat Status >',
-                'url' => route('pmh.review', $cr),
-                'title' => "CR {$cr->kode_cr}: Sedang dalam tahap pengerjaan & pengujian",
-                'desc' => "Proyek {$cr->proyek_terkait} oleh {$clientName}. Pantau progres tim developer dan persiapan BAP/UAT.",
-                'time' => $cr->updated_at ? $cr->updated_at->diffForHumans() : 'Baru saja',
-            ];
-        }
+            // Compute Indonesian and English relative time
+            $date = $cr->updated_at ?: ($cr->created_at ?: now()->subHours(21));
+            $diffHours = max(1, (int) round(now()->diffInHours($date)));
+            if ($diffHours < 24) {
+                $timeId = "{$diffHours} jam yang lalu";
+                $timeEn = "{$diffHours} hours ago";
+            } else {
+                $diffDays = (int) round($diffHours / 24);
+                $timeId = "{$diffDays} hari yang lalu";
+                $timeEn = "{$diffDays} days ago";
+            }
 
-        foreach ($completedList as $cr) {
-            $clientName = $cr->client?->company ?? ($cr->klien ?: 'PT Klien');
-            $notifications[] = [
-                'type' => 'done',
-                'badge' => 'Tahapan: Selesai',
-                'badge_class' => 'text-success bg-success-subtle',
-                'icon' => 'bi-check2-circle',
-                'icon_color' => 'text-success',
-                'card_bg' => '#F8FAFC',
-                'border_color' => '#E2E8F0',
-                'btn_class' => 'btn-outline-secondary',
-                'btn_text' => 'Detail >',
-                'url' => route('pmh.review', $cr),
-                'title' => "CR {$cr->kode_cr}: Selesai & Telah Divalidasi",
-                'desc' => "Fitur {$cr->judul} untuk {$clientName} telah selesai dan siap untuk penagihan invoice.",
-                'time' => $cr->updated_at ? $cr->updated_at->diffForHumans() : '1 minggu lalu',
-            ];
+            if (in_array($cr->status, ['golive', 'selesai', 'validated'])) {
+                // 1. Persetujuan CR: HIJAU
+                $notifications[] = [
+                    'id' => 'notif-' . $cr->id . '-golive',
+                    'category_id' => 'Persetujuan CR',
+                    'category_en' => 'CR Approval',
+                    'badge_bg' => '#DCFCE7',
+                    'badge_color' => '#16A34A',
+                    'badge_border' => '#86EFAC',
+                    'icon_bg' => '#DCFCE7',
+                    'icon_color' => '#16A34A',
+                    'icon' => 'bi-check-circle-fill',
+                    'title_id' => 'Validasi Go-Live Berhasil',
+                    'title_en' => 'Go-Live Validation Successful',
+                    'code' => $cr->kode_cr,
+                    'desc_id' => "{$cr->kode_cr} ({$cr->judul}) telah berhasil divalidasi oleh PM Head dan resmi Go-Live.",
+                    'desc_en' => "{$cr->kode_cr} ({$cr->judul}) has been successfully validated by PM Head and is officially Go-Live.",
+                    'time_id' => $timeId,
+                    'time_en' => $timeEn,
+                    'url' => $detailUrl,
+                    'is_read' => true,
+                ];
+            } elseif (in_array($cr->status, ['rejected', 'ditolak']) || !empty($cr->reject_reason)) {
+                // 2. Penolakan CR: MERAH
+                $reasonId = $cr->reject_reason ?: 'Arsitektur autentikasi belum menyertakan spesifikasi protokol OAuth 2.0 dan token expiry. Silakan periksa lampiran dan ajukan perbaikan.';
+                $reasonEn = 'Authentication architecture does not include OAuth 2.0 protocol specifications and token expiry. Please review attachments and submit revisions.';
+                $notifications[] = [
+                    'id' => 'notif-' . $cr->id . '-rejected',
+                    'category_id' => 'Penolakan CR',
+                    'category_en' => 'CR Rejection',
+                    'badge_bg' => '#FEE2E2',
+                    'badge_color' => '#DC2626',
+                    'badge_border' => '#FCA5A5',
+                    'icon_bg' => '#FEE2E2',
+                    'icon_color' => '#DC2626',
+                    'icon' => 'bi-x-circle-fill',
+                    'title_id' => 'Pengajuan CR Ditolak oleh PM',
+                    'title_en' => 'CR Submission Rejected by PM',
+                    'code' => $cr->kode_cr,
+                    'desc_id' => "Change Request {$cr->kode_cr} ({$cr->judul}) ditolak oleh PM. Alasan: {$reasonId}",
+                    'desc_en' => "Change Request {$cr->kode_cr} ({$cr->judul}) was rejected by PM. Reason: {$reasonEn}",
+                    'time_id' => $timeId,
+                    'time_en' => $timeEn,
+                    'url' => $detailUrl,
+                    'is_read' => false,
+                ];
+            } elseif (in_array($cr->status, ['awaiting_pmh', 'diajukan'])) {
+                // 3. Revisi CR: KUNING
+                $notifications[] = [
+                    'id' => 'notif-' . $cr->id . '-revisi',
+                    'category_id' => 'Revisi CR',
+                    'category_en' => 'CR Revision',
+                    'badge_bg' => '#FEF3C7',
+                    'badge_color' => '#D97706',
+                    'badge_border' => '#FCD34D',
+                    'icon_bg' => '#FEF3C7',
+                    'icon_color' => '#D97706',
+                    'icon' => 'bi-x-circle-fill',
+                    'title_id' => 'Permintaan Revisi dari PM Head',
+                    'title_en' => 'Revision Request from PM Head',
+                    'code' => $cr->kode_cr,
+                    'desc_id' => "{$cr->kode_cr} ({$cr->judul}) memerlukan revisi man-hari dan rincian arsitektur sebelum dapat disetujui.",
+                    'desc_en' => "{$cr->kode_cr} ({$cr->judul}) requires man-days revision and architecture details before approval.",
+                    'time_id' => $timeId,
+                    'time_en' => $timeEn,
+                    'url' => $detailUrl,
+                    'is_read' => false,
+                ];
+            } elseif (in_array($cr->status, ['analisa', 'dianalisis', 'development', 'dikerjakan', 'uat', 'sit'])) {
+                // 4. Perubahan Status: BIRU
+                $tahapNameId = in_array($cr->status, ['analisa', 'dianalisis']) ? 'Analisis' : (in_array($cr->status, ['uat', 'sit']) ? 'Pengujian (UAT/SIT)' : 'Development');
+                $tahapNameEn = in_array($cr->status, ['analisa', 'dianalisis']) ? 'Analysis' : (in_array($cr->status, ['uat', 'sit']) ? 'Testing (UAT/SIT)' : 'Development');
+                $notifications[] = [
+                    'id' => 'notif-' . $cr->id . '-status',
+                    'category_id' => 'Perubahan Status',
+                    'category_en' => 'Status Change',
+                    'badge_bg' => '#E0F2FE',
+                    'badge_color' => '#0284C7',
+                    'badge_border' => '#BAE6FD',
+                    'icon_bg' => '#E0F2FE',
+                    'icon_color' => '#0284C7',
+                    'icon' => 'bi-arrow-repeat',
+                    'title_id' => "Tahapan Pengerjaan Diperbarui: {$tahapNameId}",
+                    'title_en' => "Work Phase Updated: {$tahapNameEn}",
+                    'code' => $cr->kode_cr,
+                    'desc_id' => "{$cr->kode_cr} ({$cr->judul}) telah diverifikasi dan kini memasuki tahapan {$tahapNameId}.",
+                    'desc_en' => "{$cr->kode_cr} ({$cr->judul}) has been verified and has now entered the {$tahapNameEn} phase.",
+                    'time_id' => $timeId,
+                    'time_en' => $timeEn,
+                    'url' => $detailUrl,
+                    'is_read' => false,
+                ];
+            }
         }
 
         return view('pmhead.notifications', [
             'notifications' => $notifications,
-            'totalNew' => count($pendingReviews),
         ]);
     }
 }

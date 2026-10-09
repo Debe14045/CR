@@ -169,7 +169,7 @@
             @endphp
             <button class="btn btn-white bg-white dropdown-toggle px-3 py-2 d-flex align-items-center justify-content-between shadow-none"
                     type="button" id="statusFilterBtn" data-bs-toggle="dropdown" aria-expanded="false"
-                    style="border: 1.5px solid #CBD5E1; border-radius: 12px; font-size: 0.88rem; font-weight: 500; color: #334155; min-width: 145px; gap: 1rem;">
+                    style="border: 1.5px solid #D6D3CD; border-radius: 12px; font-size: 0.86rem; font-weight: 600; color: #475569; min-width: 145px; gap: 0.85rem;">
                 <span>{{ $statusDisplay }}</span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border p-1 mt-1" style="border-radius: 10px; min-width: 160px; border-color: #E2E8F0;" aria-labelledby="statusFilterBtn">
@@ -181,6 +181,8 @@
             </ul>
         </div>
     </div>
+
+    <div style="height: 3px; background: #E0F2FE; border-radius: 999px; margin-bottom: 1.5rem;"></div>
 
     <div class="pm-table-container mb-4">
         <div class="table-responsive m-0">
@@ -213,10 +215,10 @@
                             };
                         @endphp
                         <tr>
-                            <td class="px-3 text-center fw-semibold text-dark" style="font-size: 0.88rem;">
+                            <td class="px-3 text-center text-muted" style="font-size: 0.88rem; font-weight: 500;">
                                 {{ $changeRequests->firstItem() ? ($changeRequests->firstItem() + $index) : ($index + 1) }}
                             </td>
-                            <td class="px-3 fw-bold text-dark" style="font-size: 0.88rem;">
+                            <td class="px-3 fw-bold text-dark" style="font-size: 0.88rem; font-weight: 700;">
                                 {{ $cr->nama_pm ?: ($cr->user?->name ?: 'Danendra dada') }}
                             </td>
                             <td class="px-3">
@@ -225,18 +227,18 @@
                                          style="width: 28px; height: 28px; background: {{ $avatarBg }}; font-size: 0.68rem; flex-shrink: 0;">
                                         {{ $initials }}
                                     </div>
-                                    <span class="fw-bold text-dark" style="font-size: 0.88rem;">
+                                    <span class="fw-bold text-dark" style="font-size: 0.88rem; font-weight: 700;">
                                         {{ $clientCompany }}
                                     </span>
                                 </div>
                             </td>
                             <td class="px-3">
                                 <div>
-                                    <div class="fw-semibold text-dark" style="font-size: 0.88rem; line-height: 1.35;">{{ $cr->judul }}</div>
-                                    <div class="text-muted" style="font-size: 0.74rem;">{{ $cr->proyek_terkait ?: ($cr->kode_cr ?: 'System Enhancement') }}</div>
+                                    <div class="text-dark" style="font-size: 0.88rem; line-height: 1.35; font-weight: 400;">{{ $cr->judul }}</div>
+                                    <div class="text-muted" style="font-size: 0.74rem; font-weight: 400;">{{ $cr->proyek_terkait ?: ($cr->kode_cr ?: 'System Enhancement') }}</div>
                                 </div>
                             </td>
-                            <td class="px-3 text-center text-dark" style="font-size: 0.84rem;">
+                            <td class="px-3 text-center text-secondary" style="font-size: 0.84rem; font-weight: 400;">
                                 {{ $cr->tanggal_pengajuan ? $cr->tanggal_pengajuan->format('d M Y') : $cr->created_at->format('d M Y') }}
                             </td>
                             <td class="px-3 text-center">

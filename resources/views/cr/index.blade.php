@@ -39,6 +39,8 @@
         $linkCard4 = $isPmh ? route('pmh.change-requests', ['status' => 'golive']) : route('change-requests.index', ['view' => 'golive']);
     @endphp
 
+    <div style="height: 3px; background: #E0F2FE; border-radius: 999px; margin-bottom: 1.5rem;"></div>
+
     <div class="row g-3 mb-4">
         <div class="col-xl-3 col-md-6 col-12">
             <a href="{{ $linkCard1 }}" class="text-decoration-none d-block h-100">
