@@ -182,19 +182,21 @@
         }
 
         .app-sidebar .sidebar-link {
-            color: rgba(255, 255, 255, 0.85) !important;
+            color: #FFFFFF !important;
             padding: 0.65rem 1rem !important;
             border-radius: 9999px !important;
             font-size: 0.88rem !important;
+            font-weight: 500 !important;
             transition: all 0.15s ease !important;
         }
         .app-sidebar .sidebar-link:hover {
-            background: rgba(255, 255, 255, 0.08) !important;
+            background: rgba(255, 255, 255, 0.12) !important;
             color: #FFFFFF !important;
         }
         .app-sidebar .sidebar-link.active {
             background: #0063D7 !important;
             color: #FFFFFF !important;
+            font-weight: 600 !important;
             box-shadow: none !important;
         }
         .app-sidebar .sidebar-link.active::before {
@@ -204,6 +206,38 @@
         .topbar-search-input::placeholder {
             color: #94A3B8 !important;
             opacity: 1 !important;
+        }
+
+        /* ── Modern Dropdown Styling & Reset Bootstrap Blue Active ── */
+        .dropdown-menu {
+            border: 1px solid #E2E8F0 !important;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.08), 0 8px 10px -6px rgba(0, 0, 0, 0.04) !important;
+        }
+        .dropdown-item {
+            border-radius: 8px !important;
+            transition: background-color 0.15s ease, color 0.15s ease !important;
+            color: #1E293B !important;
+        }
+        .dropdown-item:hover,
+        .dropdown-item:focus {
+            background-color: #F1F5F9 !important;
+            color: #0F172A !important;
+        }
+        .dropdown-item:active {
+            background-color: #E2E8F0 !important;
+            color: #0F172A !important;
+        }
+        .dropdown-item.text-danger {
+            color: #DC2626 !important;
+        }
+        .dropdown-item.text-danger:hover,
+        .dropdown-item.text-danger:focus {
+            background-color: #FEE2E2 !important;
+            color: #B91C1C !important;
+        }
+        .dropdown-item.text-danger:active {
+            background-color: #FECACA !important;
+            color: #991B1B !important;
         }
 
         /* ── Sidebar Header (Logo) ── */
@@ -1357,10 +1391,10 @@
                     <span class="fw-semibold">Outstanding Payment</span>
                 </a>
 
-                {{-- 4. Notifikasi --}}
-                <a href="{{ route('pmh.notifications') }}"
-                   class="sidebar-link d-flex align-items-center justify-content-between {{ request()->routeIs('pmh.notifications') ? 'active' : '' }}"
-                   style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: #FFFFFF; margin-top: 0.35rem; {{ request()->routeIs('pmh.notifications') ? 'background: #0063D7 !important; color: #FFFFFF !important;' : '' }}">
+                {{-- 4. Notifikasi (Belum ada design, redirect ke dashboard) --}}
+                <a href="{{ route('change-requests.index') }}"
+                   class="sidebar-link d-flex align-items-center justify-content-between"
+                   style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: #FFFFFF; margin-top: 0.35rem;">
                     <span class="d-flex align-items-center gap-2">
                         <i class="bi bi-bell nav-icon" style="font-size: 1.05rem;"></i>
                         <span class="fw-medium">Notifikasi</span>
@@ -1368,10 +1402,10 @@
                     <span class="badge bg-danger rounded-pill" style="font-size: 0.65rem;">3</span>
                 </a>
 
-                {{-- 5. Pengaturan (Profile) --}}
-                <a href="{{ route('profile') }}"
-                   class="sidebar-link {{ request()->routeIs('profile') ? 'active' : '' }}"
-                   style="border-radius: 10px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem; {{ request()->routeIs('profile') ? 'background: #0063D7 !important; color: #FFFFFF !important;' : '' }}">
+                {{-- 5. Pengaturan (Belum ada design, redirect ke dashboard) --}}
+                <a href="{{ route('change-requests.index') }}"
+                   class="sidebar-link"
+                   style="border-radius: 10px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem;">
                     <i class="bi bi-gear nav-icon" style="font-size: 1.05rem;"></i>
                     <span class="fw-medium">Pengaturan</span>
                 </a>
@@ -1439,10 +1473,9 @@
                     </a>
                 </div>
 
-                {{-- 3. Notifikasi --}}
-                <a href="javascript:void(0)"
+                {{-- 3. Notifikasi (Belum ada design, redirect ke dashboard) --}}
+                <a href="{{ route('change-requests.index') }}"
                    class="sidebar-link d-flex align-items-center justify-content-between"
-                   onclick="const toastEl = document.getElementById('notifToast'); if(toastEl){ new bootstrap.Toast(toastEl).show(); }"
                    style="border-radius: 10px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem;">
                     <span class="d-flex align-items-center gap-2">
                         <i class="bi bi-bell nav-icon" style="font-size: 1.05rem;"></i>
@@ -1450,7 +1483,7 @@
                     </span>
                 </a>
 
-                {{-- 4. Pengaturan --}}
+                {{-- 4. Pengaturan (Belum ada design, redirect ke dashboard) --}}
                 @if ($currentRole === 'admin')
                     <div class="nav-group-toggle {{ str_starts_with($currentRouteName, 'master.') ? 'open' : '' }}"
                          id="settingsGroupToggle"
@@ -1484,8 +1517,8 @@
                         </a>
                     </div>
                 @else
-                    <a href="{{ $currentRole === 'client' ? route('client.profile') : route('profile') }}"
-                       class="sidebar-link {{ $currentRouteName === 'client.profile' || $currentRouteName === 'profile' ? 'active' : '' }}"
+                    <a href="{{ route('change-requests.index') }}"
+                       class="sidebar-link"
                        style="border-radius: 10px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem;">
                         <i class="bi bi-gear nav-icon" style="font-size: 1.05rem;"></i>
                         <span class="fw-medium" data-i18n="nav_settings">Pengaturan</span>
@@ -1521,12 +1554,12 @@
                 
                 {{-- Language Selector Pill (ID with Globe) --}}
                 <div class="dropdown">
-                    <button class="d-flex align-items-center gap-1 px-2 py-1 rounded-pill border-0 bg-white"
+                    <button class="d-flex align-items-center gap-2 px-3 py-1 rounded-pill border-0 bg-transparent"
                             id="langDropdown" data-bs-toggle="dropdown" aria-expanded="false"
-                            style="border: 1.5px solid #E2E8F0 !important; font-size: 0.76rem; font-weight: 600; color: #64748B; cursor: pointer;">
-                        <i class="bi bi-globe2 me-1" style="font-size: 0.78rem;"></i>
+                            style="border: 1.5px solid #E2E8F0 !important; font-size: 0.8rem; font-weight: 700; color: #475569; cursor: pointer; height: 34px;">
+                        <i class="bi bi-globe2" style="font-size: 0.95rem; color: #64748B;"></i>
                         <span id="currentLangLabel">ID</span>
-                        <i class="bi bi-chevron-down ms-1" style="font-size: 0.65rem;"></i>
+                        <i class="bi bi-chevron-down ms-0.5" style="font-size: 0.72rem; color: #64748B;"></i>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-1 mt-1" style="border-radius: 10px; min-width: 155px;" aria-labelledby="langDropdown">
                         <li>
@@ -1546,11 +1579,11 @@
 
                 {{-- Inbox Button with Red Notification Dot --}}
                 <div class="dropdown">
-                    <button class="btn p-0 position-relative d-flex align-items-center justify-content-center border-0 bg-transparent"
+                    <button class="btn p-0 position-relative d-flex align-items-center justify-content-center border-0 bg-transparent shadow-none"
                             type="button" id="inboxDropdown" data-bs-toggle="dropdown" aria-expanded="false"
-                            style="width: 36px; height: 36px; color: #475569; font-size: 1.15rem;">
+                            style="width: 36px; height: 36px; color: #1E293B; font-size: 1.25rem;">
                         <i class="bi bi-inbox"></i>
-                        <span style="position: absolute; top: 7px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: #EF4444; border: 1.5px solid #FFFFFF;"></span>
+                        <span style="position: absolute; top: 5px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: #EF4444; border: 1.5px solid #FFFFFF;"></span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-3 mt-2" style="width: 320px; border-radius: 14px;" aria-labelledby="inboxDropdown">
                         <li class="d-flex justify-content-between align-items-center mb-2">
@@ -1574,10 +1607,10 @@
 
                 {{-- Notification Bell with Red Notification Dot --}}
                 <div class="dropdown">
-                    <button class="btn p-0 position-relative d-flex align-items-center justify-content-center border-0 bg-transparent" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false"
-                            style="width: 36px; height: 36px; color: #475569; font-size: 1.15rem;">
+                    <button class="btn p-0 position-relative d-flex align-items-center justify-content-center border-0 bg-transparent shadow-none" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false"
+                            style="width: 36px; height: 36px; color: #1E293B; font-size: 1.25rem;">
                         <i class="bi bi-bell"></i>
-                        <span style="position: absolute; top: 7px; right: 5px; width: 7px; height: 7px; border-radius: 50%; background: #EF4444; border: 1.5px solid #FFFFFF;"></span>
+                        <span style="position: absolute; top: 5px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: #EF4444; border: 1.5px solid #FFFFFF;"></span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-3 mt-2" style="width: 320px; border-radius: 14px;" aria-labelledby="notifDropdown">
                         <li class="d-flex justify-content-between align-items-center mb-2">
@@ -1605,22 +1638,25 @@
                     </ul>
                 </div>
 
-                {{-- User Profile (Totok Antok with TA Avatar & Dropdown matching Figma Image 2) --}}
+                {{-- Vertical Divider between icons and profile --}}
+                <div style="width: 1px; height: 26px; background-color: #CBD5E1; margin: 0 4px;"></div>
+
+                {{-- User Profile (Totok Antok with warm beige TA Avatar & Dropdown matching Figma Image 2) --}}
                 <div class="dropdown">
-                    <div class="d-flex align-items-center gap-2 ps-1 cursor-pointer" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+                    <div class="d-flex align-items-center gap-3 ps-1 cursor-pointer" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
                         <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm"
-                             style="width: 40px; height: 40px; background: #D9D9D9; color: #334155; font-size: 0.85rem; flex-shrink: 0;">
+                             style="width: 42px; height: 42px; background: #D5CCBE; color: #292524; font-size: 0.95rem; font-weight: 700; flex-shrink: 0;">
                             TA
                         </div>
                         <div style="line-height: 1.25;" class="d-none d-sm-block text-start">
-                            <div class="fw-bold text-dark text-truncate d-flex align-items-center gap-1" style="font-size: 0.86rem; font-weight: 700; letter-spacing: -0.01em; color: #0F172A;">
-                                <span>{{ auth()->check() ? auth()->user()->name : 'Totok Antok' }}</span>
-                                <i class="bi bi-chevron-down" style="font-size: 0.75rem; color: #64748B;"></i>
+                            <div class="fw-bold text-dark text-truncate" style="font-size: 0.92rem; font-weight: 700; letter-spacing: -0.01em; color: #0F172A;">
+                                {{ auth()->check() ? auth()->user()->name : 'Totok Antok' }}
                             </div>
-                            <div class="text-muted text-truncate" style="font-size: 0.72rem; color: #64748B;">
-                                {{ auth()->check() ? (auth()->user()->isPmh() ? 'PMH' : (auth()->user()->isPm() ? 'PM' : (auth()->user()->isClient() ? 'KLIEN' : ucfirst(auth()->user()->role)))) : 'KLIEN' }}
+                            <div class="text-muted text-truncate" style="font-size: 0.76rem; color: #64748B;">
+                                {{ auth()->check() ? (auth()->user()->isPmh() ? 'PM' : (auth()->user()->isPm() ? 'PM' : (auth()->user()->isClient() ? 'KLIEN' : ucfirst(auth()->user()->role)))) : 'PM' }}
                             </div>
                         </div>
+                        <i class="bi bi-chevron-down ms-1" style="font-size: 0.88rem; color: #0F172A; font-weight: 700;"></i>
                     </div>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2 p-2" style="border-radius: 12px; min-width: 200px;" aria-labelledby="userMenuDropdown">
                         <li class="px-3 py-2 border-bottom mb-1">

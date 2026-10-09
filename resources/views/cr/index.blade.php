@@ -39,14 +39,12 @@
         $linkCard4 = $isPmh ? route('pmh.change-requests', ['status' => 'golive']) : route('change-requests.index', ['view' => 'golive']);
     @endphp
 
-    {{-- 4 Big Metric Cards (Figma: #134B8A Deep Royal Blue) --}}
     <div class="row g-3 mb-4">
-        {{-- Card 1: Semua CR (#134B8A) --}}
         <div class="col-xl-3 col-md-6 col-12">
             <a href="{{ $linkCard1 }}" class="text-decoration-none d-block h-100">
                 <div class="p-4 text-white h-100 shadow-sm"
-                     style="background: #134B8A; border-radius: 18px; transition: transform 0.2s ease, box-shadow 0.2s ease;"
-                     onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 24px rgba(19,75,138,0.35)';"
+                     style="background: {{ $isPmDashboard ? '#014DA1' : '#134B8A' }}; border-radius: 18px; transition: transform 0.2s ease, box-shadow 0.2s ease;"
+                     onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 24px rgba(1,77,161,0.35)';"
                      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.06)';">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="fw-bold" data-i18n="card_all_cr" style="font-size: 0.95rem;">Semua CR</span>
@@ -67,57 +65,54 @@
         </div>
 
         @if ($isPmDashboard)
-            {{-- PM Card 2: Butuh Persetujuan (#134B8A) --}}
             <div class="col-xl-3 col-md-6 col-12">
                 <a href="{{ $linkCard2 }}" class="text-decoration-none d-block h-100">
                     <div class="p-4 text-white h-100 shadow-sm"
-                         style="background: #134B8A; border-radius: 18px; transition: transform 0.2s ease, box-shadow 0.2s ease;"
-                         onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 24px rgba(19,75,138,0.35)';"
+                         style="background: #144272; border-radius: 18px; transition: transform 0.2s ease, box-shadow 0.2s ease;"
+                         onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 24px rgba(20,66,114,0.35)';"
                          onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.06)';">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-bold" data-i18n="card_need_approval" style="font-size: 0.95rem;">Butuh Persetujuan</span>
-                            <div class="rounded-circle d-flex align-items-center justify-content-center"
-                                 style="width: 32px; height: 32px; border: 1.5px solid rgba(255,255,255,0.7); background: transparent;">
-                                 <i class="bi bi-arrow-up-right text-white" style="font-size: 0.82rem; font-weight: bold;"></i>
-                            </div>
-                        </div>
-                        <div class="fw-bold mb-3" style="font-size: 3.5rem; line-height: 1; letter-spacing: -0.02em;">
-                            {{ $figmaNeedApprovalCr ?? 0 }}
-                        </div>
-                        <div class="d-flex align-items-center gap-2 text-white text-opacity-80" style="font-size: 0.76rem; font-weight: 500;">
-                            <i class="bi bi-bar-chart-line-fill" style="font-size: 0.85rem;"></i>
-                            <span data-i18n="card_active_month">Aktif Bulan Ini</span>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold" data-i18n="card_need_approval" style="font-size: 0.95rem;">Butuh Persetujuan</span>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center"
+                             style="width: 32px; height: 32px; border: 1.5px solid rgba(255,255,255,0.7); background: transparent;">
+                             <i class="bi bi-arrow-up-right text-white" style="font-size: 0.82rem; font-weight: bold;"></i>
                         </div>
                     </div>
-                </a>
-            </div>
+                    <div class="fw-bold mb-3" style="font-size: 3.5rem; line-height: 1; letter-spacing: -0.02em;">
+                        {{ $figmaNeedApprovalCr ?? 0 }}
+                    </div>
+                    <div class="d-flex align-items-center gap-2 text-white text-opacity-80" style="font-size: 0.76rem; font-weight: 500;">
+                        <i class="bi bi-bar-chart-line-fill" style="font-size: 0.85rem;"></i>
+                        <span data-i18n="card_active_month">Aktif Bulan Ini</span>
+                    </div>
+                </div>
+            </a>
+        </div>
 
-            {{-- PM Card 3: Development (#134B8A) --}}
             <div class="col-xl-3 col-md-6 col-12">
                 <a href="{{ $linkCard3 }}" class="text-decoration-none d-block h-100">
                     <div class="p-4 text-white h-100 shadow-sm"
-                         style="background: #134B8A; border-radius: 18px; transition: transform 0.2s ease, box-shadow 0.2s ease;"
-                         onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 24px rgba(19,75,138,0.35)';"
+                         style="background: #205295; border-radius: 18px; transition: transform 0.2s ease, box-shadow 0.2s ease;"
+                         onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 24px rgba(32,82,149,0.35)';"
                          onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.06)';">
-                        <div class="d-flex justify-content-between align-items-center mb-2">
-                            <span class="fw-bold" data-i18n="card_development" style="font-size: 0.95rem;">Development</span>
-                            <div class="rounded-circle d-flex align-items-center justify-content-center"
-                                 style="width: 32px; height: 32px; border: 1.5px solid rgba(255,255,255,0.7); background: transparent;">
-                                <i class="bi bi-arrow-up-right text-white" style="font-size: 0.82rem; font-weight: bold;"></i>
-                            </div>
-                        </div>
-                        <div class="fw-bold mb-3" style="font-size: 3.5rem; line-height: 1; letter-spacing: -0.02em;">
-                            {{ $figmaDevCr }}
-                        </div>
-                        <div class="d-flex align-items-center gap-2 text-white text-opacity-80" style="font-size: 0.76rem; font-weight: 500;">
-                            <i class="bi bi-bar-chart-line-fill" style="font-size: 0.85rem;"></i>
-                            <span data-i18n="card_active_month">Aktif Bulan Ini</span>
+                    <div class="d-flex justify-content-between align-items-center mb-2">
+                        <span class="fw-bold" data-i18n="card_development" style="font-size: 0.95rem;">Development</span>
+                        <div class="rounded-circle d-flex align-items-center justify-content-center"
+                             style="width: 32px; height: 32px; border: 1.5px solid rgba(255,255,255,0.7); background: transparent;">
+                            <i class="bi bi-arrow-up-right text-white" style="font-size: 0.82rem; font-weight: bold;"></i>
                         </div>
                     </div>
-                </a>
-            </div>
+                    <div class="fw-bold mb-3" style="font-size: 3.5rem; line-height: 1; letter-spacing: -0.02em;">
+                        {{ $figmaDevCr }}
+                    </div>
+                    <div class="d-flex align-items-center gap-2 text-white text-opacity-80" style="font-size: 0.76rem; font-weight: 500;">
+                        <i class="bi bi-bar-chart-line-fill" style="font-size: 0.85rem;"></i>
+                        <span data-i18n="card_active_month">Aktif Bulan Ini</span>
+                    </div>
+                </div>
+            </a>
+        </div>
         @else
-            {{-- Client Card 2: Development (#134B8A) --}}
             <div class="col-xl-3 col-md-6 col-12">
                 <a href="{{ route('change-requests.index', ['view' => 'development']) }}" class="text-decoration-none d-block h-100">
                     <div class="p-4 text-white h-100 shadow-sm"
@@ -142,7 +137,6 @@
                 </a>
             </div>
 
-            {{-- Client Card 3: UAT (#134B8A) --}}
             <div class="col-xl-3 col-md-6 col-12">
                 <a href="{{ route('change-requests.index', ['view' => 'uat']) }}" class="text-decoration-none d-block h-100">
                     <div class="p-4 text-white h-100 shadow-sm"
@@ -168,12 +162,11 @@
             </div>
         @endif
 
-        {{-- Card 4: GO LIVE (#134B8A) --}}
         <div class="col-xl-3 col-md-6 col-12">
             <a href="{{ $linkCard4 }}" class="text-decoration-none d-block h-100">
                 <div class="p-4 text-white h-100 shadow-sm"
-                     style="background: #134B8A; border-radius: 18px; transition: transform 0.2s ease, box-shadow 0.2s ease;"
-                     onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 24px rgba(19,75,138,0.35)';"
+                     style="background: {{ $isPmDashboard ? '#2C74B3' : '#134B8A' }}; border-radius: 18px; transition: transform 0.2s ease, box-shadow 0.2s ease;"
+                     onmouseover="this.style.transform='translateY(-3px)'; this.style.boxShadow='0 12px 24px rgba(44,116,179,0.35)';"
                      onmouseout="this.style.transform='translateY(0)'; this.style.boxShadow='0 2px 6px rgba(0,0,0,0.06)';">
                     <div class="d-flex justify-content-between align-items-center mb-2">
                         <span class="fw-bold" data-i18n="card_golive" style="font-size: 0.95rem;">GO LIVE</span>
@@ -194,9 +187,82 @@
         </div>
     </div>
 
-    {{-- Lower Row: Chart (Tren CR Bulanan for PM OR Status Donut for Client) and NOTIFIKASI --}}
+    {{-- Lower Row: NOTIFIKASI (Kiri, background putih) and Chart/Grafik (Kanan) --}}
     <div class="row g-4 mb-4">
-        {{-- Card Left --}}
+        {{-- Card Left: NOTIFIKASI (Background Putih sesuai referensi) --}}
+        <div class="col-lg-5 col-12">
+            <div class="card p-4 border-0 h-100 shadow-sm" style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E2E8F0 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="d-flex align-items-center gap-2">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #EF4444; display: inline-block;"></span>
+                        <h5 class="fw-bold mb-0 text-uppercase" data-i18n="notif_title" style="color: #0F172A; font-size: 0.95rem; font-weight: 800; letter-spacing: 0.02em;">NOTIFIKASI</h5>
+                    </div>
+                    <a href="{{ $isPmh ? route('pmh.notifications') : 'javascript:void(0)' }}" class="text-decoration-none fw-semibold" style="color: #0063D7; font-size: 0.8rem;">Lihat Semua</a>
+                </div>
+                <p class="text-muted small mb-0" style="font-size: 0.74rem; line-height: 1.45; color: #64748B;">
+                    Pemberitahuan persetujuan penting, batas waktu tinjauan dokumen, dan tindak lanjut status tahapan proyek.
+                </p>
+                <div style="height: 1px; background: #E2E8F0; margin: 0.85rem 0 1.25rem;"></div>
+
+                <div class="d-flex flex-column gap-3">
+                    {{-- Alert 1: Red box (Menunggu Persetujuan / Review) --}}
+                    <a href="{{ $isPmh ? route('pmh.persetujuan') : route('change-requests.index', ['status' => 'diajukan']) }}" class="text-decoration-none">
+                        <div class="p-3" style="background: #FFF1F2; border: 1px solid #FECDD3; border-radius: 14px; transition: transform 0.15s ease;"
+                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #E11D48; font-size: 1.05rem; flex-shrink: 0;"></i>
+                                <div style="line-height: 1.35;">
+                                    <div class="fw-bold" style="color: #9F1239; font-size: 0.82rem;">
+                                        {{ $notifPendingCount ?? 3 }} Perubahan Ruang Lingkup CR menunggu persetujuan > 14 hari
+                                    </div>
+                                    <div style="color: #E11D48; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
+                                        Status : Menunggu Persetujuan PM{{ $isPmh ? ' Head' : '' }}
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+
+                    {{-- Alert 2: Yellow box (Tahap Analisis / Verifikasi Kebutuhan) --}}
+                    <a href="{{ $isPmh ? route('pmh.change-requests', ['status' => 'analisa']) : route('change-requests.index', ['status' => 'analisa']) }}" class="text-decoration-none">
+                        <div class="p-3" style="background: #FEFCE8; border: 1px solid #FEF08A; border-radius: 14px; transition: transform 0.15s ease;"
+                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #D97706; font-size: 1.05rem; flex-shrink: 0;"></i>
+                                <div style="line-height: 1.35;">
+                                    <div class="fw-bold" style="color: #854D0E; font-size: 0.82rem;">
+                                        {{ $notifNeedVerifCount ?? 8 }} CR Baru Menunggu Verifikasi Kebutuhan
+                                    </div>
+                                    <div style="color: #B45309; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
+                                        Tahapan : 1. Analisis Kebutuhan
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+
+                    {{-- Alert 3: Blue box (Development & UAT Testing) --}}
+                    <a href="{{ $isPmh ? route('pmh.development') : route('change-requests.index', ['view' => 'development']) }}" class="text-decoration-none">
+                        <div class="p-3" style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 14px; transition: transform 0.15s ease;"
+                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-info-circle-fill mt-1" style="color: #2563EB; font-size: 1.05rem; flex-shrink: 0;"></i>
+                                <div style="line-height: 1.35;">
+                                    <div class="fw-bold" style="color: #1E40AF; font-size: 0.82rem;">
+                                        {{ $notifDevCount ?? 5 }} Masukan Pengguna UAT butuh tindak lanjut
+                                    </div>
+                                    <div style="color: #2563EB; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
+                                        Tahapan : 4. UAT & Pengujian
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+
+        {{-- Card Right: Chart / Grafik --}}
         <div class="col-lg-7 col-12">
             @if ($isPmDashboard)
                 {{-- ── PM DASHBOARD: Grafik Total Request dari PM (Hari Ini, Kemarin, Sebelumnya) ── --}}
@@ -257,12 +323,10 @@
                         foreach ($trendList as $idx => $t) {
                             $x = $startX + ($idx * $stepX);
                             $val = $t['count'];
-                            // Y: 20 (top) to 135 (baseline)
                             $y = 135 - (($val / ($maxCount ?: 1)) * 105);
                             $points[] = ['x' => $x, 'y' => $y, 'count' => $val, 'label' => $t['short_label']];
                         }
 
-                        // Build SVG Polyline & Area Path
                         $pathD = 'M ' . $points[0]['x'] . ' ' . $points[0]['y'];
                         for ($k = 1; $k < count($points); $k++) {
                             $prev = $points[$k - 1];
@@ -285,7 +349,6 @@
                                 </linearGradient>
                             </defs>
 
-                            {{-- Grid lines --}}
                             <line x1="45" y1="30" x2="505" y2="30" stroke="#F1F5F9" stroke-width="1.2" />
                             <text x="35" y="34" font-size="10" fill="#94A3B8" text-anchor="end">{{ $maxCount }}</text>
 
@@ -295,13 +358,9 @@
                             <line x1="45" y1="135" x2="505" y2="135" stroke="#E2E8F0" stroke-width="1.2" />
                             <text x="35" y="139" font-size="10" fill="#94A3B8" text-anchor="end">0</text>
 
-                            {{-- Area Gradient fill --}}
                             <path d="{{ $areaD }}" fill="url(#gradientPmRequest)" />
-
-                            {{-- Line stroke --}}
                             <path d="{{ $pathD }}" fill="none" stroke="#0063D7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
 
-                            {{-- Dots and labels --}}
                             @foreach ($points as $p)
                                 <circle cx="{{ $p['x'] }}" cy="{{ $p['y'] }}" r="4.5" fill="#0063D7" stroke="#FFFFFF" stroke-width="2" />
                                 <text x="{{ $p['x'] }}" y="{{ $p['y'] - 8 }}" font-size="11" font-weight="700" fill="#02376A" text-anchor="middle">{{ $p['count'] }}</text>
@@ -320,7 +379,7 @@
                 </div>
             @else
                 {{-- ── CLIENT DASHBOARD: STATUS (Donut + Progress) ── --}}
-                <div class="card p-4 border-0 h-100" style="border-radius: 20px; background: #F0F3F6; border: 1px solid #E2E8F0 !important;">
+                <div class="card p-4 border-0 h-100 shadow-sm" style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E2E8F0 !important;">
                     <div>
                         <h5 class="fw-bold mb-1 text-uppercase" data-i18n="status_title" style="color: #0F172A; font-size: 1rem; font-weight: 800; letter-spacing: 0.02em;">STATUS</h5>
                         <p class="text-muted small mb-0" data-i18n="status_subtitle" style="font-size: 0.78rem; color: #64748B;">Monitoring pergerakan CR melalui 6 tahapan siklus proyek TI</p>
@@ -355,7 +414,7 @@
                                     #047857 {{ $p4 }}% {{ $p5 }}%,
                                     #10B981 {{ $p5 }}% 100%
                                 ); display: flex; align-items: center; justify-content: center;">
-                                    <div style="width: 96px; height: 96px; background: #F0F3F6; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
+                                    <div style="width: 96px; height: 96px; background: #FFFFFF; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
                                         <span class="fw-bold" style="font-size: 2.2rem; line-height: 1; color: #0F172A; font-weight: 800;">{{ $totalDonut }}</span>
                                     </div>
                                 </div>
@@ -441,79 +500,6 @@
                     </div>
                 </div>
             @endif
-        </div>
-
-        {{-- Card Right: NOTIFIKASI --}}
-        <div class="col-lg-5 col-12">
-            <div class="card p-4 border-0 h-100" style="border-radius: 20px; background: #F0F3F6; border: 1px solid #E2E8F0 !important;">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <div class="d-flex align-items-center gap-2">
-                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #EF4444; display: inline-block;"></span>
-                        <h5 class="fw-bold mb-0 text-uppercase" data-i18n="notif_title" style="color: #0F172A; font-size: 0.95rem; font-weight: 800; letter-spacing: 0.02em;">NOTIFIKASI</h5>
-                    </div>
-                    <a href="{{ $isPmh ? route('pmh.notifications') : 'javascript:void(0)' }}" class="text-decoration-none fw-semibold" style="color: #0063D7; font-size: 0.8rem;">Lihat Semua</a>
-                </div>
-                <p class="text-muted small mb-0" style="font-size: 0.74rem; line-height: 1.45; color: #64748B;">
-                    Pemberitahuan persetujuan penting, batas waktu tinjauan dokumen, dan tindak lanjut status tahapan proyek.
-                </p>
-                <div style="height: 1px; background: #DCE1E7; margin: 0.85rem 0 1.25rem;"></div>
-
-                <div class="d-flex flex-column gap-3">
-                    {{-- Alert 1: Red box (Menunggu Persetujuan / Review) --}}
-                    <a href="{{ $isPmh ? route('pmh.persetujuan') : route('change-requests.index', ['status' => 'diajukan']) }}" class="text-decoration-none">
-                        <div class="p-3" style="background: #FEF3F4; border: 1px solid #FECDCA; border-radius: 14px; transition: transform 0.15s ease;"
-                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #DC2626; font-size: 1.05rem; flex-shrink: 0;"></i>
-                                <div style="line-height: 1.35;">
-                                    <div class="fw-bold" style="color: #991B1B; font-size: 0.82rem;">
-                                        {{ $notifPendingCount ?? 3 }} Perubahan Ruang Lingkup CR menunggu persetujuan
-                                    </div>
-                                    <div style="color: #DC2626; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
-                                        Status : Menunggu Persetujuan PM Head
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-
-                    {{-- Alert 2: Yellow box (Tahap Analisis / Verifikasi Kebutuhan) --}}
-                    <a href="{{ $isPmh ? route('pmh.change-requests', ['status' => 'analisa']) : route('change-requests.index', ['status' => 'analisa']) }}" class="text-decoration-none">
-                        <div class="p-3" style="background: #FDFBF0; border: 1px solid #FEDF89; border-radius: 14px; transition: transform 0.15s ease;"
-                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #D97706; font-size: 1.05rem; flex-shrink: 0;"></i>
-                                <div style="line-height: 1.35;">
-                                    <div class="fw-bold" style="color: #92400E; font-size: 0.82rem;">
-                                        {{ $notifNeedVerifCount ?? 3 }} CR Menunggu Verifikasi Kebutuhan
-                                    </div>
-                                    <div style="color: #B45309; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
-                                        Tahapan : 1. Analisis Kebutuhan
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-
-                    {{-- Alert 3: Blue box (Development & UAT Testing) --}}
-                    <a href="{{ $isPmh ? route('pmh.development') : route('change-requests.index', ['view' => 'development']) }}" class="text-decoration-none">
-                        <div class="p-3" style="background: #F2F7FE; border: 1px solid #BAE6FD; border-radius: 14px; transition: transform 0.15s ease;"
-                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-info-circle-fill mt-1" style="color: #2563EB; font-size: 1.05rem; flex-shrink: 0;"></i>
-                                <div style="line-height: 1.35;">
-                                    <div class="fw-bold" style="color: #1E40AF; font-size: 0.82rem;">
-                                        {{ $notifDevCount ?? 1 }} CR Sedang Dikerjakan & Butuh Tindak Lanjut
-                                    </div>
-                                    <div style="color: #2563EB; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
-                                        Tahapan : 2. Development & Testing
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-            </div>
         </div>
     </div>
 

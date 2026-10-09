@@ -16,9 +16,6 @@ use Illuminate\Support\Facades\Hash;
 
 class PMHeadController extends Controller
 {
-    /**
-     * Dashboard eksekutif supervisi & validasi PM Head
-     */
     public function dashboard(Request $request)
     {
         $roleMetrics = [
@@ -43,9 +40,6 @@ class PMHeadController extends Controller
         ]);
     }
 
-    /**
-     * Helper query builder untuk tabel-tabel PM Head (Semua CR, Butuh Persetujuan, Development, Go Live)
-     */
     private function buildCrQuery(Request $request, ?array $defaultStatuses = null)
     {
         $query = ChangeRequest::with(['client', 'solutionPaper']);
@@ -54,7 +48,6 @@ class PMHeadController extends Controller
             $query->whereIn('status', $defaultStatuses);
         }
 
-        // Segmented Tabs Filter: [Semua CR, CR Aktif, CR Selesai]
         $activeTab = $request->query('tab', 'semua');
         if ($activeTab === 'aktif') {
             $query->whereIn('status', ['awaiting_pmh', 'diajukan', 'dianalisis', 'validated', 'disetujui', 'analisa', 'development', 'dikerjakan', 'sit', 'uat', 'training']);
@@ -62,7 +55,6 @@ class PMHeadController extends Controller
             $query->whereIn('status', ['golive', 'selesai', 'invoicing', 'ditolak', 'revision_needed']);
         }
 
-        // Status dropdown filter
         if ($request->filled('status') && $request->status !== 'all') {
             $statusVal = strtolower($request->status);
             if (in_array($statusVal, ['diajukan', 'awaiting_pm', 'awaiting_pmh', 'persetujuan', 'pending'])) {
@@ -78,7 +70,6 @@ class PMHeadController extends Controller
             }
         }
 
-        // Search filter
         if ($request->filled('search')) {
             $search = $request->search;
             $query->where(function ($q) use ($search) {
@@ -94,9 +85,6 @@ class PMHeadController extends Controller
         return $query;
     }
 
-    /**
-     * Halaman Change Request (Semua CR - Figma PMH)
-     */
     public function semuaCr(Request $request)
     {
         $query = $this->buildCrQuery($request);
@@ -113,9 +101,6 @@ class PMHeadController extends Controller
         ]);
     }
 
-    /**
-     * Halaman Butuh Persetujuan (Figma PMH)
-     */
     public function persetujuan(Request $request)
     {
         $query = $this->buildCrQuery($request, ['awaiting_pmh', 'diajukan', 'dianalisis']);
@@ -132,9 +117,6 @@ class PMHeadController extends Controller
         ]);
     }
 
-    /**
-     * Halaman Development CR (Figma PMH)
-     */
     public function development(Request $request)
     {
         $query = $this->buildCrQuery($request, ['development', 'dikerjakan', 'analisa', 'sit', 'uat', 'training']);
@@ -151,9 +133,6 @@ class PMHeadController extends Controller
         ]);
     }
 
-    /**
-     * Halaman GO LIVE (Figma PMH)
-     */
     public function golive(Request $request)
     {
         $query = $this->buildCrQuery($request, ['golive', 'selesai', 'awaiting_golive_validation']);
@@ -170,12 +149,8 @@ class PMHeadController extends Controller
         ]);
     }
 
-    /**
-     * Halaman OUTSTANDING PAYMENT (Figma PMH)
-     */
     public function outstandingPayment(Request $request)
     {
-        // Query ChangeRequest records that have financial value / billing aspects
         $query = ChangeRequest::with(['client', 'invoices'])->latest();
 
         if ($request->filled('search')) {
@@ -189,7 +164,6 @@ class PMHeadController extends Controller
 
         $allCr = $query->get();
 
-        // Map into payment presentation items
         $payments = [];
         $no = 1;
         $totalNominal = 0;
@@ -203,7 +177,6 @@ class PMHeadController extends Controller
             $nominal = (float)($cr->biaya_pengerjaan ?: ($cr->harga_penawaran ?: 25000000));
             $totalNominal += $nominal;
 
-            // Determine status
             $isPaid = in_array(strtolower($cr->invoicing_status ?? ''), ['paid', 'lunas']) || in_array(strtolower($cr->status), ['selesai']);
             $statusLabel = $isPaid ? 'LUNAS' : 'BELUM BAYAR';
 
@@ -213,12 +186,10 @@ class PMHeadController extends Controller
                 $unpaidCount++;
             }
 
-            // Target dates
             $tglGolive = $cr->actual_completion_date ? $cr->actual_completion_date->format('d M Y') : ($cr->target_selesai ? $cr->target_selesai->format('d M Y') : '15 Jan 2024');
             $targetInvoice = $cr->target_selesai ? $cr->target_selesai->format('d M Y') : '01 Feb 2024';
             $tglInvoice = $cr->created_at ? $cr->created_at->format('d M Y') : '01 Feb 2024';
 
-            // Filter status if requested
             if ($request->filled('status') && $request->status !== 'all') {
                 $statusFilter = strtoupper($request->status);
                 if ($statusFilter === 'LUNAS' && !$isPaid) continue;
@@ -239,7 +210,6 @@ class PMHeadController extends Controller
             ];
         }
 
-        // 4 KPI Metrics calculated dynamically
         $metrics = [
             'total_tagihan' => 'Rp. ' . number_format($totalNominal, 0, ',', '.'),
             'jatuh_tempo_minggu_ini' => $unpaidCount,
@@ -254,9 +224,6 @@ class PMHeadController extends Controller
         ]);
     }
 
-    /**
-     * Export rekap outstanding payment ke CSV / Excel
-     */
     public function exportPayment(Request $request)
     {
         $headers = [
@@ -266,7 +233,7 @@ class PMHeadController extends Controller
 
         $callback = function () {
             $file = fopen('php://output', 'w');
-            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF)); // BOM UTF-8
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
             fputcsv($file, ['No', 'Pemohon', 'Judul CR', 'Kategori', 'Nilai (IDR)', 'Tgl Go-Live', 'Target Invoice', 'Tgl Invoice', 'Status']);
 
             $rows = [
@@ -286,9 +253,6 @@ class PMHeadController extends Controller
         return response()->stream($callback, 200, $headers);
     }
 
-    /**
-     * Lembar Telaah & Detail Change Request untuk PM Head (Figma Image 4)
-     */
     public function review(ChangeRequest $changeRequest)
     {
         $changeRequest->load(['client', 'solutionPaper', 'invoices']);
@@ -298,9 +262,6 @@ class PMHeadController extends Controller
         ]);
     }
 
-    /**
-     * Submit keputusan validasi / review PM Head (Approve atau Reject)
-     */
     public function submitDecision(ValidateDecisionRequest $request, ChangeRequest $changeRequest)
     {
         $user = auth()->user();
@@ -336,14 +297,10 @@ class PMHeadController extends Controller
         return back()->with('error', 'Aksi tidak valid.');
     }
 
-    /**
-     * Halaman Profile Akun & Pengaturan (Figma Profile Image 1 & 3)
-     */
     public function profile(Request $request)
     {
         $user = auth()->user();
 
-        // Sample / dynamic project yang ditangani
         $projects = [
             [
                 'instansi' => 'CV Teknologi Nusantara',
@@ -363,9 +320,6 @@ class PMHeadController extends Controller
         ]);
     }
 
-    /**
-     * Ganti Password dari halaman profil
-     */
     public function updatePassword(Request $request)
     {
         $request->validate([
@@ -390,12 +344,8 @@ class PMHeadController extends Controller
         return back()->with('success', 'Password berhasil diperbarui.');
     }
 
-    /**
-     * Halaman Notifikasi PM Head (Item revisi nomor 8)
-     */
     public function notifications(Request $request)
     {
-        // Fetch active CRs that require PM Head attention or milestone tracking
         $pendingReviews = ChangeRequest::with('client')
             ->whereIn('status', ['awaiting_pmh', 'diajukan', 'analisa', 'dianalisis'])
             ->latest()
@@ -414,7 +364,6 @@ class PMHeadController extends Controller
 
         $notifications = [];
 
-        // 1. Alert for CRs awaiting approval/review
         foreach ($pendingReviews as $cr) {
             $clientName = $cr->client?->company ?? ($cr->klien ?: 'PT Klien');
             $notifications[] = [
@@ -434,7 +383,6 @@ class PMHeadController extends Controller
             ];
         }
 
-        // 2. Alert for Development / Testing stage
         foreach ($inDevList as $cr) {
             $clientName = $cr->client?->company ?? ($cr->klien ?: 'PT Klien');
             $notifications[] = [
@@ -454,7 +402,6 @@ class PMHeadController extends Controller
             ];
         }
 
-        // 3. Info for completed / validated
         foreach ($completedList as $cr) {
             $clientName = $cr->client?->company ?? ($cr->klien ?: 'PT Klien');
             $notifications[] = [
@@ -480,4 +427,3 @@ class PMHeadController extends Controller
         ]);
     }
 }
-

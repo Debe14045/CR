@@ -5,7 +5,6 @@
 @section('content')
 <div class="page-shell pb-5">
 
-    {{-- Page Header --}}
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
         <div>
             <h1 class="fw-bold mb-1" style="color: #0F172A; font-size: 1.85rem; font-weight: 800; letter-spacing: -0.02em;">
@@ -15,7 +14,6 @@
         </div>
     </div>
 
-    {{-- Notification List Card Container --}}
     <div class="card p-4 p-md-5 border-0 shadow-sm" style="border: 1px solid #E2E8F0 !important; border-radius: 20px; background: #FFFFFF;">
 
         <div class="d-flex align-items-center justify-content-between pb-3 mb-4 border-bottom" style="border-color: #F1F5F9 !important;">

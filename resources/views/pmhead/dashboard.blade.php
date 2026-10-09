@@ -5,7 +5,6 @@
 @section('content')
 <div class="page-shell pb-5">
 
-    {{-- Role Header Banner --}}
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3 p-4 rounded-4 shadow-sm"
          style="background: linear-gradient(135deg, #02376A 0%, #0063D7 100%); color: #FFFFFF;">
         <div class="d-flex align-items-center gap-3">
@@ -38,9 +37,7 @@
         </div>
     </div>
 
-    {{-- PMH KPI Metric Cards --}}
     <div class="row g-3 mb-4">
-        {{-- 1. Total CR Masuk --}}
         <div class="col-xl col-md-4 col-6">
             <a href="{{ route('pmh.change-requests') }}" class="text-decoration-none">
                 <div class="p-3 bg-white h-100 rounded-3 shadow-sm border" style="border-color: #E2E8F0 !important;">
@@ -56,7 +53,6 @@
             </a>
         </div>
 
-        {{-- 2. Review Awal --}}
         <div class="col-xl col-md-4 col-6">
             <a href="{{ route('pmh.persetujuan') }}" class="text-decoration-none">
                 <div class="p-3 h-100 rounded-3 shadow-sm border" style="background: #FFF9FA; border-color: #FECDD3 !important;">
@@ -72,7 +68,6 @@
             </a>
         </div>
 
-        {{-- 3. Validasi Go-Live --}}
         <div class="col-xl col-md-4 col-6">
             <a href="{{ route('pmh.golive') }}" class="text-decoration-none">
                 <div class="p-3 h-100 rounded-3 shadow-sm border" style="background: #FFFBEB; border-color: #FDE68A !important;">
@@ -88,7 +83,6 @@
             </a>
         </div>
 
-        {{-- 4. CR Disetujui --}}
         <div class="col-xl col-md-6 col-6">
             <a href="{{ route('pmh.development') }}" class="text-decoration-none">
                 <div class="p-3 bg-white h-100 rounded-3 shadow-sm border" style="border-color: #E2E8F0 !important;">
@@ -104,7 +98,6 @@
             </a>
         </div>
 
-        {{-- 5. CR Ditolak / Revisi --}}
         <div class="col-xl col-md-6 col-12">
             <div class="p-3 bg-white h-100 rounded-3 shadow-sm border" style="border-color: #E2E8F0 !important;">
                 <div class="d-flex justify-content-between align-items-center mb-1">
@@ -119,7 +112,6 @@
         </div>
     </div>
 
-    {{-- Antrean Perlu Keputusan Review Sheet --}}
     <div class="card p-4 border-0 shadow-sm" style="border: 1px solid #E2E8F0 !important; border-radius: 18px; background: #FFFFFF;">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>

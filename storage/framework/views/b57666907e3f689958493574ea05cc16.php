@@ -1,30 +1,30 @@
-@extends('layouts.app')
+<?php $__env->startSection('title', 'Profile • Kelola Akun & Preferensi'); ?>
 
-@section('title', 'Profile • Kelola Akun & Preferensi')
-
-@section('content')
+<?php $__env->startSection('content'); ?>
 <div class="page-shell pb-5">
 
-    {{-- Page Header --}}
+    
     <div class="mb-4">
         <h1 class="fw-bold mb-1" style="color: #0F172A; font-size: 1.75rem; font-weight: 800; letter-spacing: -0.02em;">Profile</h1>
         <p class="text-muted mb-0" style="font-size: 0.88rem; color: #64748B;">Kelola informasi akun dan preferensi Anda.</p>
     </div>
 
-    {{-- User Header Banner --}}
+    
     <div class="mb-4">
         <h3 class="fw-bold mb-2" style="color: #0F172A; font-size: 1.35rem;">
-            {{ auth()->user()->name ?? 'Maya Sari' }}
+            <?php echo e(auth()->user()->name ?? 'Maya Sari'); ?>
+
         </h3>
         <div>
             <span class="badge px-3 py-2 text-white fw-semibold" style="background: #134B8A; border-radius: 999px; font-size: 0.82rem; letter-spacing: 0.01em;">
-                {{ auth()->user()->isPmh() ? 'Project Manager Head' : (auth()->user()->isPm() ? 'Project Manager' : (auth()->user()->isClient() ? 'Client' : ucfirst(auth()->user()->role))) }}
+                <?php echo e(auth()->user()->isPmh() ? 'Project Manager Head' : (auth()->user()->isPm() ? 'Project Manager' : (auth()->user()->isClient() ? 'Client' : ucfirst(auth()->user()->role)))); ?>
+
             </span>
         </div>
     </div>
 
     <div class="row g-4 mb-4">
-        {{-- Card Kiri: INFORMASI AKUN --}}
+        
         <div class="col-lg-6 col-12">
             <div class="card p-4 h-100 shadow-sm border-0" style="border: none !important; border-radius: 16px; background: #F8FAFC;">
                 <div class="mb-3">
@@ -37,21 +37,24 @@
                     <div>
                         <label class="text-muted small mb-1" style="font-size: 0.76rem;">Nama lengkap</label>
                         <div class="fw-bold text-dark" style="font-size: 0.95rem;">
-                            {{ auth()->user()->name ?? 'Maya Sari' }}
+                            <?php echo e(auth()->user()->name ?? 'Maya Sari'); ?>
+
                         </div>
                     </div>
 
                     <div>
                         <label class="text-muted small mb-1" style="font-size: 0.76rem;">Role</label>
                         <div class="text-muted" style="font-size: 0.9rem;">
-                            {{ auth()->user()->isPmh() ? 'Project Manager Head (disabled)' : (ucfirst(auth()->user()->role) . ' (disabled)') }}
+                            <?php echo e(auth()->user()->isPmh() ? 'Project Manager Head (disabled)' : (ucfirst(auth()->user()->role) . ' (disabled)')); ?>
+
                         </div>
                     </div>
 
                     <div>
                         <label class="text-muted small mb-1" style="font-size: 0.76rem;">Email</label>
                         <div class="fw-semibold text-dark" style="font-size: 0.9rem;">
-                            {{ auth()->user()->email ?? 'maya.sari@itpi.co.id' }}
+                            <?php echo e(auth()->user()->email ?? 'maya.sari@itpi.co.id'); ?>
+
                         </div>
                     </div>
 
@@ -65,7 +68,7 @@
             </div>
         </div>
 
-        {{-- Card Kanan: GANTI PASSWORD --}}
+        
         <div class="col-lg-6 col-12">
             <div class="card p-4 h-100 shadow-sm border-0" style="border: none !important; border-radius: 16px; background: #F8FAFC;">
                 <div class="mb-3">
@@ -74,22 +77,50 @@
                     </span>
                 </div>
 
-                <form method="POST" action="{{ route('profile.password') }}">
-                    @csrf
+                <form method="POST" action="<?php echo e(route('profile.password')); ?>">
+                    <?php echo csrf_field(); ?>
                     <div class="mb-3">
-                        <input type="password" name="old_password" class="form-control bg-white @error('old_password') is-invalid @enderror"
+                        <input type="password" name="old_password" class="form-control bg-white <?php $__errorArgs = ['old_password'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
                                placeholder="Password lama" required style="border-radius: 8px; border: 1px solid #CBD5E1; padding: 0.65rem 1rem; font-size: 0.88rem;">
-                        @error('old_password')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                        <?php $__errorArgs = ['old_password'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="invalid-feedback"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     </div>
 
                     <div class="mb-3">
-                        <input type="password" name="new_password" class="form-control bg-white @error('new_password') is-invalid @enderror"
+                        <input type="password" name="new_password" class="form-control bg-white <?php $__errorArgs = ['new_password'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?> is-invalid <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>"
                                placeholder="Password baru" required style="border-radius: 8px; border: 1px solid #CBD5E1; padding: 0.65rem 1rem; font-size: 0.88rem;">
-                        @error('new_password')
-                            <div class="invalid-feedback">{{ $message }}</div>
-                        @enderror
+                        <?php $__errorArgs = ['new_password'];
+$__bag = $errors->getBag($__errorArgs[1] ?? 'default');
+if ($__bag->has($__errorArgs[0])) :
+if (isset($message)) { $__messageOriginal = $message; }
+$message = $__bag->first($__errorArgs[0]); ?>
+                            <div class="invalid-feedback"><?php echo e($message); ?></div>
+                        <?php unset($message);
+if (isset($__messageOriginal)) { $message = $__messageOriginal; }
+endif;
+unset($__errorArgs, $__bag); ?>
                     </div>
 
                     <div>
@@ -103,7 +134,7 @@
         </div>
     </div>
 
-    {{-- Card: PREFERENSI --}}
+    
     <div class="card p-4 shadow-sm border-0 mb-4" style="border: none !important; border-radius: 16px; background: #F8FAFC;">
         <div class="mb-3">
             <span class="fw-bold text-uppercase" style="font-size: 0.78rem; letter-spacing: 0.05em; color: #0284C7;">
@@ -129,7 +160,7 @@
         </div>
     </div>
 
-    {{-- Card: PROJECT YANG DITANGANI --}}
+    
     <div class="card p-4 shadow-sm border-0" style="border: none !important; border-radius: 16px; background: #F8FAFC;">
         <div class="mb-3">
             <span class="fw-bold text-uppercase" style="font-size: 0.78rem; letter-spacing: 0.05em; color: #0284C7;">
@@ -139,21 +170,23 @@
         </div>
 
         <div class="d-flex flex-column gap-3">
-            @foreach ($projects as $p)
+            <?php $__currentLoopData = $projects; $__env->addLoop($__currentLoopData); foreach($__currentLoopData as $p): $__env->incrementLoopIndices(); $loop = $__env->getLastLoop(); ?>
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 py-2">
                     <div style="min-width: 200px;">
-                        <span class="fw-bold text-dark" style="font-size: 0.88rem;">{{ $p['instansi'] }}</span>
+                        <span class="fw-bold text-dark" style="font-size: 0.88rem;"><?php echo e($p['instansi']); ?></span>
                     </div>
                     <div style="flex: 1; min-width: 220px;" class="text-center text-sm-start">
-                        <span class="text-muted small" style="font-size: 0.84rem;">{{ $p['judul'] }}</span>
+                        <span class="text-muted small" style="font-size: 0.84rem;"><?php echo e($p['judul']); ?></span>
                     </div>
                     <div class="text-end" style="min-width: 100px;">
-                        <span class="fw-semibold text-dark small" style="font-size: 0.84rem;">{{ $p['role_text'] }}</span>
+                        <span class="fw-semibold text-dark small" style="font-size: 0.84rem;"><?php echo e($p['role_text']); ?></span>
                     </div>
                 </div>
-            @endforeach
+            <?php endforeach; $__env->popLoop(); $loop = $__env->getLastLoop(); ?>
         </div>
     </div>
 
 </div>
-@endsection
+<?php $__env->stopSection(); ?>
+
+<?php echo $__env->make('layouts.app', array_diff_key(get_defined_vars(), ['__data' => 1, '__path' => 1]))->render(); ?><?php /**PATH C:\Magang_ITPI\CR\resources\views/profile/index.blade.php ENDPATH**/ ?>
