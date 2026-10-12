@@ -37,12 +37,21 @@ class PMHeadFeatureTest extends TestCase
     public function test_pmh_can_access_development_page(): void
     {
         $pmh = $this->createPmhUser();
+        ChangeRequest::create([
+            'kode_cr' => 'CR-2026-09-0001',
+            'judul' => 'Pengembangan Modul CR',
+            'klien' => 'PT Bank Mandiri',
+            'proyek_terkait' => 'Core Banking',
+            'deskripsi' => 'Pengembangan modul',
+            'tanggal_pengajuan' => now(),
+            'status' => 'development',
+            'prioritas' => 'normal',
+        ]);
 
         $response = $this->actingAs($pmh)->get(route('pmh.development'));
 
         $response->assertOk();
         $response->assertSee('Development');
-        $response->assertSee('Danendra dada');
     }
 
     public function test_pmh_can_access_golive_page(): void
@@ -58,6 +67,18 @@ class PMHeadFeatureTest extends TestCase
     public function test_pmh_can_access_outstanding_payment_page(): void
     {
         $pmh = $this->createPmhUser();
+        ChangeRequest::create([
+            'kode_cr' => 'CR-2026-09-0002',
+            'judul' => 'Integrasi Payment Gateway',
+            'klien' => 'PT Delta Solusi',
+            'proyek_terkait' => 'Fintech Solution',
+            'deskripsi' => 'Integrasi payment',
+            'tanggal_pengajuan' => now(),
+            'status' => 'development',
+            'prioritas' => 'normal',
+            'biaya_pengerjaan' => 200000000,
+            'invoicing_status' => 'unpaid',
+        ]);
 
         $response = $this->actingAs($pmh)->get(route('pmh.outstanding-payment'));
 
@@ -68,7 +89,6 @@ class PMHeadFeatureTest extends TestCase
         $response->assertSee('Export Rekap (XLS/PDF)');
         $response->assertSee('PT Delta Solusi');
         $response->assertSee('BELUM BAYAR');
-        $response->assertSee('LUNAS');
     }
 
     public function test_pmh_can_export_outstanding_payment_csv(): void

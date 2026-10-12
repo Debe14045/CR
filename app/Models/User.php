@@ -63,6 +63,7 @@ class User extends Authenticatable
             self::ROLE_CLIENT => 'Client',
             self::ROLE_PM => 'Project Manager (PM)',
             self::ROLE_PMH => 'PM Head (PMH)',
+            self::ROLE_PRESALES => 'Presales (Marketing & Estimasi)',
             self::ROLE_FINANCE => 'Marketing / Keuangan (Finance)',
             self::ROLE_ADMIN => 'Administrator',
         ];
@@ -92,6 +93,11 @@ class User extends Authenticatable
     public function isPmh(): bool
     {
         return $this->role === self::ROLE_PMH;
+    }
+
+    public function isPresales(): bool
+    {
+        return $this->role === self::ROLE_PRESALES;
     }
 
     public function isFinance(): bool

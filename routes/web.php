@@ -41,7 +41,15 @@ Route::middleware('guest')->group(function () {
 
 Route::middleware('auth')->group(function () {
     Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
-    Route::get('/dashboard', fn () => redirect()->route('change-requests.index'));
+    Route::get('/dashboard', function () {
+        if (auth()->user()?->isPresales()) {
+            return redirect()->route('presales.dashboard');
+        }
+        if (auth()->user()?->isPmh()) {
+            return redirect()->route('pmh.change-requests');
+        }
+        return redirect()->route('change-requests.index');
+    });
 
     // Master Data for Admin (Client, Pegawai, Status)
     Route::middleware('role:admin')->prefix('master')->name('master.')->group(function () {
@@ -121,5 +129,16 @@ Route::middleware('auth')->group(function () {
         Route::get('/review/{changeRequest}', [\App\Http\Controllers\PMHead\PMHeadController::class, 'review'])->name('review');
         Route::post('/review/{changeRequest}/decision', [\App\Http\Controllers\PMHead\PMHeadController::class, 'submitDecision'])->name('decision');
         Route::get('/notifikasi', [\App\Http\Controllers\PMHead\PMHeadController::class, 'notifications'])->name('notifications');
+    });
+
+    // Modul Presales (Sesuai Desain Figma / Permintaan User)
+    Route::middleware('role:presales,admin')->prefix('presales')->name('presales.')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\Presales\PresalesController::class, 'dashboard'])->name('dashboard');
+        Route::get('/change-requests', [\App\Http\Controllers\Presales\PresalesController::class, 'semuaCr'])->name('change-requests');
+        Route::get('/persetujuan', [\App\Http\Controllers\Presales\PresalesController::class, 'persetujuan'])->name('persetujuan');
+        Route::get('/development', [\App\Http\Controllers\Presales\PresalesController::class, 'development'])->name('development');
+        Route::get('/golive', [\App\Http\Controllers\Presales\PresalesController::class, 'golive'])->name('golive');
+        Route::get('/notifikasi', [\App\Http\Controllers\Presales\PresalesController::class, 'notifications'])->name('notifications');
+        Route::get('/review/{changeRequest}', [\App\Http\Controllers\Presales\PresalesController::class, 'review'])->name('review');
     });
 });
