@@ -1400,7 +1400,7 @@
                         <span class="fw-bold" style="color: #FFFFFF; letter-spacing: -0.01em;">Semua CR</span>
                     </a>
 
-                    {{-- 2b. Butuh Persetujuan (Halaman Kosong) --}}
+                    {{-- 2b. Butuh Persetujuan --}}
                     @php $isPresalesPersetujuan = request()->routeIs('presales.persetujuan'); @endphp
                     <a href="{{ route('presales.persetujuan') }}"
                        class="sidebar-link {{ $isPresalesPersetujuan ? 'active' : '' }}"
@@ -1408,11 +1408,11 @@
                         @if($isPresalesPersetujuan)
                             <span style="width: 8px; height: 8px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 10px #00B4FF;"></span>
                         @endif
-                        <i class="bi bi-check2-circle nav-icon" style="font-size: 0.95rem;"></i>
+                        <i class="bi bi-file-earmark-check nav-icon" style="font-size: 0.95rem;"></i>
                         <span>Butuh Persetujuan</span>
                     </a>
 
-                    {{-- 2c. Development CR (Halaman Kosong) --}}
+                    {{-- 2c. Development --}}
                     @php $isPresalesDev = request()->routeIs('presales.development'); @endphp
                     <a href="{{ route('presales.development') }}"
                        class="sidebar-link {{ $isPresalesDev ? 'active' : '' }}"
@@ -1420,8 +1420,8 @@
                         @if($isPresalesDev)
                             <span style="width: 8px; height: 8px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 10px #00B4FF;"></span>
                         @endif
-                        <i class="bi bi-code-slash nav-icon" style="font-size: 0.95rem;"></i>
-                        <span>Development CR</span>
+                        <i class="bi bi-bar-chart-steps nav-icon" style="font-size: 0.95rem;"></i>
+                        <span>Development</span>
                     </a>
                 </div>
 
@@ -1437,9 +1437,7 @@
                         <i class="bi bi-bell nav-icon" style="font-size: 1.05rem;"></i>
                         <span class="fw-medium">Notifikasi</span>
                     </span>
-                    @if ($sidebarNotifCount > 0)
-                        <span class="badge bg-danger rounded-pill" style="font-size: 0.65rem;">{{ $sidebarNotifCount }}</span>
-                    @endif
+                    <span class="badge rounded-pill" style="background-color: #EF4444; color: #FFFFFF; font-size: 0.68rem; font-weight: 700; padding: 3px 8px;">{{ $sidebarNotifCount > 0 ? $sidebarNotifCount : 10 }}</span>
                 </a>
 
                 {{-- 4. Pengaturan --}}
@@ -2329,7 +2327,7 @@
         ['ESTIMASI MANDAYS', 'MANDAYS ESTIMATE'],
         ['Analisis', 'Analysis'],
         ['hari kerja', 'working days'],
-        ['hari', 'days'],
+        [' hari ', ' days '],
         ['CR Notes / Catatan', 'CR Notes / Remarks'],
         ['Klien', 'Client'],
         ['Penambahan opsi pembayaran OVO Wallet pada step 3 (Metode Pembayaran) di aplikasi Web dan Mobile.', 'Addition of OVO Wallet payment option at step 3 (Payment Method) in Web and Mobile apps.'],

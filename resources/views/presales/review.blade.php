@@ -148,42 +148,77 @@
         flex: 1; display: flex; align-items: center; justify-content: center;
         padding: 0.75rem 1rem; font-size: 0.9rem; font-weight: 700;
         text-decoration: none; text-align: center; transition: all 0.15s ease;
-        position: relative; cursor: pointer; border: none; background: transparent; color: #1E3A8A;
+        position: relative; cursor: pointer; border: none; background: transparent; color: #0B6EBD;
     }
-    .pm-filter-tab.active { background: #0B6EBD !important; color: #FFFFFF !important; box-shadow: none !important; }
+    .pm-filter-tab.active { background: #0072D2 !important; color: #FFFFFF !important; box-shadow: none !important; }
     .pm-filter-tab:not(.active):hover { background: rgba(11,110,189,0.08) !important; }
     .pm-filter-divider { width: 1px; background: #CBDCEE; flex-shrink: 0; }
-    .quot-input {
-        background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px;
-        padding: 0.5rem 0.8rem; font-size: 0.84rem; color: #0F172A; width: 100%;
+    
+    /* Quotation Components Styling */
+    .section-num-badge {
+        width: 18px; height: 18px; border-radius: 4px;
+        background: #0084FF; color: #FFFFFF;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.7rem; font-weight: 800; flex-shrink: 0;
     }
-    .quot-label { font-size: 0.7rem; font-weight: 700; color: #64748B; text-transform: uppercase; letter-spacing: 0.04em; margin-bottom: 0.3rem; display: block; }
-    .top-table th { background: #F8FAFC; font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.05em; color: #64748B; padding: 0.7rem 0.9rem; border-bottom: 1px solid #E2E8F0; }
-    .top-table td { padding: 0.8rem 0.9rem; font-size: 0.83rem; border-bottom: 1px solid #F1F5F9; vertical-align: middle; }
+    .section-title-label {
+        font-size: 0.76rem; letter-spacing: 0.05em; color: #334155; font-weight: 800; text-transform: uppercase;
+    }
+    .field-label-sm {
+        font-size: 0.75rem; font-weight: 600; color: #334155; margin-bottom: 0.35rem; display: block;
+    }
+    .form-control-disabled-gray {
+        background-color: #CBD5E1 !important; border: 1.5px solid #CBD5E1 !important;
+        border-radius: 8px !important; font-size: 0.85rem !important; color: #1E293B !important;
+        font-weight: 600 !important; height: 42px !important;
+    }
+    .form-control-white {
+        background-color: #FFFFFF !important; border: 1.5px solid #CBD5E1 !important;
+        border-radius: 8px !important; font-size: 0.85rem !important; color: #1E293B !important;
+        height: 42px !important;
+    }
+    .form-select-custom {
+        border: 1.5px solid #CBD5E1 !important; border-radius: 8px !important;
+        font-size: 0.85rem !important; color: #1E293B !important; height: 42px !important;
+    }
+    .termin-table th {
+        background: #F8FAFC !important; font-size: 0.72rem !important; text-transform: uppercase !important;
+        letter-spacing: 0.04em !important; color: #64748B !important; padding: 0.85rem 1rem !important;
+        border-bottom: 1.5px solid #E2E8F0 !important; vertical-align: middle;
+    }
+    .termin-table td {
+        padding: 1rem !important; font-size: 0.84rem !important;
+        border-bottom: 1px solid #F1F5F9 !important; vertical-align: middle; background: #FFFFFF;
+    }
+    .termin-no-badge {
+        width: 28px; height: 28px; border-radius: 50%; border: 1px solid #CBD5E1;
+        display: inline-flex; align-items: center; justify-content: center;
+        font-size: 0.8rem; font-weight: 600; color: #64748B; background: #FFFFFF;
+    }
 </style>
 
 <div class="page-shell pb-5">
 
     <div class="mb-3">
-        <h1 class="fw-bold mb-1" style="color: #000000; font-size: 2rem; font-weight: 800; letter-spacing: -0.025em; line-height: 1.2;">
-            Detail Change Request
+        <h1 class="fw-bold mb-1" id="pageHeaderTitle" style="color: #0F172A; font-size: 2rem; font-weight: 800; letter-spacing: -0.02em; line-height: 1.2;">
+            Quotation
         </h1>
         <p class="text-muted mb-0" style="font-size: 0.86rem; color: #64748B;">Melihat Data Lengkap CR</p>
     </div>
 
-    <div style="height: 3px; background: #E0F2FE; border-radius: 999px; margin-bottom: 1.5rem;"></div>
-
     <div class="pm-filter-container" role="tablist" aria-label="Tab Detail CR">
-        <button type="button" class="pm-filter-tab active" id="tabBtnDetail" onclick="switchCrTab('detail')" role="tab" aria-selected="true" style="border-top-left-radius: 11px; border-bottom-left-radius: 11px;">
-            Detail Change Request
+        <button type="button" class="pm-filter-tab" id="tabBtnDetail" onclick="switchCrTab('detail')" role="tab" aria-selected="false" style="border-top-left-radius: 11px; border-bottom-left-radius: 11px;">
+            <span>Detail Change Request</span>
+            <i class="bi bi-check2 ms-1" style="font-size: 1.15rem; color: #0072D2; font-weight: bold;"></i>
         </button>
         <div class="pm-filter-divider" id="divDetailQuot"></div>
-        <button type="button" class="pm-filter-tab" id="tabBtnQuotation" onclick="switchCrTab('quotation')" role="tab" aria-selected="false">
-            Quotation <span style="width:6px;height:6px;border-radius:50%;background:#EF4444;display:inline-block;margin-left:4px;"></span>
+        <button type="button" class="pm-filter-tab active" id="tabBtnQuotation" onclick="switchCrTab('quotation')" role="tab" aria-selected="true">
+            <span>Quotation</span>
+            <span style="color: #EF4444; font-weight: 800; margin-left: 2px;">*</span>
         </button>
         <div class="pm-filter-divider" id="divQuotPay"></div>
         <button type="button" class="pm-filter-tab" id="tabBtnPayment" onclick="switchCrTab('payment')" role="tab" aria-selected="false" style="border-top-right-radius: 11px; border-bottom-right-radius: 11px;">
-            Detail Pembayaran &amp; QR
+            <span>Data Pembayaran &amp; GR</span>
         </button>
     </div>
 
@@ -496,242 +531,334 @@
 
     </div>
 
-    {{-- ============ TAB: QUOTATION ============ --}}
-    <div id="tabContentQuotation" class="cr-detail-container p-4 p-md-5 mb-4" style="display: none;">
+    {{-- ========================================================= --}}
+    {{-- ============ TAB 2: QUOTATION (DESAIN FIGMA) ============ --}}
+    {{-- ========================================================= --}}
+    <div id="tabContentQuotation" class="cr-detail-container p-4 p-md-5 mb-4">
 
+        {{-- Card Top Row: Header Badge & Quotation Dropdown --}}
         <div class="d-flex align-items-center justify-content-between gap-3 mb-4 flex-wrap">
             <div class="d-flex align-items-center gap-3">
-                <div class="d-flex align-items-center justify-content-center text-white fw-bold shadow-sm" style="width: 44px; height: 44px; background: #007DFF; font-size: 1.35rem; border-radius: 12px; flex-shrink: 0;">
-                    {{ $firstChar }}
+                <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
+                     style="width: 42px; height: 42px; background: #0084FF; font-size: 1.35rem; flex-shrink: 0;">
+                    I
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
-                    <h3 class="fw-bold mb-0" style="color: #0F172A; font-size: 1.25rem; font-weight: 800;">{{ $crTitle }}</h3>
-                    <span class="badge px-3 py-1 fw-bold text-white" style="background: #00A3FF; border-radius: 999px; font-size: 0.72rem;">{{ ucfirst(str_replace('_', ' ', $changeRequest->status ?: '-')) }}</span>
+                    <h3 class="fw-bold mb-0" style="color: #0F172A; font-size: 1.35rem; font-weight: 800;">
+                        Integrasi API Pembayaran OVO
+                    </h3>
+                    <span class="badge px-3 py-1.5 fw-bold text-white d-inline-flex align-items-center gap-1.5"
+                          style="background: #00A3FF; border-radius: 999px; font-size: 0.72rem; letter-spacing: 0.02em;">
+                        <span style="width: 5px; height: 5px; border-radius: 50%; background: #FFFFFF;"></span>
+                        Analisa
+                    </span>
                 </div>
             </div>
-            <div class="d-flex align-items-center gap-2">
-                <span class="text-muted small" style="font-size: 0.78rem;">Quotation</span>
-                <span class="badge px-3 py-2" style="background: #F1F5F9; border: 1px solid #E2E8F0; color: #334155; border-radius: 8px; font-size: 0.78rem; font-weight: 700;">Overall</span>
+            <div>
+                <label class="form-label small fw-semibold text-secondary mb-1 d-block text-md-end" style="font-size: 0.76rem;">
+                    Quotation<span class="text-danger">*</span>
+                </label>
+                <select class="form-select form-select-sm" style="min-width: 170px; border-radius: 8px; border: 1.5px solid #CBD5E1; font-size: 0.84rem; font-weight: 600; color: #334155; padding: 0.45rem 0.8rem; background-color: #FFFFFF;">
+                    <option value="overall" selected>Overall</option>
+                    <option value="tahap1">Tahap 1</option>
+                    <option value="tahap2">Tahap 2</option>
+                </select>
             </div>
         </div>
 
-        <div class="cr-subcard p-4 mb-4">
-            <div class="fw-bold mb-3 text-uppercase" style="font-size: 0.76rem; letter-spacing: 0.05em; color: #64748B;">INFORMASI QUOTATION</div>
+        {{-- 1. INFORMASI QUOTATION --}}
+        <div class="mb-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="section-num-badge">1</span>
+                <span class="section-title-label">INFORMASI QUOTATION</span>
+            </div>
             <div class="row g-3">
                 <div class="col-md-4 col-12">
-                    <label class="quot-label">Nomor Quotation <span class="text-danger">*</span></label>
-                    <input class="quot-input" value="{{ $nomorQuotation }}" readonly>
+                    <label class="field-label-sm">Nomor Quotation</label>
+                    <div class="position-relative">
+                        <input type="text" class="form-control form-control-disabled-gray" value="QT-2024-112" readonly style="padding-right: 2.3rem;">
+                        <i class="bi bi-lock-fill position-absolute" style="right: 12px; top: 50%; transform: translateY(-50%); color: #64748B; font-size: 0.95rem;"></i>
+                    </div>
                 </div>
                 <div class="col-md-4 col-12">
-                    <label class="quot-label">Tanggal Dibuat <span class="text-danger">*</span></label>
-                    <input class="quot-input" value="{{ $tglDibuat }}" readonly>
+                    <label class="field-label-sm">Tanggal Dibuat</label>
+                    <div class="position-relative">
+                        <input type="text" class="form-control form-control-white" value="20 Ags 2026" style="padding-right: 2.3rem;">
+                        <i class="bi bi-calendar3 position-absolute" style="right: 12px; top: 50%; transform: translateY(-50%); color: #64748B; font-size: 0.95rem;"></i>
+                    </div>
                 </div>
                 <div class="col-md-4 col-12">
-                    <label class="quot-label">Berlaku Sampai <span class="text-danger">*</span></label>
-                    <input class="quot-input" value="{{ $berlakuSampai }}" readonly>
+                    <label class="field-label-sm">Berlaku Sampai</label>
+                    <div class="position-relative">
+                        <input type="text" class="form-control form-control-white" value="20 Sep 2026" style="padding-right: 2.3rem;">
+                        <i class="bi bi-calendar3 position-absolute" style="right: 12px; top: 50%; transform: translateY(-50%); color: #64748B; font-size: 0.95rem;"></i>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="cr-subcard p-4 mb-4">
-            <div class="fw-bold mb-3 text-uppercase" style="font-size: 0.76rem; letter-spacing: 0.05em; color: #64748B;">INFORMASI PENAWARAN QUOTATION</div>
+        {{-- 2. INFORMASI PENGIRIMAN QUOTATION --}}
+        <div class="mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="section-num-badge">2</span>
+                    <span class="section-title-label">INFORMASI PENGIRIMAN QUOTATION</span>
+                </div>
+                <span class="text-muted small fw-semibold" style="font-size: 0.74rem; letter-spacing: 0.05em;">D2CECE</span>
+            </div>
+            <div class="row g-3 mb-3">
+                <div class="col-md-6 col-12">
+                    <label class="field-label-sm">Nama Perusahaan<span class="text-danger">*</span></label>
+                    <select class="form-select form-select-custom" style="background-color: #CBD5E1; font-weight: 600;">
+                        <option selected>PT Maju Bersama</option>
+                        <option>PT Teknologi Nusantara</option>
+                        <option>PT Delta Solusi</option>
+                        <option>PT Global Inovasi</option>
+                    </select>
+                </div>
+                <div class="col-md-6 col-12">
+                    <label class="field-label-sm">Nama PIC<span class="text-danger">*</span></label>
+                    <select class="form-select form-select-custom" style="background-color: #FFFFFF;">
+                        <option selected>Totok Antok</option>
+                        <option>Andik Virmansyah</option>
+                        <option>Rizky Pratama</option>
+                        <option>Budi Santoso</option>
+                    </select>
+                </div>
+            </div>
             <div class="row g-3">
-                <div class="col-md-4 col-12">
-                    <label class="quot-label">Nama Penawaran <span class="text-danger">*</span></label>
-                    <input class="quot-input" value="{{ $companyName }}" readonly>
-                </div>
-                <div class="col-md-4 col-12">
-                    <label class="quot-label">Kode CR</label>
-                    <input class="quot-input" value="{{ $crCode }}" readonly>
-                </div>
-                <div class="col-md-4 col-12">
-                    <label class="quot-label">Nama PIC <span class="text-danger">*</span></label>
-                    <input class="quot-input" value="{{ $picName }}" readonly>
+                <div class="col-md-6 col-12">
+                    <label class="field-label-sm">Metode Pengiriman<span class="text-danger">*</span></label>
+                    <select class="form-select form-select-custom" style="background-color: #FFFFFF;">
+                        <option selected>Email</option>
+                        <option>WhatsApp Business</option>
+                        <option>Client Portal</option>
+                        <option>Kurir / Hardcopy</option>
+                    </select>
                 </div>
                 <div class="col-md-6 col-12">
-                    <label class="quot-label">Email <span class="text-danger">*</span></label>
-                    <input class="quot-input" value="{{ $clientEmail }}" readonly>
-                </div>
-                <div class="col-md-6 col-12">
-                    <label class="quot-label">Alamat / Proyek Terkait</label>
-                    <input class="quot-input" value="{{ $projectName }}{{ $changeRequest->client?->address ? ' — ' . $changeRequest->client->address : '' }}" readonly>
+                    <label class="field-label-sm">Alamat Email Tujuan</label>
+                    <input type="email" class="form-control form-control-white" value="totokantok@gmail.com">
                 </div>
             </div>
         </div>
 
-        <div class="cr-subcard p-4 mb-4">
-            <div class="fw-bold mb-3 text-uppercase" style="font-size: 0.76rem; letter-spacing: 0.05em; color: #64748B;">PEKERJAAN (RINCIAN MAN-DAYS &amp; TARIF)</div>
-            <div class="table-responsive">
-                <table class="table top-table mb-0">
-                    <thead>
-                        <tr>
-                            <th style="min-width: 160px;">Pekerjaan</th>
-                            <th class="text-center" style="min-width: 110px;">Estimasi (md)</th>
-                            <th class="text-end" style="min-width: 150px;">Tarif / md</th>
-                            <th class="text-end" style="min-width: 160px;">Subtotal</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        <tr>
-                            <td>Analisis</td>
-                            <td class="text-center fw-bold">{{ rtrim(rtrim(number_format($mandaysAnalisis, 2, ',', '.'), '0'), ',') }}</td>
-                            <td class="text-end">{{ $fmtIdr($ratePerMandays) }}</td>
-                            <td class="text-end fw-bold">{{ $fmtIdr($subAnalisis) }}</td>
-                        </tr>
-                        <tr>
-                            <td>Development</td>
-                            <td class="text-center fw-bold">{{ rtrim(rtrim(number_format($mandaysDev, 2, ',', '.'), '0'), ',') }}</td>
-                            <td class="text-end">{{ $fmtIdr($ratePerMandays) }}</td>
-                            <td class="text-end fw-bold">{{ $fmtIdr($subDev) }}</td>
-                        </tr>
-                        <tr>
-                            <td>Testing</td>
-                            <td class="text-center fw-bold">{{ rtrim(rtrim(number_format($mandaysTest, 2, ',', '.'), '0'), ',') }}</td>
-                            <td class="text-end">{{ $fmtIdr($ratePerMandays) }}</td>
-                            <td class="text-end fw-bold">{{ $fmtIdr($subTest) }}</td>
-                        </tr>
-                        <tr style="background: #F8FAFC;">
-                            <td class="fw-bold">Total Mandays</td>
-                            <td class="text-center fw-bold">{{ rtrim(rtrim(number_format($totalMandays, 2, ',', '.'), '0'), ',') }} hari kerja</td>
-                            <td></td>
-                            <td class="text-end fw-bold" style="color: #0063D7;">{{ $fmtIdr($estimasiNilai) }}</td>
-                        </tr>
-                    </tbody>
-                </table>
+        {{-- 3. MANDAYS --}}
+        <div class="mb-4">
+            <div class="d-flex align-items-center gap-2 mb-3">
+                <span class="section-num-badge">3</span>
+                <span class="section-title-label">MANDAYS</span>
             </div>
-            @if($totalMandays == 0)
-                <div class="text-muted small mt-2" style="font-size: 0.78rem;">Estimasi man-days belum diinput. Nilai dihitung otomatis setelah PM mengisi man-days.</div>
-            @endif
+            <div class="row g-3">
+                <div class="col-md-3 col-6">
+                    <label class="field-label-sm">Analisis (hari)<span class="text-danger">*</span></label>
+                    <input type="number" id="inputMdAnalisis" class="form-control form-control-disabled-gray" value="0" oninput="recalcMandays()">
+                </div>
+                <div class="col-md-3 col-6">
+                    <label class="field-label-sm">Development (hari)<span class="text-danger">*</span></label>
+                    <input type="number" id="inputMdDev" class="form-control form-control-disabled-gray" value="0" oninput="recalcMandays()">
+                </div>
+                <div class="col-md-3 col-6">
+                    <label class="field-label-sm">Testing (hari)<span class="text-danger">*</span></label>
+                    <input type="number" id="inputMdTest" class="form-control form-control-disabled-gray" value="0" oninput="recalcMandays()">
+                </div>
+                <div class="col-md-3 col-6">
+                    <label class="field-label-sm">Total Mandays</label>
+                    <input type="number" id="inputMdTotal" class="form-control form-control-disabled-gray fw-bold" value="10" readonly>
+                </div>
+            </div>
         </div>
 
-        <div class="cr-subcard p-4 mb-4">
-            <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                <div class="fw-bold text-uppercase" style="font-size: 0.76rem; letter-spacing: 0.05em; color: #64748B;">TERMS OF PAYMENT (TERMIN PEMBAYARAN)</div>
-                <button type="button" class="btn btn-sm fw-bold" style="background: #10B981; color: #fff; border-radius: 8px; font-size: 0.76rem;" onclick="switchCrTab('payment')">
-                    <i class="bi bi-plus-lg me-1"></i> Kelola Termin
+        {{-- 4. TERMIN OF PAYMENT (SKEMA TAHAPAN PEMBAYARAN) --}}
+        <div class="mb-4">
+            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="section-num-badge">4</span>
+                    <span class="section-title-label">TERMIN OF PAYMENT (SKEMA TAHAPAN PEMBAYARAN)</span>
+                </div>
+                <button type="button" class="btn text-white fw-bold d-inline-flex align-items-center gap-1.5 px-3 py-1.5"
+                        style="background: #22C55E; border-radius: 8px; font-size: 0.78rem; border: none; box-shadow: 0 2px 6px rgba(34,197,94,0.25);"
+                        onclick="openAddTerminModal()">
+                    <i class="bi bi-plus-lg"></i> Tambah Termin
                 </button>
             </div>
-            <div class="table-responsive">
-                <table class="table top-table mb-0">
+
+            <div class="table-responsive" style="border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; background: #FFFFFF;">
+                <table class="table mb-0 align-middle termin-table">
                     <thead>
                         <tr>
-                            <th style="width: 50px;" class="text-center">NO</th>
-                            <th style="min-width: 170px;">Terms of Payment</th>
-                            <th style="min-width: 240px;">Keterangan / Activities Deliverables</th>
-                            <th class="text-end" style="min-width: 150px;">Nominal (IDR)</th>
-                            <th class="text-center" style="width: 110px;">Aksi</th>
+                            <th class="text-center" style="width: 60px;">NO</th>
+                            <th style="min-width: 200px;">TERMIN OF PAYMENT</th>
+                            <th style="min-width: 380px;">KETERANGAN / MILESTONE DELIVERABLE</th>
+                            <th class="text-end" style="min-width: 150px;">NOMINAL (IDR)</th>
+                            <th class="text-center" style="width: 150px;">AKSI</th>
                         </tr>
                     </thead>
-                    <tbody>
-                        @forelse($invoices as $idx => $inv)
-                            <tr>
-                                <td class="text-center">{{ $idx + 1 }}</td>
-                                <td class="fw-bold">{{ $inv->term_name ?: ($inv->invoice_number ?: 'Termin ' . ($idx + 1)) }}</td>
-                                <td class="text-muted">{{ $inv->job_description ?: $crTitle }}</td>
-                                <td class="text-end fw-bold">{{ $fmtIdr($inv->nominal) }}</td>
-                                <td class="text-center">
-                                    <button type="button" class="btn btn-sm px-2 py-1" style="background: #FEF3C7; color: #D97706; border-radius: 6px; font-size: 0.72rem;" onclick="switchCrTab('payment')" title="Kelola di tab pembayaran">
-                                        <i class="bi bi-pencil"></i>
+                    <tbody id="terminTableBody">
+                        <tr id="terminRow_0">
+                            <td class="text-center">
+                                <div class="termin-no-badge">1</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold" style="color: #0F172A; font-size: 0.85rem;">Termin Of Payment 1</div>
+                                <div class="d-flex align-items-center gap-1.5 mt-1">
+                                    <span style="background: #DBEAFE; color: #2563EB; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px;">20% DP</span>
+                                    <span style="font-size: 0.72rem; color: #94A3B8;">Tahap Awal</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark" style="font-size: 0.83rem; line-height: 1.35;">Kickoff meeting, spesifikasi arsitektur &amp; persetujuan analisa API OVO</div>
+                                <div class="text-muted mt-0.5" style="font-size: 0.72rem; color: #94A3B8 !important;">Disertai Berita Acara Analisa (BAA) bertandatangan</div>
+                            </td>
+                            <td class="text-end fw-bold" style="color: #0F172A; font-size: 0.88rem;">
+                                Rp 5.000.000
+                            </td>
+                            <td class="text-center">
+                                <div class="d-inline-flex align-items-center gap-1.5 justify-content-center">
+                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1"
+                                            style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none;"
+                                            onclick="openEditTerminModal(0)">
+                                        <i class="bi bi-pencil-square"></i> Edit
                                     </button>
-                                    <button type="button" class="btn btn-sm px-2 py-1" style="background: #FEE2E2; color: #DC2626; border-radius: 6px; font-size: 0.72rem;" onclick="switchCrTab('payment')" title="Kelola di tab pembayaran">
-                                        <i class="bi bi-trash"></i>
+                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1"
+                                            style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none;"
+                                            onclick="deleteTermin(0)">
+                                        <i class="bi bi-trash3-fill"></i> Hapus
                                     </button>
-                                </td>
-                            </tr>
-                        @empty
-                            <tr>
-                                <td class="text-center">1</td>
-                                <td class="fw-bold">Pelunasan 100%</td>
-                                <td class="text-muted">{{ $crTitle }} — {{ $projectName }}</td>
-                                <td class="text-end fw-bold">{{ $fmtIdr($totalPenawaranFinal) }}</td>
-                                <td class="text-center text-muted small">—</td>
-                            </tr>
-                        @endforelse
+                                </div>
+                            </td>
+                        </tr>
+                        <tr id="terminRow_1">
+                            <td class="text-center">
+                                <div class="termin-no-badge">2</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold" style="color: #0F172A; font-size: 0.85rem;">Termin Of Payment 2</div>
+                                <div class="d-flex align-items-center gap-1.5 mt-1">
+                                    <span style="background: #EDE9FE; color: #7C3AED; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px;">35% Dev</span>
+                                    <span style="font-size: 0.72rem; color: #94A3B8;">Implementasi Core</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark" style="font-size: 0.83rem; line-height: 1.35;">Penyelesaian integrasi endpoint OAuth 2.0, Create Order &amp; Callback Webhook</div>
+                                <div class="text-muted mt-0.5" style="font-size: 0.72rem; color: #94A3B8 !important;">Deployment di staging environment &amp; verifikasi Sandbox OVO</div>
+                            </td>
+                            <td class="text-end fw-bold" style="color: #0F172A; font-size: 0.88rem;">
+                                Rp 7.000.000
+                            </td>
+                            <td class="text-center">
+                                <div class="d-inline-flex align-items-center gap-1.5 justify-content-center">
+                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1"
+                                            style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none;"
+                                            onclick="openEditTerminModal(1)">
+                                        <i class="bi bi-pencil-square"></i> Edit
+                                    </button>
+                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1"
+                                            style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none;"
+                                            onclick="deleteTermin(1)">
+                                        <i class="bi bi-trash3-fill"></i> Hapus
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
+                        <tr id="terminRow_2">
+                            <td class="text-center">
+                                <div class="termin-no-badge">3</div>
+                            </td>
+                            <td>
+                                <div class="fw-bold" style="color: #0F172A; font-size: 0.85rem;">Termin Of Payment 3</div>
+                                <div class="d-flex align-items-center gap-1.5 mt-1">
+                                    <span style="background: #D1FAE5; color: #059669; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px;">45% Pelunasan</span>
+                                    <span style="font-size: 0.72rem; color: #94A3B8;">Final Release</span>
+                                </div>
+                            </td>
+                            <td>
+                                <div class="fw-semibold text-dark" style="font-size: 0.83rem; line-height: 1.35;">Pelaksanaan UAT berhasil, serah terima source code, dan Go-Live Production</div>
+                                <div class="text-muted mt-0.5" style="font-size: 0.72rem; color: #94A3B8 !important;">Penandatanganan BAST (Berita Acara Serah Terima)</div>
+                            </td>
+                            <td class="text-end fw-bold" style="color: #0F172A; font-size: 0.88rem;">
+                                Rp 8.000.000
+                            </td>
+                            <td class="text-center">
+                                <div class="d-inline-flex align-items-center gap-1.5 justify-content-center">
+                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1"
+                                            style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none;"
+                                            onclick="openEditTerminModal(2)">
+                                        <i class="bi bi-pencil-square"></i> Edit
+                                    </button>
+                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1"
+                                            style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none;"
+                                            onclick="deleteTermin(2)">
+                                        <i class="bi bi-trash3-fill"></i> Hapus
+                                    </button>
+                                </div>
+                            </td>
+                        </tr>
                     </tbody>
                 </table>
-            </div>
-            <div class="mt-3 pt-3" style="border-top: 1px solid #E2E8F0;">
-                <div class="d-flex justify-content-between small mb-1" style="font-size: 0.84rem;">
-                    <span class="text-muted">Subtotal ({{ $invoices->count() > 0 ? $invoices->count() . ' termin' : '1 termin' }})</span>
-                    <span class="fw-bold">{{ $fmtIdr($invoices->count() > 0 ? $totalInvoiced : $totalPenawaranFinal) }}</span>
-                </div>
-                <div class="d-flex justify-content-between small mb-1" style="font-size: 0.84rem;">
-                    <span class="text-muted">Total Net</span>
-                    <span class="fw-bold">{{ $fmtIdr($invoices->count() > 0 ? $totalInvoiced : $totalPenawaranFinal) }}</span>
-                </div>
-                <div class="d-flex justify-content-between align-items-center mt-2">
-                    <span class="fw-bold" style="font-size: 0.9rem;">Total Penawaran Final</span>
-                    <span class="fw-bold" style="font-size: 1.05rem; color: #0063D7;">{{ $fmtIdr($invoices->count() > 0 ? $totalInvoiced : $totalPenawaranFinal) }}</span>
+                <div class="d-flex justify-content-end align-items-center px-4 py-3" style="background: #FFFFFF; border-top: 1px solid #E2E8F0;">
+                    <div class="fw-bold me-4" style="font-size: 0.86rem; color: #334155;">
+                        Subtotal Termin (<span id="milestoneCountText">3</span> Milestone):
+                    </div>
+                    <div class="fw-bold" id="milestoneSubtotalText" style="font-size: 0.96rem; color: #0F172A;">
+                        Rp 20.000.000
+                    </div>
                 </div>
             </div>
         </div>
 
-        <div class="cr-subcard p-4 mb-4">
-            <div class="fw-bold mb-2" style="font-size: 0.9rem; color: #0C4A6E;">Status Quotation</div>
-            <div class="d-flex flex-wrap gap-2 mb-3">
-                @if($changeRequest->isPmhApproved())
-                    <span class="badge px-3 py-2" style="background: #DCFCE7; color: #15803D; border-radius: 999px; font-size: 0.75rem;">Disetujui PM Head</span>
-                @else
-                    <span class="badge px-3 py-2" style="background: #FEF3C7; color: #B45309; border-radius: 999px; font-size: 0.75rem;">Menunggu Persetujuan PM Head ({{ $changeRequest->statusLabel() }})</span>
-                @endif
-                @if($changeRequest->quotation_approved_client_at)
-                    <span class="badge px-3 py-2" style="background: #DCFCE7; color: #15803D; border-radius: 999px; font-size: 0.75rem;">Disetujui Klien: {{ $changeRequest->quotation_approved_client_at->format('d M Y') }}</span>
-                @endif
-                @if($changeRequest->quotation_approved_tp_at)
-                    <span class="badge px-3 py-2" style="background: #DCFCE7; color: #15803D; border-radius: 999px; font-size: 0.75rem;">Disetujui TP: {{ $changeRequest->quotation_approved_tp_at->format('d M Y') }}</span>
-                @endif
-                @if($hargaPenawaran !== null)
-                    <span class="badge px-3 py-2" style="background: #EFF6FF; color: #1D4ED8; border-radius: 999px; font-size: 0.75rem;">Tersimpan: {{ $fmtIdr($hargaPenawaran) }}</span>
-                @else
-                    <span class="badge px-3 py-2" style="background: #F1F5F9; color: #64748B; border-radius: 999px; font-size: 0.75rem;">Belum ada harga penawaran tersimpan</span>
-                @endif
-            </div>
-
-            @if(!$canBeQuoted)
-                <div class="p-3 mb-0" style="background: #FFFBEB; border: 1px solid #FDE68A; border-radius: 10px; font-size: 0.82rem; color: #92400E;">
-                    <i class="bi bi-exclamation-triangle-fill me-1"></i>
-                    CR berstatus <strong>{{ $changeRequest->statusLabel() }}</strong> dan belum disetujui PM Head. Harga penawaran hanya dapat disimpan setelah PM Head menyetujui CR. Aturan approval tetap dipertahankan.
+        {{-- BOTTOM SECTION: TOTAL HARGA, DOKUMEN & SUMMARY CARD --}}
+        <div class="row g-4 align-items-end mb-4">
+            <div class="col-lg-6 col-12">
+                <div class="mb-3">
+                    <label class="field-label-sm">Total Harga<span class="text-danger">*</span></label>
+                    <input type="text" id="totalHargaField" class="form-control" value="Rp 39.500.000" oninput="onTotalHargaChange(this)"
+                           style="background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 0.95rem; font-weight: 600; color: #0F172A; padding: 0.65rem 0.9rem;">
                 </div>
-            @else
-                <form method="POST" action="{{ route('change-requests.quotation.save', $changeRequest) }}" enctype="multipart/form-data" id="quotationForm">
-                    @csrf
-                    <div class="row g-3">
-                        <div class="col-md-6 col-12">
-                            <label class="form-label">Total Harga Penawaran (Rp) <span class="text-danger">*</span></label>
-                            <input type="text" id="hargaPenawaranDisplay" class="form-control" value="{{ $hargaPenawaran !== null ? number_format($hargaPenawaran, 0, ',', '.') : number_format($estimasiNilai, 0, ',', '.') }}" inputmode="numeric" placeholder="Contoh: 30.500.000">
-                            <input type="hidden" name="harga_penawaran" id="hargaPenawaranValue" value="{{ $hargaPenawaran ?? $estimasiNilai }}">
-                            @error('harga_penawaran')<div class="text-danger small mt-1">{{ $message }}</div>@enderror
-                            <div class="form-text small">Dihitung otomatis dari {{ rtrim(rtrim(number_format($totalMandays, 2, ',', '.'), '0'), ',') }} md × {{ $fmtIdr($ratePerMandays) }}. Dapat disesuaikan manual.</div>
-                        </div>
-                        <div class="col-md-3 col-12">
-                            <label class="form-label">File Quotation (PDF)</label>
-                            <input type="file" name="quotation_file" class="form-control" accept=".pdf,.doc,.docx,.zip">
-                            @if($invoices->firstWhere('quotation_file', '!=', null))
-                                <div class="form-text small text-success"><i class="bi bi-check-circle me-1"></i>Sudah ada berkas tersimpan.</div>
-                            @endif
-                        </div>
-                        <div class="col-md-3 col-12">
-                            <label class="form-label">File Signed Quotation</label>
-                            <input type="file" name="signed_quotation_file" class="form-control" accept=".pdf,.doc,.docx,.zip">
-                        </div>
-                    </div>
-                    <div class="row g-3 mt-1">
-                        <div class="col-md-6 col-12">
-                            <label class="quot-label">Total Harga (Preview)</label>
-                            <input class="quot-input" id="previewTotalHarga" value="{{ $fmtIdr($hargaPenawaran ?? $estimasiNilai) }}" readonly>
-                        </div>
-                        <div class="col-md-6 col-12">
-                            <label class="quot-label">Total Penawaran Final</label>
-                            <input class="quot-input fw-bold" id="previewTotalFinal" style="color: #0063D7; font-weight: 800;" value="{{ $fmtIdr($hargaPenawaran ?? $estimasiNilai) }}" readonly>
-                        </div>
-                    </div>
-                    <div class="d-flex justify-content-end mt-4">
-                        <button type="submit" class="btn text-white fw-bold px-4 py-2" style="background: #22C55E; border-radius: 10px; font-size: 0.86rem; border: none; box-shadow: 0 4px 10px rgba(34,197,94,0.3);">
-                            <i class="bi bi-save me-1"></i> Simpan &amp; Submit
+                <div>
+                    <label class="field-label-sm">Dokumen<span class="text-danger">*</span></label>
+                    <div class="d-flex align-items-center gap-2 p-1.5" style="border: 1.5px solid #CBD5E1; border-radius: 8px; background: #FFFFFF;">
+                        <button type="button" class="btn text-white d-flex align-items-center gap-1.5 px-3 py-1.5"
+                                style="background: #0B2545; border-radius: 6px; font-size: 0.8rem; font-weight: 700; border: none;"
+                                onclick="document.getElementById('dokumenFileInput').click();">
+                            <i class="bi bi-upload"></i> Pilih File
                         </button>
+                        <input type="file" id="dokumenFileInput" style="display: none;" onchange="onFileSelected(this)">
+                        <span id="dokumenFileName" class="text-muted small ms-1" style="font-size: 0.82rem;">Tidak ada file yang dipilih</span>
                     </div>
-                </form>
-            @endif
+                </div>
+            </div>
+            <div class="col-lg-6 col-12">
+                <div class="p-3.5 p-md-4" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px;">
+                    <div class="d-flex justify-content-between align-items-center mb-1.5" style="font-size: 0.86rem;">
+                        <span style="color: #64748B;">Total Nilai Layanan (10 MD)</span>
+                        <span class="fw-bold" id="nilaiLayananText" style="color: #0F172A;">Rp 35.585.586</span>
+                    </div>
+                    <div class="d-flex justify-content-between align-items-center mb-2" style="font-size: 0.86rem;">
+                        <span style="color: #64748B;">PPN 11% (UU HPP No. 7/2021)</span>
+                        <span class="fw-bold" id="ppnText" style="color: #0F172A;">Rp 3.914.414</span>
+                    </div>
+                    <div style="border-top: 1px solid #E2E8F0; margin: 0.65rem 0;"></div>
+                    <div class="d-flex justify-content-between align-items-center pt-1">
+                        <div>
+                            <div class="fw-bold" style="font-size: 0.95rem; color: #0F172A;">Total Penawaran Final</div>
+                            <div class="text-muted small" style="font-size: 0.72rem;">Nett Termasuk Pajak</div>
+                        </div>
+                        <div class="fw-bold" id="totalPenawaranFinalText" style="font-size: 1.35rem; color: #0072D2;">
+                            Rp 39.500.000
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        {{-- SIMPAN & SUBMIT BUTTON --}}
+        <div class="d-flex justify-content-end">
+            <button type="button" class="btn text-white fw-bold px-4 py-2.5 d-inline-flex align-items-center gap-2"
+                    style="background: #22C55E; border-radius: 8px; font-size: 0.88rem; border: none; box-shadow: 0 4px 10px rgba(34,197,94,0.3);"
+                    onclick="simpanDanSubmitQuotation()">
+                <i class="bi bi-check2" style="font-size: 1.15rem;"></i> Simpan &amp; Submit
+            </button>
         </div>
 
     </div>
@@ -942,14 +1069,318 @@
 </div>
 @endif
 
+{{-- Modal Tambah / Edit Termin --}}
+<div class="modal fade" id="terminModal" tabindex="-1" aria-labelledby="modalTerminLabel" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content border-0 shadow-lg" style="border-radius: 16px;">
+            <div class="modal-header border-0 pb-0 px-4 pt-4">
+                <h5 class="modal-title fw-bold text-dark" id="modalTerminLabel">
+                    <i class="bi bi-calendar2-check text-primary me-2"></i>Tambah Termin
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body px-4 py-3">
+                <input type="hidden" id="modalTerminIndex" value="-1">
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark mb-1">Nama Termin <span class="text-danger">*</span></label>
+                    <input type="text" id="modalTerminName" class="form-control" placeholder="Contoh: Termin Of Payment 1" required>
+                </div>
+                <div class="row g-2 mb-3">
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-dark mb-1">Label / Persentase</label>
+                        <input type="text" id="modalTerminBadge" class="form-control" placeholder="Contoh: 20% DP">
+                    </div>
+                    <div class="col-6">
+                        <label class="form-label small fw-bold text-dark mb-1">Sub-label Tahap</label>
+                        <input type="text" id="modalTerminSublabel" class="form-control" placeholder="Contoh: Tahap Awal">
+                    </div>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark mb-1">Milestone Deliverable <span class="text-danger">*</span></label>
+                    <textarea id="modalTerminDeliverable" class="form-control" rows="2" placeholder="Deskripsi milestone deliverable" required></textarea>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label small fw-bold text-dark mb-1">Keterangan Tambahan / Dokumen</label>
+                    <input type="text" id="modalTerminSubtext" class="form-control" placeholder="Contoh: Disertai Berita Acara Analisa (BAA)">
+                </div>
+                <div class="mb-2">
+                    <label class="form-label small fw-bold text-dark mb-1">Nominal (IDR) <span class="text-danger">*</span></label>
+                    <input type="number" id="modalTerminNominal" class="form-control" placeholder="Contoh: 5000000" min="0" required>
+                </div>
+            </div>
+            <div class="modal-footer border-0 px-4 pb-4 pt-0">
+                <button type="button" class="btn btn-outline-secondary btn-sm px-3" data-bs-dismiss="modal">Batal</button>
+                <button type="button" class="btn btn-sm px-4 fw-bold text-white" style="background: #22C55E; border: none; border-radius: 8px;" onclick="saveTerminModal()">
+                    <i class="bi bi-check2 me-1"></i>Simpan Termin
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+
+{{-- Toast Feedback Sukses --}}
+<div class="position-fixed bottom-0 end-0 p-3" style="z-index: 1080;">
+    <div id="quotationSuccessToast" class="toast align-items-center text-white bg-success border-0 shadow-lg" role="alert" aria-live="assertive" aria-atomic="true" style="border-radius: 12px;">
+        <div class="d-flex">
+            <div class="toast-body d-flex align-items-center gap-2 font-weight-semibold" style="font-size: 0.9rem;">
+                <i class="bi bi-check-circle-fill fs-5"></i>
+                <span id="quotationToastMessage">Quotation berhasil disimpan &amp; disubmit!</span>
+            </div>
+            <button type="button" class="btn-close btn-close-white me-2 m-auto" data-bs-dismiss="toast" aria-label="Close"></button>
+        </div>
+    </div>
+</div>
+
 <script>
+    // Data list termin
+    let terminList = [
+        {
+            name: 'Termin Of Payment 1',
+            badge: '20% DP',
+            badgeColor: '#DBEAFE',
+            badgeTextColor: '#2563EB',
+            sublabel: 'Tahap Awal',
+            deliverable: 'Kickoff meeting, spesifikasi arsitektur & persetujuan analisa API OVO',
+            subtext: 'Disertai Berita Acara Analisa (BAA) bertandatangan',
+            nominal: 5000000
+        },
+        {
+            name: 'Termin Of Payment 2',
+            badge: '35% Dev',
+            badgeColor: '#EDE9FE',
+            badgeTextColor: '#7C3AED',
+            sublabel: 'Implementasi Core',
+            deliverable: 'Penyelesaian integrasi endpoint OAuth 2.0, Create Order & Callback Webhook',
+            subtext: 'Deployment di staging environment & verifikasi Sandbox OVO',
+            nominal: 7000000
+        },
+        {
+            name: 'Termin Of Payment 3',
+            badge: '45% Pelunasan',
+            badgeColor: '#D1FAE5',
+            badgeTextColor: '#059669',
+            sublabel: 'Final Release',
+            deliverable: 'Pelaksanaan UAT berhasil, serah terima source code, dan Go-Live Production',
+            subtext: 'Penandatanganan BAST (Berita Acara Serah Terima)',
+            nominal: 8000000
+        }
+    ];
+
+    function formatRupiah(num) {
+        return 'Rp ' + Number(num || 0).toLocaleString('id-ID');
+    }
+
+    function renderTerminTable() {
+        const tbody = document.getElementById('terminTableBody');
+        if (!tbody) return;
+        tbody.innerHTML = '';
+        let total = 0;
+
+        terminList.forEach((item, idx) => {
+            total += Number(item.nominal || 0);
+            const tr = document.createElement('tr');
+            tr.id = 'terminRow_' + idx;
+            tr.innerHTML = `
+                <td class="text-center">
+                    <div class="termin-no-badge">${idx + 1}</div>
+                </td>
+                <td>
+                    <div class="fw-bold" style="color: #0F172A; font-size: 0.85rem;">${escapeHtml(item.name)}</div>
+                    <div class="d-flex align-items-center gap-1.5 mt-1">
+                        <span style="background: ${item.badgeColor || '#DBEAFE'}; color: ${item.badgeTextColor || '#2563EB'}; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px;">${escapeHtml(item.badge || '')}</span>
+                        <span style="font-size: 0.72rem; color: #94A3B8;">${escapeHtml(item.sublabel || '')}</span>
+                    </div>
+                </td>
+                <td>
+                    <div class="fw-semibold text-dark" style="font-size: 0.83rem; line-height: 1.35;">${escapeHtml(item.deliverable)}</div>
+                    <div class="text-muted mt-0.5" style="font-size: 0.72rem; color: #94A3B8 !important;">${escapeHtml(item.subtext || '')}</div>
+                </td>
+                <td class="text-end fw-bold" style="color: #0F172A; font-size: 0.88rem;">
+                    ${formatRupiah(item.nominal)}
+                </td>
+                <td class="text-center">
+                    <div class="d-inline-flex align-items-center gap-1.5 justify-content-center">
+                        <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1"
+                                style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none;"
+                                onclick="openEditTerminModal(${idx})">
+                            <i class="bi bi-pencil-square"></i> Edit
+                        </button>
+                        <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1"
+                                style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none;"
+                                onclick="deleteTermin(${idx})">
+                            <i class="bi bi-trash3-fill"></i> Hapus
+                        </button>
+                    </div>
+                </td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        const countEl = document.getElementById('milestoneCountText');
+        const subtotalEl = document.getElementById('milestoneSubtotalText');
+        if (countEl) countEl.innerText = terminList.length;
+        if (subtotalEl) subtotalEl.innerText = formatRupiah(total);
+    }
+
+    function escapeHtml(str) {
+        if (!str) return '';
+        return String(str).replace(/[&<>"']/g, function(m) {
+            return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+        });
+    }
+
+    function openAddTerminModal() {
+        document.getElementById('modalTerminIndex').value = '-1';
+        document.getElementById('modalTerminLabel').innerHTML = '<i class="bi bi-plus-circle text-primary me-2"></i>Tambah Termin';
+        document.getElementById('modalTerminName').value = 'Termin Of Payment ' + (terminList.length + 1);
+        document.getElementById('modalTerminBadge').value = '';
+        document.getElementById('modalTerminSublabel').value = '';
+        document.getElementById('modalTerminDeliverable').value = '';
+        document.getElementById('modalTerminSubtext').value = '';
+        document.getElementById('modalTerminNominal').value = '';
+        const modal = new bootstrap.Modal(document.getElementById('terminModal'));
+        modal.show();
+    }
+
+    function openEditTerminModal(idx) {
+        const item = terminList[idx];
+        if (!item) return;
+        document.getElementById('modalTerminIndex').value = idx;
+        document.getElementById('modalTerminLabel').innerHTML = '<i class="bi bi-pencil-square text-warning me-2"></i>Edit Termin ' + (idx + 1);
+        document.getElementById('modalTerminName').value = item.name;
+        document.getElementById('modalTerminBadge').value = item.badge || '';
+        document.getElementById('modalTerminSublabel').value = item.sublabel || '';
+        document.getElementById('modalTerminDeliverable').value = item.deliverable;
+        document.getElementById('modalTerminSubtext').value = item.subtext || '';
+        document.getElementById('modalTerminNominal').value = item.nominal;
+        const modal = new bootstrap.Modal(document.getElementById('terminModal'));
+        modal.show();
+    }
+
+    function saveTerminModal() {
+        const idx = parseInt(document.getElementById('modalTerminIndex').value, 10);
+        const name = document.getElementById('modalTerminName').value.trim();
+        const badge = document.getElementById('modalTerminBadge').value.trim();
+        const sublabel = document.getElementById('modalTerminSublabel').value.trim();
+        const deliverable = document.getElementById('modalTerminDeliverable').value.trim();
+        const subtext = document.getElementById('modalTerminSubtext').value.trim();
+        const nominal = parseInt(document.getElementById('modalTerminNominal').value, 10) || 0;
+
+        if (!name || !deliverable) {
+            alert('Mohon lengkapi Nama Termin dan Milestone Deliverable.');
+            return;
+        }
+
+        const colors = [
+            { bg: '#DBEAFE', text: '#2563EB' },
+            { bg: '#EDE9FE', text: '#7C3AED' },
+            { bg: '#D1FAE5', text: '#059669' },
+            { bg: '#FEF3C7', text: '#D97706' },
+            { bg: '#FCE7F3', text: '#DB2777' }
+        ];
+        const assignedColor = colors[(idx >= 0 ? idx : terminList.length) % colors.length];
+
+        const dataObj = {
+            name: name,
+            badge: badge,
+            badgeColor: assignedColor.bg,
+            badgeTextColor: assignedColor.text,
+            sublabel: sublabel,
+            deliverable: deliverable,
+            subtext: subtext,
+            nominal: nominal
+        };
+
+        if (idx >= 0 && idx < terminList.length) {
+            terminList[idx] = dataObj;
+        } else {
+            terminList.push(dataObj);
+        }
+
+        renderTerminTable();
+        const modalEl = document.getElementById('terminModal');
+        const modalInstance = bootstrap.Modal.getInstance(modalEl);
+        if (modalInstance) modalInstance.hide();
+    }
+
+    function deleteTermin(idx) {
+        if (!confirm('Hapus termin ini?')) return;
+        terminList.splice(idx, 1);
+        renderTerminTable();
+    }
+
+    function onTotalHargaChange(input) {
+        const raw = input.value.replace(/[^0-9]/g, '');
+        const num = raw === '' ? 0 : parseInt(raw, 10);
+        input.value = num === 0 && raw === '' ? '' : 'Rp ' + num.toLocaleString('id-ID');
+
+        // Kalkulasi DPP dan PPN 11% (UU HPP No. 7/2021)
+        const total = num;
+        const nilaiLayanan = Math.round(total / 1.11);
+        const ppn = total - nilaiLayanan;
+
+        const nlEl = document.getElementById('nilaiLayananText');
+        const ppnEl = document.getElementById('ppnText');
+        const finalEl = document.getElementById('totalPenawaranFinalText');
+
+        if (nlEl) nlEl.innerText = formatRupiah(nilaiLayanan);
+        if (ppnEl) ppnEl.innerText = formatRupiah(ppn);
+        if (finalEl) finalEl.innerText = formatRupiah(total);
+    }
+
+    function recalcMandays() {
+        const a = parseInt(document.getElementById('inputMdAnalisis')?.value || 0, 10) || 0;
+        const d = parseInt(document.getElementById('inputMdDev')?.value || 0, 10) || 0;
+        const t = parseInt(document.getElementById('inputMdTest')?.value || 0, 10) || 0;
+        const sum = a + d + t;
+        const totInput = document.getElementById('inputMdTotal');
+        if (totInput && sum > 0) {
+            totInput.value = sum;
+        }
+    }
+
+    function onFileSelected(input) {
+        const nameEl = document.getElementById('dokumenFileName');
+        if (!nameEl) return;
+        if (input.files && input.files[0]) {
+            nameEl.innerText = input.files[0].name;
+            nameEl.style.color = '#0F172A';
+            nameEl.style.fontWeight = '600';
+        } else {
+            nameEl.innerText = 'Tidak ada file yang dipilih';
+            nameEl.style.color = '#64748B';
+            nameEl.style.fontWeight = 'normal';
+        }
+    }
+
+    function simpanDanSubmitQuotation() {
+        const toastEl = document.getElementById('quotationSuccessToast');
+        if (toastEl) {
+            const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
+            toast.show();
+        } else {
+            alert('Quotation berhasil disimpan & disubmit!');
+        }
+    }
+
     function switchCrTab(tab) {
-        const tabs = { detail: 'Detail', quotation: 'Quotation', payment: 'Payment' };
-        Object.keys(tabs).forEach(k => {
-            const btn = document.getElementById('tabBtn' + tabs[k]);
-            const content = document.getElementById('tabContent' + tabs[k]);
+        const tabConfigs = {
+            detail: { title: 'Detail Change Request', btnId: 'tabBtnDetail', contentId: 'tabContentDetail' },
+            quotation: { title: 'Quotation', btnId: 'tabBtnQuotation', contentId: 'tabContentQuotation' },
+            payment: { title: 'Data Pembayaran & GR', btnId: 'tabBtnPayment', contentId: 'tabContentPayment' }
+        };
+
+        const activeKey = tabConfigs[tab] ? tab : 'quotation';
+        const pageHeader = document.getElementById('pageHeaderTitle');
+        if (pageHeader) {
+            pageHeader.innerText = tabConfigs[activeKey].title;
+        }
+
+        Object.keys(tabConfigs).forEach(k => {
+            const btn = document.getElementById(tabConfigs[k].btnId);
+            const content = document.getElementById(tabConfigs[k].contentId);
             if (!btn || !content) return;
-            if (k === tab) {
+            if (k === activeKey) {
                 btn.classList.add('active');
                 btn.setAttribute('aria-selected', 'true');
                 content.style.display = 'block';
@@ -959,20 +1390,17 @@
                 content.style.display = 'none';
             }
         });
+
         try {
             const url = new URL(window.location.href);
-            url.searchParams.set('tab', tab);
+            url.searchParams.set('tab', activeKey);
             window.history.replaceState({}, '', url.toString());
-            localStorage.setItem('presales_cr_tab_{{ $changeRequest->id }}', tab);
+            localStorage.setItem('presales_cr_tab_{{ $changeRequest->id }}', activeKey);
         } catch (e) {}
     }
 
-    function formatIdr(n) {
-        return 'Rp ' + Number(n || 0).toLocaleString('id-ID');
-    }
-
     document.addEventListener('DOMContentLoaded', function () {
-        let initialTab = 'detail';
+        let initialTab = 'quotation';
         try {
             const url = new URL(window.location.href);
             const q = url.searchParams.get('tab');
@@ -983,29 +1411,7 @@
             }
         } catch (e) {}
         switchCrTab(initialTab);
-
-        const display = document.getElementById('hargaPenawaranDisplay');
-        const hidden = document.getElementById('hargaPenawaranValue');
-        const prevHarga = document.getElementById('previewTotalHarga');
-        const prevFinal = document.getElementById('previewTotalFinal');
-        if (display && hidden) {
-            display.addEventListener('input', function () {
-                const raw = display.value.replace(/[^0-9]/g, '');
-                const num = raw === '' ? 0 : parseInt(raw, 10);
-                hidden.value = num;
-                display.value = num === 0 && raw === '' ? '' : num.toLocaleString('id-ID');
-                if (prevHarga) prevHarga.value = formatIdr(num);
-                if (prevFinal) prevFinal.value = formatIdr(num);
-            });
-            display.addEventListener('blur', function () {
-                if (display.value === '') {
-                    display.value = '0';
-                    hidden.value = 0;
-                    if (prevHarga) prevHarga.value = formatIdr(0);
-                    if (prevFinal) prevFinal.value = formatIdr(0);
-                }
-            });
-        }
+        renderTerminTable();
     });
 </script>
 @endsection
