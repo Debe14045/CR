@@ -12,7 +12,6 @@
         </a>
         <h4 class="fw-bold mb-0" style="color: #0F172A; font-size: 1.35rem; letter-spacing: -0.02em;">Verifikasi CR</h4>
     </div>
-
     {{-- ══ CR Summary Card (Figma MacBook 7) ══ --}}
     <div class="card p-3 px-4 mb-4 shadow-sm border-0" style="border: 1px solid #E2E8F0 !important; border-radius: 14px;">
         <div class="d-flex align-items-center justify-content-between flex-wrap gap-3">
