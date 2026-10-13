@@ -118,82 +118,9 @@
         </div>
     </div>
 
-    {{-- Bagian Bawah: NOTIFIKASI (Kiri) dan GRAFIK REQUEST CR (Kanan) --}}
+    {{-- Bagian Bawah: GRAFIK REQUEST CR (Kiri) dan NOTIFIKASI (Kanan) --}}
     <div class="row g-4 mb-4">
-        {{-- Card Left: NOTIFIKASI --}}
-        <div class="col-lg-5 col-12">
-            <div class="card p-4 border-0 h-100 shadow-sm" style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E2E8F0 !important;">
-                <div class="d-flex justify-content-between align-items-center mb-1">
-                    <div class="d-flex align-items-center gap-2">
-                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #EF4444; display: inline-block;"></span>
-                        <h5 class="fw-bold mb-0 text-uppercase" style="color: #0F172A; font-size: 0.95rem; font-weight: 800; letter-spacing: 0.02em;">NOTIFIKASI</h5>
-                    </div>
-                    <a href="{{ route('presales.notifications') }}" class="text-decoration-none fw-semibold" style="color: #0063D7; font-size: 0.8rem;">Lihat Semua &gt;</a>
-                </div>
-                <p class="text-muted small mb-0" style="font-size: 0.74rem; line-height: 1.45; color: #64748B;">
-                    Pemberitahuan persetujuan penting, batas waktu tinjauan dokumen, dan tindak lanjut status tahapan proyek.
-                </p>
-                <div style="height: 1px; background: #E2E8F0; margin: 0.85rem 0 1.25rem;"></div>
-
-                <div class="d-flex flex-column gap-3">
-                    {{-- Alert 1: Red box (Penolakan / Menunggu Persetujuan > 14 hari) --}}
-                    <a href="{{ route('presales.persetujuan') }}" class="text-decoration-none">
-                        <div class="p-3" style="background: #FFF1F2; border: 1px solid #FECDD3; border-radius: 14px; transition: transform 0.15s ease;"
-                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-x-circle-fill mt-1" style="color: #E11D48; font-size: 1.05rem; flex-shrink: 0;"></i>
-                                <div style="line-height: 1.35;">
-                                    <div class="fw-bold" style="color: #9F1239; font-size: 0.82rem;">
-                                        Pengajuan Registrasi Akun ditolak oleh PM.
-                                    </div>
-                                    <div style="color: #E11D48; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
-                                        Alasan: Arsitektur autentikasi belum menyertakan spesifikasi protokol OAuth 2.0.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-
-                    {{-- Alert 2: Yellow box (Revisi / Menunggu Estimasi) --}}
-                    <a href="{{ route('presales.change-requests', ['status' => 'analisa']) }}" class="text-decoration-none">
-                        <div class="p-3" style="background: #FEFCE8; border: 1px solid #FEF08A; border-radius: 14px; transition: transform 0.15s ease;"
-                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #D97706; font-size: 1.05rem; flex-shrink: 0;"></i>
-                                <div style="line-height: 1.35;">
-                                    <div class="fw-bold" style="color: #854D0E; font-size: 0.82rem;">
-                                        Pengajuan CR Anda sedang direvisi oleh PM Head.
-                                    </div>
-                                    <div style="color: #B45309; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
-                                        Periksa rincian man-hari dan rincian arsitektur sebelum penawaran diajukan.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-
-                    {{-- Alert 3: Blue box (Development & Pengerjaan) --}}
-                    <a href="{{ route('presales.development') }}" class="text-decoration-none">
-                        <div class="p-3" style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 14px; transition: transform 0.15s ease;"
-                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-info-circle-fill mt-1" style="color: #2563EB; font-size: 1.05rem; flex-shrink: 0;"></i>
-                                <div style="line-height: 1.35;">
-                                    <div class="fw-bold" style="color: #1E40AF; font-size: 0.82rem;">
-                                        Pengajuan CR dengan ID #CR-001 telah memasuki tahapan Development.
-                                    </div>
-                                    <div style="color: #2563EB; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
-                                        Tahapan : 2. Pengembangan Fitur &amp; Integrasi
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
-                </div>
-            </div>
-        </div>
-
-        {{-- Card Right: Grafik Request CR --}}
+        {{-- Card Left: Grafik Request CR --}}
         <div class="col-lg-7 col-12">
             <div class="card p-4 border-0 h-100 shadow-sm" style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E2E8F0 !important;">
                 <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
@@ -299,6 +226,80 @@
                 </div>
             </div>
         </div>
+
+        {{-- Card Right: NOTIFIKASI --}}
+        <div class="col-lg-5 col-12">
+            <div class="card p-4 border-0 h-100 shadow-sm" style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E2E8F0 !important;">
+                <div class="d-flex justify-content-between align-items-center mb-1">
+                    <div class="d-flex align-items-center gap-2">
+                        <span style="width: 8px; height: 8px; border-radius: 50%; background: #EF4444; display: inline-block;"></span>
+                        <h5 class="fw-bold mb-0 text-uppercase" style="color: #0F172A; font-size: 0.95rem; font-weight: 800; letter-spacing: 0.02em;">NOTIFIKASI</h5>
+                    </div>
+                    <a href="{{ route('presales.notifications') }}" class="text-decoration-none fw-semibold" style="color: #0063D7; font-size: 0.8rem;">Lihat Semua &gt;</a>
+                </div>
+                <p class="text-muted small mb-0" style="font-size: 0.74rem; line-height: 1.45; color: #64748B;">
+                    Pemberitahuan persetujuan penting, batas waktu tinjauan dokumen, dan tindak lanjut status tahapan proyek.
+                </p>
+                <div style="height: 1px; background: #E2E8F0; margin: 0.85rem 0 1.25rem;"></div>
+
+                <div class="d-flex flex-column gap-3">
+                    {{-- Alert 1: Red box (Penolakan / Menunggu Persetujuan > 14 hari) --}}
+                    <a href="{{ route('presales.persetujuan') }}" class="text-decoration-none">
+                        <div class="p-3" style="background: #FFF1F2; border: 1px solid #FECDD3; border-radius: 14px; transition: transform 0.15s ease;"
+                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-x-circle-fill mt-1" style="color: #E11D48; font-size: 1.05rem; flex-shrink: 0;"></i>
+                                <div style="line-height: 1.35;">
+                                    <div class="fw-bold" style="color: #9F1239; font-size: 0.82rem;">
+                                        Pengajuan Registrasi Akun ditolak oleh PM.
+                                    </div>
+                                    <div style="color: #E11D48; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
+                                        Alasan: Arsitektur autentikasi belum menyertakan spesifikasi protokol OAuth 2.0.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+
+                    {{-- Alert 2: Yellow box (Revisi / Menunggu Estimasi) --}}
+                    <a href="{{ route('presales.change-requests', ['status' => 'analisa']) }}" class="text-decoration-none">
+                        <div class="p-3" style="background: #FEFCE8; border: 1px solid #FEF08A; border-radius: 14px; transition: transform 0.15s ease;"
+                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #D97706; font-size: 1.05rem; flex-shrink: 0;"></i>
+                                <div style="line-height: 1.35;">
+                                    <div class="fw-bold" style="color: #854D0E; font-size: 0.82rem;">
+                                        Pengajuan CR Anda sedang direvisi oleh PM Head.
+                                    </div>
+                                    <div style="color: #B45309; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
+                                        Periksa rincian man-hari dan rincian arsitektur sebelum penawaran diajukan.
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+
+                    {{-- Alert 3: Blue box (Development & Pengerjaan) --}}
+                    <a href="{{ route('presales.development') }}" class="text-decoration-none">
+                        <div class="p-3" style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 14px; transition: transform 0.15s ease;"
+                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                            <div class="d-flex align-items-start gap-2">
+                                <i class="bi bi-info-circle-fill mt-1" style="color: #2563EB; font-size: 1.05rem; flex-shrink: 0;"></i>
+                                <div style="line-height: 1.35;">
+                                    <div class="fw-bold" style="color: #1E40AF; font-size: 0.82rem;">
+                                        Pengajuan CR dengan ID #CR-001 telah memasuki tahapan Development.
+                                    </div>
+                                    <div style="color: #2563EB; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
+                                        Tahapan : 2. Pengembangan Fitur &amp; Integrasi
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
     </div>
 
 </div>
