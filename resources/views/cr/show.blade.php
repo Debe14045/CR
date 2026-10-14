@@ -31,29 +31,29 @@
         $progressPct = 100;
     }
 
-    $isFigmaDefault = ($changeRequest->id == 1 || in_array($changeRequest->kode_cr, ['CR-2026-06-0042', 'CR-2026-09-0042']) || empty($changeRequest->judul));
+    $isFigmaDefault = (in_array($changeRequest->kode_cr, ['CR-2026-06-0042', 'CR-2026-09-0042']) || empty($changeRequest->judul));
     if ($isFigmaDefault) {
         $mainStageNum = $isClientUser ? 1 : 2;
         $progressPct = 17;
     }
 
-    $crJudul = $isFigmaDefault ? 'Integrasi API Pembayaran OVO' : ($changeRequest->judul ?: 'Integrasi API Pembayaran OVO');
-    $crKode = $isFigmaDefault ? 'CR-2026-09-0042' : ($changeRequest->kode_cr ?: 'CR-2026-09-0042');
+    $crJudul = $changeRequest->judul ?: 'Integrasi API Pembayaran OVO';
+    $crKode = $changeRequest->kode_cr ?: 'CR-2026-09-0042';
     $firstChar = strtoupper(substr($crJudul, 0, 1)) ?: 'I';
 
-    $modalCrCodeJudul = $isFigmaDefault ? 'CR-2024-089: Integrasi API Pembayaran OVO' : (($changeRequest->kode_cr ?: 'CR-2024-089') . ': ' . $crJudul);
-    $modalPemohon = $isFigmaDefault ? 'Tim Product Support' : ($changeRequest->owner_cr ?: ($changeRequest->user?->name ?: ($changeRequest->client?->name ?: 'Tim Product Support')));
+    $modalCrCodeJudul = ($changeRequest->kode_cr ?: 'CR-2024-089') . ': ' . $crJudul;
+    $modalPemohon = $changeRequest->owner_cr ?: ($changeRequest->user?->name ?: ($changeRequest->client?->name ?: 'Tim Product Support'));
 
-    $companyName = $isFigmaDefault ? 'PT Maju Bersama' : ($changeRequest->client?->company ?: ($changeRequest->klien ?: 'PT Maju Bersama'));
-    $clientInitial = $isFigmaDefault ? 'AF' : ($changeRequest->client?->nickname ?: 'AF');
-    $picName = $isFigmaDefault ? 'Totok Antok' : ($changeRequest->owner_cr ?: ($changeRequest->user?->name ?: 'Totok Antok'));
-    $projectName = $isFigmaDefault ? 'Sistem E-commerce' : ($changeRequest->proyek_terkait ?: 'Sistem E-commerce');
-    $crOwner = $isFigmaDefault ? 'Andik Virmansyah' : ($changeRequest->pic_sales ?: ($changeRequest->main_desk ?: 'Andik Virmansyah'));
-    $priorityLabel = $isFigmaDefault ? 'Normal' : ucfirst($changeRequest->prioritas ?: 'Normal');
+    $companyName = $changeRequest->client?->company ?: ($changeRequest->klien ?: 'PT Maju Bersama');
+    $clientInitial = $changeRequest->client?->nickname ?: 'AF';
+    $picName = $changeRequest->owner_cr ?: ($changeRequest->user?->name ?: 'Totok Antok');
+    $projectName = $changeRequest->proyek_terkait ?: 'Sistem E-commerce';
+    $crOwner = $changeRequest->pic_sales ?: ($changeRequest->main_desk ?: 'Andik Virmansyah');
+    $priorityLabel = ucfirst($changeRequest->prioritas ?: 'Normal');
 
-    $tanggalPengajuan = $isFigmaDefault ? '15 Jan 2024' : ($changeRequest->tanggal_pengajuan ? $changeRequest->tanggal_pengajuan->translatedFormat('d M Y') : '15 Jan 2024');
-    $headerTanggalPengajuan = $isFigmaDefault ? '04 Sep 2026' : ($changeRequest->tanggal_pengajuan ? $changeRequest->tanggal_pengajuan->translatedFormat('d M Y') : '04 Sep 2026');
-    $requestGoLive = $isFigmaDefault ? '15 Jan 2024' : ($changeRequest->target_selesai ? $changeRequest->target_selesai->translatedFormat('d M Y') : '15 Jan 2024');
+    $tanggalPengajuan = $changeRequest->tanggal_pengajuan ? $changeRequest->tanggal_pengajuan->translatedFormat('d M Y') : '15 Jan 2024';
+    $headerTanggalPengajuan = $changeRequest->tanggal_pengajuan ? $changeRequest->tanggal_pengajuan->translatedFormat('d M Y') : '04 Sep 2026';
+    $requestGoLive = $changeRequest->target_selesai ? $changeRequest->target_selesai->translatedFormat('d M Y') : '15 Jan 2024';
 
     $docCrUrl = $changeRequest->google_drive_url ?: 'https://drive.google.com/drive/folders/abc123';
     $solutionPaperUrl = $changeRequest->solution_paper_url ?: 'https://drive.google.com/file/sp001';

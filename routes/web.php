@@ -95,6 +95,8 @@ Route::middleware('auth')->group(function () {
         Route::middleware('auth')->group(function () {
             Route::get('/profile', 'profile')->name('profile.index');
             Route::post('/profile/password', 'updatePassword')->name('profile.password');
+            Route::get('/client/profile', 'profile')->name('client.profile');
+            Route::post('/client/profile/password', 'updatePassword')->name('client.profile.password');
         });
 
         Route::middleware('role:client')->group(function () {
@@ -112,15 +114,15 @@ Route::middleware('auth')->group(function () {
         Route::delete('/change-requests/{changeRequest}', 'destroy')->name('change-requests.destroy');
         Route::get('/change-requests/{changeRequest}/initial-file', 'downloadInitialAttachment')->name('change-requests.initial-file');
 
-        // 5. Editing (Draft for Client, Verification/Validation for PM, PMH, Finance, Admin)
-        Route::middleware('role:client,pm,pmh,presales,finance,admin')->group(function () {
+        // 5. Editing (Draft for Client, Verification/Validation for PM, PMH, Admin)
+        Route::middleware('role:client,pm,pmh,presales,admin')->group(function () {
             Route::get('/change-requests/{changeRequest}/edit', 'edit')->name('change-requests.edit');
             Route::put('/change-requests/{changeRequest}', 'update')->name('change-requests.update');
             Route::post('/change-requests/{changeRequest}/sequential-status', 'updateSequentialStatus')->name('change-requests.sequential-status');
         });
 
-        // 6. Marketing / Finance Internal Record Keeping Only (Quotation, Invoices, GR, Jurnal)
-        Route::middleware('role:presales,finance,admin')->group(function () {
+        // 6. Marketing / Presales Internal Record Keeping Only (Quotation, Invoices, GR, Jurnal)
+        Route::middleware('role:presales,admin')->group(function () {
             Route::post('/change-requests/{changeRequest}/quotation', 'saveQuotation')->name('change-requests.quotation.save');
             Route::post('/change-requests/{changeRequest}/invoices', 'storeInvoice')->name('change-requests.invoices.store');
             Route::put('/change-requests/invoices/{invoice}/status', 'updateInvoiceStatus')->name('change-requests.invoices.status');

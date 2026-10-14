@@ -16,7 +16,6 @@ class User extends Authenticatable
     public const ROLE_CLIENT = 'client';
     public const ROLE_PM = 'pm';
     public const ROLE_PRESALES = 'presales';
-    public const ROLE_FINANCE = 'finance';
     public const ROLE_PMH = 'pmh';
     public const ROLE_ADMIN = 'admin';
 
@@ -64,19 +63,12 @@ class User extends Authenticatable
             self::ROLE_PM => 'Project Manager (PM)',
             self::ROLE_PMH => 'PM Head (PMH)',
             self::ROLE_PRESALES => 'Presales (Marketing & Estimasi)',
-            self::ROLE_FINANCE => 'Marketing / Keuangan (Finance)',
             self::ROLE_ADMIN => 'Administrator',
         ];
     }
 
     public function isRole(string $role): bool
     {
-        if ($role === 'finance' && $this->role === 'presales') {
-            return true;
-        }
-        if ($role === 'presales' && $this->role === 'finance') {
-            return true;
-        }
         return $this->role === $role;
     }
 
@@ -102,7 +94,7 @@ class User extends Authenticatable
 
     public function isFinance(): bool
     {
-        return in_array($this->role, [self::ROLE_FINANCE, self::ROLE_PRESALES], true);
+        return $this->isPresales();
     }
 
     public function isAdmin(): bool
@@ -112,6 +104,6 @@ class User extends Authenticatable
 
     public function isInternal(): bool
     {
-        return in_array($this->role, [self::ROLE_PM, self::ROLE_PMH, self::ROLE_FINANCE, self::ROLE_PRESALES, self::ROLE_ADMIN], true);
+        return in_array($this->role, [self::ROLE_PM, self::ROLE_PMH, self::ROLE_PRESALES, self::ROLE_ADMIN], true);
     }
 }

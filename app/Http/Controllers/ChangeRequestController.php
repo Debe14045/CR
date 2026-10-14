@@ -115,12 +115,53 @@ class ChangeRequestController extends Controller
             }
 
             $query->where('status', 'draft');
+        } elseif ($viewMode === 'total') {
+            $figmaTotalCrs = [
+                ['kode' => 'CR-2024-006', 'klien' => 'PT Delta Solusi', 'judul' => 'Fitur SSO Login Karyawan', 'cat' => 'Authentication', 'date' => '2024-02-01', 'status' => 'diajukan', 'prioritas' => 'urgent'],
+                ['kode' => 'CR-2024-008', 'klien' => 'PT Maju Bersama', 'judul' => 'Modul Absensi Mobile App', 'cat' => 'Mobile', 'date' => '2024-02-01', 'status' => 'diajukan', 'prioritas' => 'normal'],
+                ['kode' => 'CR-2024-011', 'klien' => 'PT Teknologi Nusantara', 'judul' => 'Integrasi API Payment Gateway', 'cat' => 'Integration', 'date' => '2024-02-01', 'status' => 'analisa', 'prioritas' => 'urgent'],
+                ['kode' => 'CR-2024-014', 'klien' => 'PT Global Inovasi', 'judul' => 'Dashboard Laporan Keuangan Real-time', 'cat' => 'Reporting', 'date' => '2024-02-01', 'status' => 'analisa', 'prioritas' => 'normal'],
+                ['kode' => 'CR-2024-017', 'klien' => 'PT Solusi Digital', 'judul' => 'Notifikasi Push Multi-Platform', 'cat' => 'Notification', 'date' => '2024-02-01', 'status' => 'development', 'prioritas' => 'normal'],
+                ['kode' => 'CR-2024-019', 'klien' => 'PT Solusi Digital', 'judul' => 'Modul HR Self-Service Portal', 'cat' => 'HR', 'date' => '2024-02-01', 'status' => 'diajukan', 'prioritas' => 'normal'],
+            ];
+            $defaultClient = Client::first();
+            $targetUserId = $user?->id ?? User::first()?->id;
+            foreach ($figmaTotalCrs as $ft) {
+                ChangeRequest::updateOrCreate(
+                    ['kode_cr' => $ft['kode']],
+                    [
+                        'judul' => $ft['judul'],
+                        'deskripsi' => $ft['judul'] . ' — change request.',
+                        'proyek_terkait' => $ft['cat'],
+                        'category' => $ft['cat'],
+                        'klien' => $ft['klien'],
+                        'status' => $ft['status'],
+                        'prioritas' => $ft['prioritas'],
+                        'tanggal_pengajuan' => $ft['date'],
+                        'user_id' => $targetUserId,
+                        'client_id' => $defaultClient?->id,
+                    ]
+                );
+            }
         } elseif ($viewMode === 'status') {
             // Ordered by pipeline stage
         }
 
-        if ($request->filled('status') && !in_array($request->status, ['development', 'uat', 'golive', 'total', 'all'])) {
-            $query->where('status', $request->status);
+        if ($request->filled('status') && !in_array(strtolower($request->status), ['total', 'all', 'semua', 'semua status'])) {
+            $statusVal = strtolower($request->status);
+            if (in_array($statusVal, ['diajukan', 'awaiting_pm', 'awaiting_pmh', 'persetujuan', 'pending'])) {
+                $query->whereIn('status', ['diajukan', 'awaiting_pm', 'awaiting_pmh', 'persetujuan']);
+            } elseif (in_array($statusVal, ['analisa', 'analysis', 'dianalisis'])) {
+                $query->whereIn('status', ['analisa', 'analysis', 'dianalisis']);
+            } elseif (in_array($statusVal, ['development', 'develop', 'dikerjakan'])) {
+                $query->whereIn('status', ['development', 'develop', 'dikerjakan']);
+            } elseif (in_array($statusVal, ['uat', 'sit'])) {
+                $query->whereIn('status', ['uat', 'sit']);
+            } elseif (in_array($statusVal, ['golive', 'go-live', 'go_live'])) {
+                $query->whereIn('status', ['golive', 'selesai', 'invoicing']);
+            } else {
+                $query->where('status', $request->status);
+            }
         }
 
         // Category Tab Filter
@@ -164,6 +205,10 @@ class ChangeRequestController extends Controller
                 WHEN kode_cr = 'CR-2024-026' THEN 2
                 ELSE 3 END ASC, id asc")->paginate(15)->withQueryString();
         } elseif ($viewMode === 'total') {
+            $perPage = (int) $request->input('per_page', 10);
+            if (!in_array($perPage, [5, 10, 20, 50, 100])) {
+                $perPage = 10;
+            }
             $changeRequests = $query->orderByRaw("CASE 
                 WHEN kode_cr = 'CR-2024-006' THEN 1
                 WHEN kode_cr = 'CR-2024-008' THEN 2
@@ -171,7 +216,20 @@ class ChangeRequestController extends Controller
                 WHEN kode_cr = 'CR-2024-014' THEN 4
                 WHEN kode_cr = 'CR-2024-017' THEN 5
                 WHEN kode_cr = 'CR-2024-019' THEN 6
-                ELSE 7 END ASC, id asc")->paginate(15)->withQueryString();
+                ELSE 7 END ASC, id asc")->paginate($perPage)->withQueryString();
+        } elseif ($viewMode === 'draft') {
+            $perPage = (int) $request->input('per_page', 10);
+            if (!in_array($perPage, [5, 10, 20, 50, 100])) {
+                $perPage = 10;
+            }
+            $changeRequests = $query->orderByRaw("CASE 
+                WHEN kode_cr = 'CR-DRAFT-001' THEN 1
+                WHEN kode_cr = 'CR-DRAFT-002' THEN 2
+                WHEN kode_cr = 'CR-DRAFT-003' THEN 3
+                WHEN kode_cr = 'CR-DRAFT-004' THEN 4
+                WHEN kode_cr = 'CR-DRAFT-005' THEN 5
+                WHEN kode_cr = 'CR-DRAFT-006' THEN 6
+                ELSE 7 END ASC, id asc")->paginate($perPage)->withQueryString();
         } else {
             $changeRequests = $query->latest()->paginate(15)->withQueryString();
         }
@@ -565,11 +623,17 @@ class ChangeRequestController extends Controller
             $validated['owner_cr'] = $user->name ?? 'Pemohon CR';
         }
 
-        $validated['status'] = 'diajukan';
+        $isDraft = ($request->input('action') === 'draft' || $request->input('status') === 'draft');
+        $validated['status'] = $isDraft ? 'draft' : 'diajukan';
 
         $changeRequest = ChangeRequest::create($validated);
 
-        // Notify PM and Admin
+        if ($isDraft) {
+            return redirect()->route('change-requests.index', ['view' => 'draft'])
+                ->with('success', 'Draft Change Request ' . $changeRequest->kode_cr . ' berhasil disimpan.');
+        }
+
+        // Notify PM and Admin on real submission
         Notification::sendNotification([
             'target_role'       => 'pm',
             'change_request_id' => $changeRequest->id,
@@ -816,11 +880,11 @@ class ChangeRequestController extends Controller
             'berita_acara_no' => 'nullable|string|max:100',
         ]);
 
-        if (! in_array($role, ['presales', 'finance'], true)) {
+        if ($role !== 'presales') {
             unset($validated['biaya_pengerjaan'], $validated['harga_penawaran'], $validated['potensi_penjualan']);
         }
 
-        if (in_array($role, ['presales', 'finance'], true)) {
+        if ($role === 'presales') {
             if (isset($validated['harga_penawaran']) && $validated['harga_penawaran'] !== null && $validated['harga_penawaran'] !== '') {
                 if (! $changeRequest->canBeQuoted()) {
                     return back()->withErrors([
@@ -1115,17 +1179,31 @@ class ChangeRequestController extends Controller
     public function saveQuotation(Request $request, ChangeRequest $changeRequest)
     {
         $user = auth()->user();
-        abort_unless($user?->isFinance() || $user?->isAdmin(), 403, 'Akses ditolak. Modul ini adalah pencatatan internal Marketing / Keuangan.');
+        abort_unless($user?->isPresales() || $user?->isAdmin(), 403, 'Akses ditolak. Modul ini adalah pencatatan internal Presales / Marketing.');
 
         $validated = $request->validate([
             'harga_penawaran' => 'required|numeric|min:0',
+            'biaya_pengerjaan' => 'nullable|numeric|min:0',
+            'estimasi_waktu' => 'nullable|string|max:100',
+            'estimasi_resource' => 'nullable|string|max:255',
             'quotation_file' => 'nullable|file|mimes:pdf,doc,docx,zip|max:20480',
             'signed_quotation_file' => 'nullable|file|mimes:pdf,doc,docx,zip|max:20480',
         ]);
 
-        $changeRequest->update([
+        $updateData = [
             'harga_penawaran' => $validated['harga_penawaran'],
-        ]);
+        ];
+        if (array_key_exists('biaya_pengerjaan', $validated) && $validated['biaya_pengerjaan'] !== null) {
+            $updateData['biaya_pengerjaan'] = $validated['biaya_pengerjaan'];
+        }
+        if (!empty($validated['estimasi_waktu'])) {
+            $updateData['estimasi_waktu'] = $validated['estimasi_waktu'];
+        }
+        if (!empty($validated['estimasi_resource'])) {
+            $updateData['estimasi_resource'] = $validated['estimasi_resource'];
+        }
+
+        $changeRequest->update($updateData);
 
         // Store into CrInvoice or update first invoice quotation
         $invoice = $changeRequest->invoices()->first() ?: new CrInvoice(['change_request_id' => $changeRequest->id]);
@@ -1145,7 +1223,7 @@ class ChangeRequestController extends Controller
     public function storeInvoice(Request $request, ChangeRequest $changeRequest)
     {
         $user = auth()->user();
-        abort_unless($user?->isFinance() || $user?->isAdmin(), 403, 'Akses ditolak. Modul Invoicing adalah wewenang bagian Marketing / Keuangan.');
+        abort_unless($user?->isPresales() || $user?->isAdmin(), 403, 'Akses ditolak. Modul Invoicing adalah wewenang bagian Presales.');
 
         // Aturan Khusus: CR harus berstatus Go-Live dan tervalidasi PM Head sebelum dapat diterbitkan invoice
         if (! $changeRequest->isReadyForInvoicing()) {
@@ -1215,7 +1293,7 @@ class ChangeRequestController extends Controller
     public function updateInvoiceStatus(Request $request, CrInvoice $invoice)
     {
         $user = auth()->user();
-        abort_unless($user?->isFinance() || $user?->isAdmin(), 403, 'Akses ditolak. Perubahan status pembayaran hanya dapat dilakukan oleh Marketing / Keuangan.');
+        abort_unless($user?->isPresales() || $user?->isAdmin(), 403, 'Akses ditolak. Perubahan status pembayaran hanya dapat dilakukan oleh Presales.');
 
         $validated = $request->validate([
             'payment_status' => 'required|in:pending,paid',

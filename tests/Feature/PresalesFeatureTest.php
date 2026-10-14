@@ -80,10 +80,9 @@ class PresalesFeatureTest extends TestCase
         $response->assertOk();
         $response->assertSee('Change Request');
         $response->assertSee('Semua CR');
-        $response->assertSee('CR Aktif');
-        $response->assertSee('CR Selesai');
         $response->assertSee('Integrasi Payment Gateway');
         $response->assertSee('PT Maju Bersama');
+        $response->assertSee('Review');
     }
 
     public function test_presales_can_access_persetujuan_page(): void
@@ -122,5 +121,40 @@ class PresalesFeatureTest extends TestCase
         $response = $this->actingAs($client)->get(route('presales.dashboard'));
 
         $response->assertForbidden();
+    }
+
+    public function test_presales_title_changes_dynamically_with_status_filter(): void
+    {
+        $presales = $this->createPresalesUser();
+
+        // 1. Diajukan
+        $res = $this->actingAs($presales)->get(route('presales.change-requests', ['status' => 'diajukan']));
+        $res->assertOk();
+        $res->assertSee('Diajukan');
+        $res->assertSee('Pantau seluruh permintaan perubahan berstatus Diajukan');
+
+        // 2. Analysis
+        $res = $this->actingAs($presales)->get(route('presales.change-requests', ['status' => 'analisa']));
+        $res->assertOk();
+        $res->assertSee('Analysis');
+        $res->assertSee('Pantau seluruh permintaan perubahan berstatus Analysis');
+
+        // 3. Develop
+        $res = $this->actingAs($presales)->get(route('presales.change-requests', ['status' => 'development']));
+        $res->assertOk();
+        $res->assertSee('Develop');
+        $res->assertSee('Pantau seluruh permintaan perubahan berstatus Develop');
+
+        // 4. Go Live
+        $res = $this->actingAs($presales)->get(route('presales.change-requests', ['status' => 'golive']));
+        $res->assertOk();
+        $res->assertSee('Go Live');
+        $res->assertSee('Pantau seluruh permintaan perubahan berstatus Go Live');
+
+        // 5. Default (Semua Status)
+        $res = $this->actingAs($presales)->get(route('presales.change-requests'));
+        $res->assertOk();
+        $res->assertSee('Change Request');
+        $res->assertSee('Pantau seluruh permintaan perubahan Anda');
     }
 }

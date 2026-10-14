@@ -36,11 +36,11 @@ class NotificationController extends Controller
         if ($request->filled('search')) {
             $search = trim($request->query('search'));
             $query->where(function ($q) use ($search) {
-                $q->where('title', 'ilike', "%{$search}%")
-                  ->orWhere('message', 'ilike', "%{$search}%")
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('message', 'like', "%{$search}%")
                   ->orWhereHas('changeRequest', function ($crQuery) use ($search) {
-                      $crQuery->where('kode_cr', 'ilike', "%{$search}%")
-                              ->orWhere('judul', 'ilike', "%{$search}%");
+                      $crQuery->where('kode_cr', 'like', "%{$search}%")
+                              ->orWhere('judul', 'like', "%{$search}%");
                   });
             });
         }

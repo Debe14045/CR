@@ -132,8 +132,20 @@ class PresalesController extends Controller
         $query = $this->buildCrQuery($request);
         $changeRequests = $query->latest()->paginate($perPage)->withQueryString();
 
+        $pageTitle = 'Change Request';
+        if ($request->filled('status') && $request->status !== 'all') {
+            $statusVal = strtolower($request->status);
+            $pageTitle = match($statusVal) {
+                'diajukan', 'awaiting_pm', 'awaiting_pmh', 'persetujuan' => 'Diajukan',
+                'analisa', 'analysis', 'dianalisis' => 'Analysis',
+                'development', 'develop', 'dikerjakan' => 'Develop',
+                'golive', 'go-live', 'go_live', 'selesai' => 'Go Live',
+                default => ucfirst(str_replace('_', ' ', $request->status)),
+            };
+        }
+
         return view('presales.table_page', [
-            'pageTitle'      => 'Change Request',
+            'pageTitle'      => $pageTitle,
             'activeMenu'     => 'semua_cr',
             'changeRequests' => $changeRequests,
             'totalData'      => $changeRequests->total(),

@@ -31,7 +31,6 @@ class UserSeeder extends Seeder
         foreach ([
             ['pmh@itpi.test', 'PM Head Demo', User::ROLE_PMH],
             ['presales@itpi.test', 'Presales Demo', User::ROLE_PRESALES],
-            ['finance@itpi.test', 'Finance Demo', User::ROLE_FINANCE],
             ['admin@itpi.test', 'Admin Demo', User::ROLE_ADMIN],
         ] as [$email, $name, $role]) {
             User::updateOrCreate(compact('email'), [

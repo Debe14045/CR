@@ -69,7 +69,7 @@
                             <button type="button" class="btn w-100 d-flex align-items-center justify-content-between text-start"
                                     id="companyDropdownBtn"
                                     onclick="toggleCustomDropdown('companyDropdownMenu', event)"
-                                    style="background: #FFFFFF; border: 1.5px solid #BAE6FD; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; font-weight: 500; color: #1E293B; transition: all 0.15s ease;">
+                                    style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; font-weight: 500; color: #1E293B; transition: all 0.15s ease;">
                                 <span id="selectedCompanyName">{{ old('nama_perusahaan', 'PT Maju Bersama') }}</span>
                                 <svg id="companyDropdownChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ms-2 flex-shrink-0" style="transition: transform 0.2s ease;">
                                     <polyline points="6 9 12 15 18 9"></polyline>
@@ -111,7 +111,7 @@
                                 </label>
                                 <input type="text" name="inisial_klien" id="inisial_klien"
                                        value="{{ old('inisial_klien', 'MB') }}" readonly
-                                       style="background-color: #E2E8F0; color: #475569; font-weight: 600; border: none; border-radius: 8px; height: 42px; padding: 0 8px; font-size: 0.84rem; width: 100%; text-align: center;">
+                                       style="background-color: #E9EDF1; color: #475569; font-weight: 600; border: none; border-radius: 8px; height: 42px; padding: 0 8px; font-size: 0.84rem; width: 100%; text-align: center;">
                             </div>
 
                             {{-- Nama PIC --}}
@@ -121,7 +121,7 @@
                                 </label>
                                 <input type="text" name="nama_pic" id="nama_pic"
                                        value="{{ old('nama_pic', Auth::user()->name ?? 'Totok Antok') }}" readonly
-                                       style="background-color: #E2E8F0; color: #475569; font-weight: 500; border: none; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
+                                       style="background-color: #E9EDF1; color: #475569; font-weight: 500; border: none; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             </div>
                         </div>
                     </div>
@@ -133,7 +133,7 @@
                         </label>
                         <input type="text" name="cr_owner" id="cr_owner"
                                value="{{ old('cr_owner', !empty($changeRequest) ? ($changeRequest->owner_cr ?: 'Andik Vermansyah') : 'Andik Vermansyah') }}" required
-                               style="background-color: #FFFFFF; border: 1.5px solid #BAE6FD; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; color: #1E293B; width: 100%;">
+                               style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; color: #1E293B; width: 100%;">
                     </div>
 
                 </div>
@@ -146,10 +146,10 @@
         <div class="card border-0 mb-4 shadow-xs" style="border-radius: 14px; background: #FFFFFF; border: 1px solid #E2E8F0 !important; position: relative; z-index: 30;">
             
             {{-- Header Strip --}}
-            <div class="d-flex align-items-center justify-content-between px-4 py-3" style="background: #DCFCE7; border-bottom: 1px solid rgba(0,0,0,0.03); border-top-left-radius: 13px; border-top-right-radius: 13px;">
+            <div class="d-flex align-items-center justify-content-between px-4 py-3" style="background: #E1F6F1; border-bottom: 1px solid rgba(0,0,0,0.03); border-top-left-radius: 13px; border-top-right-radius: 13px;">
                 <div class="d-flex align-items-center gap-2">
                     <div class="d-flex align-items-center justify-content-center text-white rounded-circle shadow-xs"
-                         style="width: 30px; height: 30px; background: #16A34A; flex-shrink: 0;">
+                         style="width: 30px; height: 30px; background: #03A086; flex-shrink: 0;">
                         <i class="bi bi-file-earmark-text-fill" style="font-size: 1rem;"></i>
                     </div>
                     <span class="fw-bold" style="color: #0F172A; font-size: 0.95rem; letter-spacing: -0.01em;">Informasi Change Request</span>
@@ -174,7 +174,7 @@
                             <button type="button" class="btn w-100 d-flex align-items-center justify-content-between text-start"
                                     id="projectDropdownBtn"
                                     onclick="toggleCustomDropdown('projectDropdownMenu', event)"
-                                    style="background: #FFFFFF; border: 1.5px solid #BAE6FD; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; font-weight: 500; color: #1E293B; transition: all 0.15s ease;">
+                                    style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; font-weight: 500; color: #1E293B; transition: all 0.15s ease;">
                                 <span id="selectedProjectName" class="text-truncate">{{ old('nama_project', 'Eprocurement PT eagle Hight plantanions TBK') }}</span>
                                 <svg id="projectDropdownChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ms-2 flex-shrink-0" style="transition: transform 0.2s ease;">
                                     <polyline points="6 9 12 15 18 9"></polyline>
@@ -213,9 +213,9 @@
                         </label>
                         <div class="position-relative cursor-pointer" onclick="openDatePicker('date_input_1', event)">
                             <input type="text" name="date" id="date_input_1"
-                                   value="{{ old('date', '04 Sep 2026') }}" readonly
-                                   onclick="openDatePicker('date_input_1', event)"
-                                   style="background-color: #FFFFFF; border: 1.5px solid #BAE6FD; border-radius: 8px; height: 42px; padding: 0 38px 0 14px; font-size: 0.84rem; color: #1E293B; width: 100%; cursor: pointer;">
+                                    value="{{ old('date', '04 Sep 2026') }}" readonly
+                                    onclick="openDatePicker('date_input_1', event)"
+                                    style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 38px 0 14px; font-size: 0.84rem; color: #1E293B; width: 100%; cursor: pointer;">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                                  style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); pointer-events: none;">
                                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -233,9 +233,9 @@
                         </label>
                         <div class="position-relative cursor-pointer" onclick="openDatePicker('date_input_2', event)">
                             <input type="text" name="request_date" id="date_input_2"
-                                   value="{{ old('request_date', old('target_golive', '04 Sep 2026')) }}" readonly
-                                   onclick="openDatePicker('date_input_2', event)"
-                                   style="background-color: #FFFFFF; border: 1.5px solid #BAE6FD; border-radius: 8px; height: 42px; padding: 0 38px 0 14px; font-size: 0.84rem; color: #1E293B; width: 100%; cursor: pointer;">
+                                    value="{{ old('request_date', old('target_golive', '04 Sep 2026')) }}" readonly
+                                    onclick="openDatePicker('date_input_2', event)"
+                                    style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 38px 0 14px; font-size: 0.84rem; color: #1E293B; width: 100%; cursor: pointer;">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
                                  style="position: absolute; right: 14px; top: 50%; transform: translateY(-50%); pointer-events: none;">
                                 <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
@@ -256,7 +256,7 @@
                     <input type="text" name="cr_name" id="cr_name"
                            placeholder="Contoh: Integrasi API Pembayaran OVO"
                            value="{{ old('cr_name', !empty($changeRequest) ? $changeRequest->judul : '') }}" required
-                           style="background-color: #FFFFFF; border: 1.5px solid #BAE6FD; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; color: #1E293B; width: 100%;">
+                           style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; color: #1E293B; width: 100%;">
                 </div>
 
                 {{-- Row 3: Detail CR* (Interactive TinyMCE Style Editor) --}}
@@ -466,7 +466,7 @@
             <div class="d-flex align-items-center justify-content-between px-4 py-3" style="background: #ECEAFD; border-bottom: 1px solid rgba(0,0,0,0.03); border-top-left-radius: 13px; border-top-right-radius: 13px;">
                 <div class="d-flex align-items-center gap-2">
                     <div class="d-flex align-items-center justify-content-center text-white rounded-circle shadow-xs"
-                         style="width: 30px; height: 30px; background: #7C3AED; flex-shrink: 0;">
+                         style="width: 30px; height: 30px; background: #907CF8; flex-shrink: 0;">
                         <i class="bi bi-file-earmark-text-fill" style="font-size: 1rem;"></i>
                     </div>
                     <span class="fw-bold" style="color: #0F172A; font-size: 0.95rem; letter-spacing: -0.01em;">Dokumen Dan Lainnya</span>
@@ -494,7 +494,7 @@
                              ondragover="handleDragOver(event)"
                              ondragleave="handleDragLeave(event)"
                              ondrop="handleFileDrop(event)"
-                             style="border: 1.5px dashed #93C5FD; border-radius: 10px; background: #FFFFFF; min-height: 104px; transition: all 0.2s ease;">
+                             style="border: 1.5px dashed #CBD5E1; border-radius: 10px; background: #FFFFFF; min-height: 104px; transition: all 0.2s ease;">
                             
                             {{-- Upload Tray Icon matching Figma --}}
                             <div id="dropzonePlaceholder">
@@ -578,7 +578,7 @@
                         CR Notes
                     </label>
                     <textarea name="cr_notes" id="cr_notes" rows="3" class="form-control"
-                              style="background-color: #FFFFFF; border: 1.5px solid #BAE6FD; border-radius: 8px; font-size: 0.84rem; padding: 12px 14px; width: 100%; height: 90px; outline: none;"
+                              style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 0.84rem; padding: 12px 14px; width: 100%; height: 90px; outline: none;"
                               placeholder="Catatan tambahan, prioritas, atau informasi lain yang perlu diketahui PM...">{{ old('cr_notes', !empty($changeRequest) ? $changeRequest->catatan_pengajuan : '') }}</textarea>
                 </div>
 
