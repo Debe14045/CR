@@ -29,6 +29,11 @@ class ChangeRequestController extends Controller
             $query->where('user_id', $user->id);
         }
 
+        // Presales dedicated dashboard redirect
+        if ($role === 'presales' && ! $request->filled('view') && ! $request->filled('status') && ! $request->filled('search') && ! $request->filled('tab')) {
+            return redirect()->route('presales.dashboard');
+        }
+
         // PM Head Queue Rule:
         if ($role === 'pmh') {
             if ($request->status === 'awaiting_pm' || $request->status === 'diajukan') {

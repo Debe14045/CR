@@ -29,6 +29,8 @@
         </div>
     </div>
 
+    <div style="height: 3px; background: #E0F2FE; border-radius: 999px; margin-bottom: 1.5rem;"></div>
+
     <div class="row g-3 mb-4">
         <div class="col-xl-3 col-md-6 col-12">
             <a href="{{ route('pmh.change-requests') }}" class="text-decoration-none d-block h-100">

@@ -105,6 +105,8 @@
         <p class="text-muted mb-0" style="font-size: 0.86rem; color: #64748B;">Melihat Data Lengkap CR</p>
     </div>
 
+    <div style="height: 3px; background: #E0F2FE; border-radius: 999px; margin-bottom: 1.5rem;"></div>
+
     <div class="cr-detail-container p-4 p-md-5 mb-4">
         
         <div class="d-flex align-items-center gap-3 mb-4">
@@ -137,7 +139,7 @@
             </div>
             <div class="text-muted small d-flex align-items-center gap-1.5" style="font-size: 0.8rem; color: #64748B;">
                 <i class="bi bi-calendar3" style="font-size: 0.82rem; color: #94A3B8;"></i>
-                <span>Tanggal Pengajuan: <strong style="color: #1E293B; font-weight: 700;">{{ $tglHeader }}</strong></span>
+                <span>Tanggal Pengajuan: <strong style="color: #334155; font-weight: 700;">{{ $tglHeader }}</strong></span>
             </div>
         </div>
 
@@ -242,37 +244,37 @@
                     <div class="row g-3">
                         <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">NAMA PERUSAHAAN</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0F172A; font-weight: 800;">{{ $companyName }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;">{{ $companyName }}</div>
                         </div>
                         <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">INISIAL KLIEN</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0F172A; font-weight: 800;">{{ $clientInitial }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;">{{ $clientInitial }}</div>
                         </div>
                         <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">NAMA PIC</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0F172A; font-weight: 800;">{{ $picName }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;">{{ $picName }}</div>
                         </div>
 
                         <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">NAMA PROJECT</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0F172A; font-weight: 800;">{{ $projectName }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;">{{ $projectName }}</div>
                         </div>
                         <div class="col-8">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">CR OWNER</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0F172A; font-weight: 800;">{{ $crOwner }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;">{{ $crOwner }}</div>
                         </div>
 
                         <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">TANGGAL PENGAJUAN</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0F172A; font-weight: 800;">{{ $tglPengajuan }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;">{{ $tglPengajuan }}</div>
                         </div>
                         <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">REQUEST GO-LIVE</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0F172A; font-weight: 800;">{{ $targetSelesai }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;">{{ $targetSelesai }}</div>
                         </div>
                         <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">PRIORITAS CR</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0F172A; font-weight: 800;">{{ $priority }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #0C4A6E; font-weight: 800;">{{ $priority }}</div>
                         </div>
                     </div>
                 </div>
@@ -392,14 +394,14 @@
             <div class="col-lg-6 col-12">
                 <div class="cr-subcard p-4 h-100 d-flex flex-column">
                     <div class="d-flex align-items-center gap-2 mb-3">
-                        <i class="bi bi-chat-square-text" style="color: #475569; font-size: 0.95rem;"></i>
-                        <span class="fw-bold text-uppercase" style="font-size: 0.76rem; letter-spacing: 0.05em; color: #0F172A; font-weight: 800;">
+                        <i class="bi bi-chat-square-text" style="color: #0C4A6E; font-size: 0.95rem;"></i>
+                        <span class="fw-bold text-uppercase" style="font-size: 0.76rem; letter-spacing: 0.05em; color: #0C4A6E; font-weight: 800;">
                             CR Notes / Catatan
                         </span>
                     </div>
 
                     <div class="p-4 flex-grow-1 d-flex align-items-center justify-content-center" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 12px;">
-                        <p class="mb-0" style="font-size: 0.85rem; line-height: 1.65; color: #475569;">
+                        <p class="mb-0" style="font-size: 0.85rem; line-height: 1.65; color: #0C4A6E;">
                             &ldquo;{{ $catatanCR }}&rdquo;
                         </p>
                     </div>
@@ -408,7 +410,7 @@
         </div>
 
         <div class="cr-subcard p-4">
-            <h5 class="fw-bold text-dark mb-1" style="font-size: 1rem; font-weight: 800; color: #0F172A;">Keputusan Approval</h5>
+            <h5 class="fw-bold mb-1" style="font-size: 1rem; font-weight: 800; color: #0C4A6E;">Keputusan Approval</h5>
             <p class="text-muted small mb-3" style="font-size: 0.82rem; color: #64748B;">
                 PM <strong style="color: #0F172A; font-weight: 700;">{{ $pmVerifier }}</strong> sudah memverifikasi Change Request. Setujui untuk diteruskan ke Marketing.
             </p>
@@ -416,7 +418,7 @@
             <form method="POST" action="{{ route('pmh.decision', $changeRequest) }}">
                 @csrf
                 <div class="mb-3">
-                    <label class="fw-bold small text-dark mb-1" style="font-size: 0.78rem; font-weight: 700; color: #0284C7;">CR Notes</label>
+                    <label class="fw-bold small mb-1" style="font-size: 0.78rem; font-weight: 700; color: #0C4A6E;">CR Notes</label>
                     <textarea name="catatan_approval" rows="4" class="form-control"
                               placeholder="Catatan tambahan, prioritas, atau informasi lain yang perlu diketahui PM..."
                               style="border-radius: 10px; border: 1.5px solid #BAE6FD; font-size: 0.86rem; padding: 0.75rem 1rem; color: #1E293B; background: #FFFFFF;"></textarea>

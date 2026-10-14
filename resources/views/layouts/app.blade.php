@@ -16,7 +16,7 @@
             'pm'       => ['brand' => '#059669', 'brand_dark' => '#047857', 'soft' => '#ECFDF5', 'border' => '#A7F3D0', 'icon' => 'bi-kanban-fill', 'label' => 'Project Manager', 'desc' => 'Verifikasi, Solution Paper, Status & BA'],
             'pmh'      => ['brand' => '#E11D48', 'brand_dark' => '#BE123C', 'soft' => '#FFF1F2', 'border' => '#FECDD3', 'icon' => 'bi-shield-check', 'label' => 'PM Head', 'desc' => 'Validasi CR & Validasi Go-Live'],
             'finance'  => ['brand' => '#0D9488', 'brand_dark' => '#0F766E', 'soft' => '#F0FDFA', 'border' => '#99F6E4', 'icon' => 'bi-receipt-cutoff', 'label' => 'Marketing / Keuangan', 'desc' => 'Internal Quotation & Invoicing'],
-            'presales' => ['brand' => '#0D9488', 'brand_dark' => '#0F766E', 'soft' => '#F0FDFA', 'border' => '#99F6E4', 'icon' => 'bi-receipt-cutoff', 'label' => 'Marketing / Keuangan', 'desc' => 'Internal Quotation & Invoicing'],
+            'presales' => ['brand' => '#0063D7', 'brand_dark' => '#02376A', 'soft' => '#EFF6FF', 'border' => '#BFDBFE', 'icon' => 'bi-briefcase-fill', 'label' => 'Presales', 'desc' => 'Presales Dashboard & Pipeline CR'],
             'admin'    => ['brand' => '#4F46E5', 'brand_dark' => '#4338CA', 'soft' => '#EEF2FF', 'border' => '#C7D2FE', 'icon' => 'bi-gear-wide-connected', 'label' => 'Administrator', 'desc' => 'Master Data (Client, Pegawai, Status)'],
         ];
         $currentRole = auth()->user()?->role ?? 'guest';
@@ -1366,12 +1366,100 @@
                 MENU
             </span>
 
-            @if ($currentRole === 'pmh')
-                {{-- ══ PM HEAD DEDICATED SIDEBAR (FIGMA EXACT) ══ --}}
+            @if ($currentRole === 'presales')
+                {{-- ══ PRESALES DEDICATED SIDEBAR ══ --}}
+                @php
+                    $isPresalesDashboardActive = request()->routeIs('presales.dashboard') || ($currentRouteName === 'change-requests.index' && (!request()->filled('view') || request('view') === 'dashboard') && !request()->filled('search') && !request()->filled('status'));
+                    $isPresalesReview = request()->routeIs('presales.review');
+                    $isPresalesCrGroupActive = request()->routeIs('presales.change-requests') || request()->routeIs('presales.persetujuan') || request()->routeIs('presales.development') || $isPresalesReview;
+                @endphp
+
+                {{-- 1. Dashboard --}}
+                <a href="{{ route('presales.dashboard') }}"
+                   class="sidebar-link {{ $isPresalesDashboardActive ? 'active' : '' }}"
+                   style="position: relative; border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; {{ $isPresalesDashboardActive ? 'background: #0063D7 !important; color: #FFFFFF !important;' : '' }}">
+                    <i class="bi bi-grid-fill nav-icon" style="font-size: 1.05rem;"></i>
+                    <span class="fw-semibold">Dashboard</span>
+                </a>
+
+                {{-- 2. Change Request Accordion Group (Semua CR, Butuh Persetujuan, Development CR) --}}
+                <div class="nav-group-toggle open"
+                     id="presalesCrGroupToggle"
+                     role="button"
+                     onclick="this.classList.toggle('open'); document.getElementById('presalesCrGroupBody').classList.toggle('open');"
+                     aria-expanded="true"
+                     style="border-radius: 9999px; padding: 0.65rem 1.15rem; font-size: 0.92rem; display: flex; align-items: center; gap: 0.75rem; color: #FFFFFF; margin-top: 0.35rem; {{ $isPresalesCrGroupActive ? 'background: #0063D7 !important;' : 'background: transparent;' }}">
+                    <i class="bi bi-file-earmark-text nav-icon" style="font-size: 1.05rem; opacity: 1;"></i>
+                    <span class="fw-bold" style="letter-spacing: -0.01em;">Change Request</span>
+                    <i class="bi bi-chevron-down toggle-chevron ms-auto" style="font-size: 0.8rem; font-weight: 700; opacity: 0.95;"></i>
+                </div>
+
+                <div class="nav-group-body sidebar-sub open" id="presalesCrGroupBody" style="padding-left: 0.45rem; display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.35rem;">
+                    {{-- 2a. Semua CR --}}
+                    @php $isPresalesSemuaCr = request()->routeIs('presales.change-requests') || ($isPresalesReview && !request()->routeIs('presales.persetujuan') && !request()->routeIs('presales.development')); @endphp
+                    <a href="{{ route('presales.change-requests') }}"
+                       class="sidebar-link {{ $isPresalesSemuaCr ? 'active' : '' }}"
+                       style="border-radius: 9999px; padding: 0.62rem 1.15rem; font-size: 0.9rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; {{ $isPresalesSemuaCr ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent; color: rgba(255,255,255,0.85);' }}">
+                        @if($isPresalesSemuaCr)
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 10px #00B4FF;"></span>
+                        @endif
+                        <i class="bi bi-file-earmark-text nav-icon" style="font-size: 1.05rem; color: #FFFFFF; opacity: 1;"></i>
+                        <span class="fw-bold" style="color: #FFFFFF; letter-spacing: -0.01em;">Semua CR</span>
+                    </a>
+
+                    {{-- 2b. Butuh Persetujuan --}}
+                    @php $isPresalesPersetujuan = request()->routeIs('presales.persetujuan'); @endphp
+                    <a href="{{ route('presales.persetujuan') }}"
+                       class="sidebar-link {{ $isPresalesPersetujuan ? 'active' : '' }}"
+                       style="border-radius: 9999px; padding: 0.55rem 1.15rem; font-size: 0.86rem; color: rgba(255,255,255,0.85); display: flex; align-items: center; gap: 0.65rem; {{ $isPresalesPersetujuan ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent;' }}">
+                        @if($isPresalesPersetujuan)
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 10px #00B4FF;"></span>
+                        @endif
+                        <i class="bi bi-file-earmark-check nav-icon" style="font-size: 0.95rem;"></i>
+                        <span>Butuh Persetujuan</span>
+                    </a>
+
+                    {{-- 2c. Development --}}
+                    @php $isPresalesDev = request()->routeIs('presales.development'); @endphp
+                    <a href="{{ route('presales.development') }}"
+                       class="sidebar-link {{ $isPresalesDev ? 'active' : '' }}"
+                       style="border-radius: 9999px; padding: 0.55rem 1.15rem; font-size: 0.86rem; color: rgba(255,255,255,0.85); display: flex; align-items: center; gap: 0.65rem; {{ $isPresalesDev ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent;' }}">
+                        @if($isPresalesDev)
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 10px #00B4FF;"></span>
+                        @endif
+                        <i class="bi bi-bar-chart-steps nav-icon" style="font-size: 0.95rem;"></i>
+                        <span>Development</span>
+                    </a>
+                </div>
+
+                {{-- 3. Notifikasi --}}
+                @php
+                    $isNotifActive = request()->routeIs('presales.notifications');
+                    $sidebarNotifCount = \App\Models\ChangeRequest::count();
+                @endphp
+                <a href="{{ route('presales.notifications') }}"
+                   class="sidebar-link d-flex align-items-center justify-content-between {{ $isNotifActive ? 'active' : '' }}"
+                   style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: #FFFFFF; margin-top: 0.35rem; {{ $isNotifActive ? 'background: #0063D7 !important;' : '' }}">
+                    <span class="d-flex align-items-center gap-2">
+                        <i class="bi bi-bell nav-icon" style="font-size: 1.05rem;"></i>
+                        <span class="fw-medium">Notifikasi</span>
+                    </span>
+                    <span class="badge rounded-pill" style="background-color: #EF4444; color: #FFFFFF; font-size: 0.68rem; font-weight: 700; padding: 3px 8px;">{{ $sidebarNotifCount > 0 ? $sidebarNotifCount : 10 }}</span>
+                </a>
+
+                {{-- 4. Pengaturan --}}
+                <a href="{{ route('profile') }}"
+                   class="sidebar-link"
+                   style="border-radius: 10px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem;">
+                    <i class="bi bi-gear nav-icon" style="font-size: 1.05rem;"></i>
+                    <span class="fw-medium">Pengaturan</span>
+                </a>
+
+            @elseif ($currentRole === 'pmh')
+                {{-- ══ PM HEAD DEDICATED SIDEBAR (ORIGINAL SINGLE MENU) ══ --}}
                 @php
                     $isPmhDashboardActive = request()->routeIs('pmh.dashboard') || ($currentRouteName === 'change-requests.index' && (!request()->filled('view') || request('view') === 'dashboard') && !request()->filled('search') && !request()->filled('status'));
-                    $isPmhReview = request()->routeIs('pmh.review');
-                    $isPmhCrGroupActive = request()->routeIs('pmh.change-requests') || request()->routeIs('pmh.persetujuan') || request()->routeIs('pmh.development') || request()->routeIs('pmh.golive') || $isPmhReview;
+                    $isPmhCrActive = request()->routeIs('pmh.change-requests') || request()->routeIs('pmh.persetujuan') || request()->routeIs('pmh.development') || request()->routeIs('pmh.golive') || request()->routeIs('pmh.review');
                 @endphp
 
                 {{-- 1. Dashboard --}}
@@ -1382,10 +1470,10 @@
                     <span class="fw-semibold">Dashboard</span>
                 </a>
 
-                {{-- 2. Change Request (Single Direct Menu, No Dropdown, Sesuai Permintaan User) --}}
+                {{-- 2. Change Request (Single Direct Menu, No Dropdown, Sesuai Desain PM Head Asli) --}}
                 <a href="{{ route('pmh.change-requests') }}"
-                   class="sidebar-link {{ $isPmhCrGroupActive ? 'active' : '' }}"
-                   style="position: relative; border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; margin-top: 0.35rem; {{ $isPmhCrGroupActive ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'color: #FFFFFF;' }}">
+                   class="sidebar-link {{ $isPmhCrActive ? 'active' : '' }}"
+                   style="position: relative; border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; margin-top: 0.35rem; {{ $isPmhCrActive ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'color: #FFFFFF;' }}">
                     <i class="bi bi-file-earmark-text nav-icon" style="font-size: 1.05rem;"></i>
                     <span class="fw-semibold">Change Request</span>
                 </a>
@@ -1398,19 +1486,25 @@
                     <span class="fw-semibold">Outstanding Payment</span>
                 </a>
 
-                {{-- 4. Notifikasi (Belum ada design, redirect ke dashboard) --}}
-                <a href="{{ route('change-requests.index') }}"
-                   class="sidebar-link d-flex align-items-center justify-content-between"
-                   style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: #FFFFFF; margin-top: 0.35rem;">
+                {{-- 4. Notifikasi --}}
+                @php
+                    $isNotifActive = request()->routeIs('pmh.notifications');
+                    $sidebarNotifCount = \App\Models\ChangeRequest::count();
+                @endphp
+                <a href="{{ route('pmh.notifications') }}"
+                   class="sidebar-link d-flex align-items-center justify-content-between {{ $isNotifActive ? 'active' : '' }}"
+                   style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: #FFFFFF; margin-top: 0.35rem; {{ $isNotifActive ? 'background: #0063D7 !important;' : '' }}">
                     <span class="d-flex align-items-center gap-2">
                         <i class="bi bi-bell nav-icon" style="font-size: 1.05rem;"></i>
                         <span class="fw-medium">Notifikasi</span>
                     </span>
-                    <span class="badge bg-danger rounded-pill" style="font-size: 0.65rem;">3</span>
+                    @if ($sidebarNotifCount > 0)
+                        <span class="badge bg-danger rounded-pill" style="font-size: 0.65rem;">{{ $sidebarNotifCount }}</span>
+                    @endif
                 </a>
 
-                {{-- 5. Pengaturan (Belum ada design, redirect ke dashboard) --}}
-                <a href="{{ route('change-requests.index') }}"
+                {{-- 5. Pengaturan --}}
+                <a href="{{ route('profile') }}"
                    class="sidebar-link"
                    style="border-radius: 10px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem;">
                     <i class="bi bi-gear nav-icon" style="font-size: 1.05rem;"></i>
@@ -1524,7 +1618,7 @@
                         </a>
                     </div>
                 @else
-                    <a href="{{ route('change-requests.index') }}"
+                    <a href="{{ route('profile') }}"
                        class="sidebar-link"
                        style="border-radius: 10px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem;">
                         <i class="bi bi-gear nav-icon" style="font-size: 1.05rem;"></i>
@@ -1622,7 +1716,7 @@
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-3 mt-2" style="width: 320px; border-radius: 14px;" aria-labelledby="notifDropdown">
                         <li class="d-flex justify-content-between align-items-center mb-2">
                             <span class="fw-bold small text-dark" data-i18n="notif_incoming">Notifikasi Masuk</span>
-                            <span class="badge bg-danger-subtle text-danger rounded-pill" style="font-size: 0.68rem;" data-i18n="notif_badge">3 Baru</span>
+                            <span class="badge bg-danger-subtle text-danger rounded-pill" style="font-size: 0.68rem;">{{ \App\Models\ChangeRequest::count() }} Baru</span>
                         </li>
                         <li class="mb-2">
                             <div class="p-2 rounded-2" style="background: #FEF2F2; border-left: 3px solid #EF4444;">
@@ -1986,7 +2080,17 @@
             'h3_background_purpose': '1. LATAR BELAKANG & TUJUAN',
             'h3_scope_of_work': '2. RUANG LINGKUP PERUBAHAN (SCOPE OF WORK)',
             'h3_technical_impact': '3. DAMPAK TEKNIS & DEPENDENCIES',
-            'user_role_label': 'Klien'
+            'user_role_label': 'Klien',
+
+            // Notifikasi Page
+            'notif_page_title': 'Notifikasi',
+            'notif_page_subtitle': 'Pemberitahuan pembaruan status, persetujuan, dan aktivitas Change Request Anda.',
+            'btn_bersihkan': 'Bersihkan',
+            'tab_semua': 'Semua',
+            'tab_belum_dibaca': 'Belum Dibaca',
+            'placeholder_search_notif': 'Cari notifikasi / kode CR...',
+            'breadcrumb_dashboard': 'Dashboard',
+            'breadcrumb_notifikasi': 'Notifikasi'
         },
         en: {
             // Sidebar & Navigation
@@ -2008,6 +2112,16 @@
             'inbox_new_badge': '2 New',
             'notif_badge': '3 New',
             'notif_incoming': 'Incoming Notifications',
+
+            // Notifikasi Page
+            'notif_page_title': 'Notifications',
+            'notif_page_subtitle': 'Notifications of status updates, approvals, and your Change Request activities.',
+            'btn_bersihkan': 'Clear All',
+            'tab_semua': 'All',
+            'tab_belum_dibaca': 'Unread',
+            'placeholder_search_notif': 'Search notification / CR code...',
+            'breadcrumb_dashboard': 'Dashboard',
+            'breadcrumb_notifikasi': 'Notifications',
 
             // Dashboard Header & Cards
             'dashboard_title': 'DASHBOARD',
@@ -2220,7 +2334,7 @@
         ['ESTIMASI MANDAYS', 'MANDAYS ESTIMATE'],
         ['Analisis', 'Analysis'],
         ['hari kerja', 'working days'],
-        ['hari', 'days'],
+        [' hari ', ' days '],
         ['CR Notes / Catatan', 'CR Notes / Remarks'],
         ['Klien', 'Client'],
         ['Penambahan opsi pembayaran OVO Wallet pada step 3 (Metode Pembayaran) di aplikasi Web dan Mobile.', 'Addition of OVO Wallet payment option at step 3 (Payment Method) in Web and Mobile apps.'],

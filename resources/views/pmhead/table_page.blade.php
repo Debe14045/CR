@@ -169,7 +169,7 @@
             @endphp
             <button class="btn btn-white bg-white dropdown-toggle px-3 py-2 d-flex align-items-center justify-content-between shadow-none"
                     type="button" id="statusFilterBtn" data-bs-toggle="dropdown" aria-expanded="false"
-                    style="border: 1.5px solid #CBD5E1; border-radius: 12px; font-size: 0.88rem; font-weight: 500; color: #334155; min-width: 145px; gap: 1rem;">
+                    style="border: 1.5px solid #D6D3CD; border-radius: 12px; font-size: 0.86rem; font-weight: 600; color: #475569; min-width: 145px; gap: 0.85rem;">
                 <span>{{ $statusDisplay }}</span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border p-1 mt-1" style="border-radius: 10px; min-width: 160px; border-color: #E2E8F0;" aria-labelledby="statusFilterBtn">

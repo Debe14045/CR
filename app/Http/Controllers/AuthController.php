@@ -43,10 +43,8 @@ class AuthController extends Controller
         if ($email && Auth::attempt(['email' => $email, 'password' => $request->input('password')], $request->boolean('remember'))) {
             $request->session()->regenerate();
 
-            if (Auth::user()->isPmh()) {
-                return redirect()->intended(route('pmh.change-requests'));
-            }
-            return redirect()->intended(route('change-requests.index'));
+            $user = Auth::user();
+            return $this->redirectAfterLogin($user);
         }
 
         return back()->withErrors([
@@ -294,7 +292,7 @@ class AuthController extends Controller
         Auth::login($user, true);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('change-requests.index'))->with('success', $message);
+        return $this->redirectAfterLogin($user, $message);
     }
 
     /**
@@ -398,7 +396,7 @@ class AuthController extends Controller
         Auth::login($user, true);
         $request->session()->regenerate();
 
-        return redirect()->intended(route('change-requests.index'))->with('success', $message);
+        return $this->redirectAfterLogin($user, $message);
     }
 
     // ─── Figma Password Reset Flow ─────────────────────────────────────────
@@ -533,5 +531,21 @@ class AuthController extends Controller
         $request->session()->regenerateToken();
 
         return redirect('/login');
+    }
+
+    protected function redirectAfterLogin(User $user, ?string $message = null)
+    {
+        $redirectUrl = route('change-requests.index');
+        if ($user->isPresales()) {
+            $redirectUrl = route('presales.dashboard');
+        } elseif ($user->isPmh()) {
+            $redirectUrl = route('pmh.change-requests');
+        }
+
+        $redirect = redirect()->intended($redirectUrl);
+        if ($message) {
+            $redirect->with('success', $message);
+        }
+        return $redirect;
     }
 }

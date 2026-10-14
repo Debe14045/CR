@@ -91,6 +91,8 @@
         </div>
     </div>
 
+    <div style="height: 3px; background: #E0F2FE; border-radius: 999px; margin-bottom: 1.5rem;"></div>
+
     <div class="d-flex justify-content-between align-items-center gap-3 mb-4 flex-wrap">
         <form method="GET" action="{{ route('pmh.outstanding-payment') }}" class="m-0" style="flex: 1; max-width: 380px;">
             <div style="position: relative; display: flex; align-items: center;">

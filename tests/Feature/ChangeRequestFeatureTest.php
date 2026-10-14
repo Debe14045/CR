@@ -47,7 +47,7 @@ class ChangeRequestFeatureTest extends TestCase
         $this->post('/login', [
             'email' => $user->email,
             'password' => 'password',
-        ])->assertRedirect('/change-requests');
+        ])->assertRedirect(route('presales.dashboard'));
 
         $this->assertAuthenticatedAs($user);
     }
@@ -66,10 +66,16 @@ class ChangeRequestFeatureTest extends TestCase
                 'email' => $role . '@itpi.test',
             ]);
 
+            $expectedRedirect = match ($role) {
+                User::ROLE_PRESALES => route('presales.dashboard'),
+                User::ROLE_PMH => route('pmh.change-requests'),
+                default => '/change-requests',
+            };
+
             $this->post('/login', [
                 'email' => $user->email,
                 'password' => 'password',
-            ])->assertRedirect('/change-requests');
+            ])->assertRedirect($expectedRedirect);
 
             $this->assertAuthenticatedAs($user);
             $this->post('/logout');
