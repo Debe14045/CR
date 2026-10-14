@@ -439,16 +439,16 @@
                     @enderror
                 </div>
 
-                <div class="d-flex justify-content-end align-items-center gap-2.5 pt-1">
-                    <button type="submit" name="action" value="reject" class="btn text-white fw-bold px-4 py-2 d-inline-flex align-items-center gap-1.5"
-                            style="background: #DC2626; border-radius: 8px; font-size: 0.84rem; border: none; padding: 0.48rem 1.6rem;"
+                <div class="d-flex justify-content-end align-items-center pt-2" style="gap: 12px;">
+                    <button type="submit" name="action" value="reject" class="btn text-white fw-bold d-inline-flex align-items-center justify-content-center"
+                            style="background: #DC2626; border-radius: 8px; font-size: 0.84rem; border: none; padding: 0.52rem 1.6rem; gap: 8px;"
                             onclick="return confirm('Apakah Anda yakin ingin menolak / mengembalikan CR ini untuk revisi PM? Pastikan telah mengisi alasan di CR Notes.');">
                         <i class="bi bi-x-lg"></i> Tolak
                     </button>
-                    <button type="submit" name="action" value="approve" class="btn text-white fw-bold px-4 py-2 d-inline-flex align-items-center gap-1.5"
-                            style="background: #22C55E; border-radius: 8px; font-size: 0.84rem; border: none; padding: 0.48rem 1.6rem;"
+                    <button type="submit" name="action" value="approve" class="btn text-white fw-bold d-inline-flex align-items-center justify-content-center"
+                            style="background: #22C55E; border-radius: 8px; font-size: 0.84rem; border: none; padding: 0.52rem 1.6rem; gap: 8px;"
                             onclick="return confirm('Setujui dan validasi Change Request ini untuk diteruskan ke Marketing?');">
-                        <i class="bi bi-check-lg"></i> Setujui
+                        <i class="bi bi-check-lg"></i> Setuju
                     </button>
                 </div>
             </form>
