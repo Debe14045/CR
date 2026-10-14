@@ -189,8 +189,8 @@
 
     {{-- Lower Row: NOTIFIKASI (Kiri, background putih) and Chart/Grafik (Kanan) --}}
     <div class="row g-4 mb-4">
-        {{-- Card Left: NOTIFIKASI (Background Putih sesuai referensi) --}}
-        <div class="col-lg-5 col-12">
+        {{-- Card Right (now visually right): NOTIFIKASI --}}
+        <div class="col-lg-5 col-12 order-lg-2">
             <div class="card p-4 border-0 h-100 shadow-sm" style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E2E8F0 !important;">
                 <div class="d-flex justify-content-between align-items-center mb-1">
                     <div class="d-flex align-items-center gap-2">
@@ -262,122 +262,9 @@
             </div>
         </div>
 
-        {{-- Card Right: Chart / Grafik --}}
-        <div class="col-lg-7 col-12">
-            @if ($isPmDashboard)
-                {{-- ── PM DASHBOARD: Grafik Total Request dari PM (Hari Ini, Kemarin, Sebelumnya) ── --}}
-                <div class="card p-4 border-0 h-100 shadow-sm" style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E2E8F0 !important;">
-                    <div class="d-flex justify-content-between align-items-center mb-3 flex-wrap gap-2">
-                        <div>
-                            <h5 class="fw-bold mb-1" style="color: #0F172A; font-size: 1rem; font-weight: 800;">Grafik Request dari PM</h5>
-                            <p class="text-muted small mb-0" style="font-size: 0.78rem; color: #64748B;">Total permintaan CR dari PM: hari ini, kemarin, dan hari-hari sebelumnya</p>
-                        </div>
-                        <div class="d-flex align-items-center gap-2">
-                            <span class="badge px-3 py-2 fw-semibold" style="background: #EFF6FF; color: #0063D7; border-radius: 999px; font-size: 0.76rem;">
-                                <i class="bi bi-clock-history me-1"></i> 7 Hari Terakhir
-                            </span>
-                        </div>
-                    </div>
+        {{-- Card Left (now visually left): Chart / Grafik --}}
+        <div class="col-lg-7 col-12 order-lg-1">
 
-                    {{-- Summary Badges: Hari Ini & Kemarin --}}
-                    <div class="row g-2 mb-3">
-                        <div class="col-6">
-                            <div class="p-2 px-3 rounded-3" style="background: #F0F9FF; border: 1px solid #BAE6FD;">
-                                <div class="text-muted small" style="font-size: 0.72rem; font-weight: 600;">REQUEST HARI INI</div>
-                                <div class="d-flex align-items-baseline gap-2">
-                                    <span class="fw-bold text-primary" style="font-size: 1.4rem;">{{ $pmRequestsToday ?? 0 }}</span>
-                                    <span class="text-muted small" style="font-size: 0.72rem;">CR Baru</span>
-                                </div>
-                            </div>
-                        </div>
-                        <div class="col-6">
-                            <div class="p-2 px-3 rounded-3" style="background: #F8FAFC; border: 1px solid #E2E8F0;">
-                                <div class="text-muted small" style="font-size: 0.72rem; font-weight: 600;">REQUEST KEMARIN</div>
-                                <div class="d-flex align-items-baseline gap-2">
-                                    <span class="fw-bold text-dark" style="font-size: 1.4rem;">{{ $pmRequestsYesterday ?? 0 }}</span>
-                                    <span class="text-muted small" style="font-size: 0.72rem;">CR Diproses</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    {{-- SVG Spline Line & Area Chart of PM Requests --}}
-                    @php
-                        $trendList = $dailyTrend ?? [
-                            ['label' => '5 Hari Lalu', 'short_label' => '03/10', 'count' => 1],
-                            ['label' => '4 Hari Lalu', 'short_label' => '04/10', 'count' => 3],
-                            ['label' => '3 Hari Lalu', 'short_label' => '05/10', 'count' => 2],
-                            ['label' => '2 Hari Lalu', 'short_label' => '06/10', 'count' => 5],
-                            ['label' => 'Sebelumnya', 'short_label' => '07/10', 'count' => 3],
-                            ['label' => 'Kemarin', 'short_label' => 'Kemarin', 'count' => 2],
-                            ['label' => 'Hari Ini', 'short_label' => 'Hari Ini', 'count' => 4],
-                        ];
-                        $maxCount = max(array_merge([6], array_column($trendList, 'count')));
-                        $points = [];
-                        $svgWidth = 520;
-                        $svgHeight = 160;
-                        $startX = 50;
-                        $endX = 490;
-                        $stepX = ($endX - $startX) / (count($trendList) - 1 ?: 1);
-
-                        foreach ($trendList as $idx => $t) {
-                            $x = $startX + ($idx * $stepX);
-                            $val = $t['count'];
-                            $y = 135 - (($val / ($maxCount ?: 1)) * 105);
-                            $points[] = ['x' => $x, 'y' => $y, 'count' => $val, 'label' => $t['short_label']];
-                        }
-
-                        $pathD = 'M ' . $points[0]['x'] . ' ' . $points[0]['y'];
-                        for ($k = 1; $k < count($points); $k++) {
-                            $prev = $points[$k - 1];
-                            $curr = $points[$k];
-                            $cx1 = $prev['x'] + ($stepX / 2);
-                            $cy1 = $prev['y'];
-                            $cx2 = $prev['x'] + ($stepX / 2);
-                            $cy2 = $curr['y'];
-                            $pathD .= " C $cx1 $cy1, $cx2 $cy2, {$curr['x']} {$curr['y']}";
-                        }
-                        $areaD = $pathD . " L {$points[count($points)-1]['x']} 140 L {$points[0]['x']} 140 Z";
-                    @endphp
-
-                    <div class="w-100 position-relative pt-1">
-                        <svg viewBox="0 0 530 175" class="w-100" style="overflow: visible; font-family: 'Plus Jakarta Sans', sans-serif;">
-                            <defs>
-                                <linearGradient id="gradientPmRequest" x1="0%" y1="0%" x2="0%" y2="100%">
-                                    <stop offset="0%" stop-color="#0063D7" stop-opacity="0.25" />
-                                    <stop offset="100%" stop-color="#0063D7" stop-opacity="0.0" />
-                                </linearGradient>
-                            </defs>
-
-                            <line x1="45" y1="30" x2="505" y2="30" stroke="#F1F5F9" stroke-width="1.2" />
-                            <text x="35" y="34" font-size="10" fill="#94A3B8" text-anchor="end">{{ $maxCount }}</text>
-
-                            <line x1="45" y1="82" x2="505" y2="82" stroke="#F1F5F9" stroke-width="1.2" />
-                            <text x="35" y="86" font-size="10" fill="#94A3B8" text-anchor="end">{{ round($maxCount / 2) }}</text>
-
-                            <line x1="45" y1="135" x2="505" y2="135" stroke="#E2E8F0" stroke-width="1.2" />
-                            <text x="35" y="139" font-size="10" fill="#94A3B8" text-anchor="end">0</text>
-
-                            <path d="{{ $areaD }}" fill="url(#gradientPmRequest)" />
-                            <path d="{{ $pathD }}" fill="none" stroke="#0063D7" stroke-width="3" stroke-linecap="round" stroke-linejoin="round" />
-
-                            @foreach ($points as $p)
-                                <circle cx="{{ $p['x'] }}" cy="{{ $p['y'] }}" r="4.5" fill="#0063D7" stroke="#FFFFFF" stroke-width="2" />
-                                <text x="{{ $p['x'] }}" y="{{ $p['y'] - 8 }}" font-size="11" font-weight="700" fill="#02376A" text-anchor="middle">{{ $p['count'] }}</text>
-                                <text x="{{ $p['x'] }}" y="156" font-size="10" font-weight="600" fill="#64748B" text-anchor="middle">{{ $p['label'] }}</text>
-                            @endforeach
-                        </svg>
-                    </div>
-
-                    <div class="d-flex align-items-center justify-content-between mt-2 pt-2 border-top text-muted" style="font-size: 0.74rem;">
-                        <span class="d-flex align-items-center gap-1">
-                            <span style="width: 8px; height: 8px; border-radius: 50%; background: #0063D7; display: inline-block;"></span>
-                            Volume pengajuan CR dari PM per hari
-                        </span>
-                        <span class="fw-semibold text-dark">Data Terkini &bull; Real-time Monitoring</span>
-                    </div>
-                </div>
-            @else
                 {{-- ── CLIENT DASHBOARD: STATUS (Donut + Progress) ── --}}
                 <div class="card p-4 border-0 h-100 shadow-sm" style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E2E8F0 !important;">
                     <div>
@@ -499,7 +386,6 @@
                         </div>
                     </div>
                 </div>
-            @endif
         </div>
     </div>
 

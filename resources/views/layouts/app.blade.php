@@ -553,6 +553,7 @@
             display: flex;
             flex-direction: column;
             min-height: 100vh;
+            min-width: 0;
             transition: margin-left 0.3s cubic-bezier(0.16,1,0.3,1);
         }
 
@@ -1222,6 +1223,8 @@
 
             .main-wrapper {
                 margin-left: 0 !important;
+                width: 100% !important;
+                max-width: 100vw !important;
             }
 
             .topbar-hamburger {
@@ -1324,7 +1327,11 @@
         @media print {
             .app-sidebar, .main-topbar, .main-footer,
             .btn, .toast-container-fixed, .d-print-none { display: none !important; }
-            .main-wrapper { margin-left: 0 !important; }
+            .main-wrapper { 
+                margin-left: 0 !important; 
+                width: 100% !important;
+                max-width: none !important;
+            }
             body { background: #FFFFFF !important; color: #000 !important; }
             .card { border: 1px solid #E2E8F0 !important; box-shadow: none !important; break-inside: avoid; }
             .main-content { padding: 0 !important; }

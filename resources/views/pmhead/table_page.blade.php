@@ -182,122 +182,149 @@
         </div>
     </div>
 
-    <div class="pm-table-container mb-4">
-        <div class="table-responsive m-0">
-            <table class="table pm-table mb-0 align-middle" style="border-collapse: collapse; border: none !important;">
-                <thead>
+    <div class="card overflow-hidden shadow-sm border-0 mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 20px; background: #FFFFFF;">
+        <div class="table-responsive">
+            <table class="table mb-0 align-middle" style="border-collapse: separate; border-spacing: 0;">
+                <thead style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0;">
                     <tr>
-                        <th class="px-3 text-center text-uppercase" style="width: 50px;">NO</th>
-                        <th class="px-3 text-uppercase" style="min-width: 140px;">NAMA PM</th>
-                        <th class="px-3 text-uppercase" style="min-width: 180px;">PEMOHON</th>
-                        <th class="px-3 text-uppercase" style="min-width: 250px;">JUDUL CR</th>
-                        <th class="px-3 text-center text-uppercase" style="min-width: 110px;">PENGAJUAN</th>
-                        <th class="px-3 text-center text-uppercase" style="min-width: 105px;">STATUS</th>
-                        <th class="px-3 text-center text-uppercase" style="min-width: 100px;">PRIORITAS</th>
-                        <th class="px-3 text-center text-uppercase" style="width: 110px;">AKSI</th>
+                        <th class="py-3 px-4 text-muted fw-bold text-uppercase" data-i18n="th_no" style="font-size: 0.72rem; letter-spacing: 0.06em; width: 60px;">NO</th>
+                        <th class="py-3 px-4 text-muted fw-bold text-uppercase" data-i18n="th_kode_cr" style="font-size: 0.72rem; letter-spacing: 0.06em;">KODE CR</th>
+                        <th class="py-3 px-4 text-muted fw-bold text-uppercase" data-i18n="th_requester" style="font-size: 0.72rem; letter-spacing: 0.06em;">PEMOHON</th>
+                        <th class="py-3 px-4 text-muted fw-bold text-uppercase" data-i18n="th_cr_title" style="font-size: 0.72rem; letter-spacing: 0.06em;">JUDUL CR</th>
+                        <th class="py-3 px-4 text-muted fw-bold text-uppercase" data-i18n="th_submission_date" style="font-size: 0.72rem; letter-spacing: 0.06em; width: 140px;">PENGAJUAN</th>
+                        <th class="py-3 px-4 text-muted fw-bold text-uppercase" data-i18n="th_status" style="font-size: 0.72rem; letter-spacing: 0.06em; width: 150px;">STATUS</th>
+                        <th class="py-3 px-4 text-muted fw-bold text-uppercase text-center" data-i18n="th_priority" style="font-size: 0.72rem; letter-spacing: 0.06em; width: 120px;">PRIORITAS</th>
+                        <th class="py-3 px-4 text-muted fw-bold text-uppercase text-end" data-i18n="th_action" style="font-size: 0.72rem; letter-spacing: 0.06em; width: 130px;">AKSI</th>
                     </tr>
                 </thead>
                 <tbody>
+                    @php
+                        $avatarColors = ['#F59E0B', '#10B981', '#3B82F6', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
+                    @endphp
+
                     @forelse ($changeRequests as $index => $cr)
                         @php
-                            $statusKey = strtolower($cr->status);
-                            $isUrgent = in_array(strtolower($cr->prioritas ?? ''), ['kritis', 'tinggi', 'urgent']);
-                            $clientCompany = $cr->client?->company ?? ($cr->klien ?: 'PT Maju Bersama');
-                            $initials = strtoupper(substr($cr->client?->nickname ?? $clientCompany, 0, 2));
-                            $colorSeed = abs(crc32($clientCompany)) % 4;
-                            $avatarBg = match($colorSeed) {
-                                0 => '#EF4444',
-                                1 => '#10B981',
-                                2 => '#8B5CF6',
-                                default => '#6366F1',
-                            };
+                            $colorIndex = $index % count($avatarColors);
+                            $avColor = $avatarColors[$colorIndex];
+
+                            $pemohonName = $cr->owner_cr ?: ($cr->user?->name ?: 'Totok Antok');
+                            $pemohonInitials = strtoupper(substr($pemohonName, 0, 1));
+                            $companyName = $cr->klien ?: ($cr->client?->company ?: 'PT Maju Bersama');
+
+                            // Status badge mapping
+                            $statusText = 'Diajukan';
+                            $statusBg = '#FEF3C7';
+                            $statusColor = '#D97706';
+
+                            if (in_array(strtolower($cr->status), ['analisa', 'dianalisis'])) {
+                                $statusText = 'Analisis';
+                                $statusBg = '#DBEAFE';
+                                $statusColor = '#2563EB';
+                            } elseif (in_array(strtolower($cr->status), ['development', 'dikerjakan'])) {
+                                $statusText = 'Develop';
+                                $statusBg = '#EDE9FE';
+                                $statusColor = '#7C3AED';
+                            } elseif (in_array(strtolower($cr->status), ['uat', 'sit'])) {
+                                $statusText = 'UAT';
+                                $statusBg = '#FCE7F3';
+                                $statusColor = '#DB2777';
+                            } elseif (in_array(strtolower($cr->status), ['golive', 'selesai', 'invoicing'])) {
+                                $statusText = 'Go-Live';
+                                $statusBg = '#D1FAE5';
+                                $statusColor = '#059669';
+                            }
+
+                            // Priority badge
+                            $isUrgent = in_array(strtolower($cr->prioritas ?? ''), ['urgent', 'kritis', 'tinggi', 'high']);
+                            
+                            $rowNo = method_exists($changeRequests, 'firstItem') ? ($changeRequests->firstItem() + $index) : ($index + 1);
                         @endphp
-                        <tr>
-                            <td class="px-3 text-center fw-semibold text-dark" style="font-size: 0.88rem;">
-                                {{ $changeRequests->firstItem() ? ($changeRequests->firstItem() + $index) : ($index + 1) }}
+                        <tr style="border-bottom: 1px solid #F1F5F9; transition: background 0.15s ease;" onmouseover="this.style.background='#F8FAFC';" onmouseout="this.style.background='#FFFFFF';">
+                            {{-- NO --}}
+                            <td class="py-3 px-4 text-muted fw-medium" style="font-size: 0.85rem;">
+                                {{ str_pad($rowNo, 2, '0', STR_PAD_LEFT) }}
                             </td>
-                            <td class="px-3 fw-bold text-dark" style="font-size: 0.88rem;">
-                                {{ $cr->nama_pm ?: ($cr->user?->name ?: 'Danendra dada') }}
+                            
+                            {{-- KODE CR --}}
+                            <td class="py-3 px-4">
+                                <div class="fw-bold text-dark" style="font-size: 0.85rem;">
+                                    {{ $cr->kode_cr ?? 'CR-'.str_pad($cr->id, 4, '0', STR_PAD_LEFT) }}
+                                </div>
                             </td>
-                            <td class="px-3">
+
+                            {{-- PEMOHON --}}
+                            <td class="py-3 px-4">
                                 <div class="d-flex align-items-center gap-2">
-                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold"
-                                         style="width: 28px; height: 28px; background: {{ $avatarBg }}; font-size: 0.68rem; flex-shrink: 0;">
-                                        {{ $initials }}
+                                    <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
+                                         style="width: 34px; height: 34px; background: {{ $avColor }}; font-size: 0.82rem;">
+                                        {{ strtoupper(substr($companyName, 0, 2)) }}
                                     </div>
-                                    <span class="fw-bold text-dark" style="font-size: 0.88rem;">
-                                        {{ $clientCompany }}
-                                    </span>
+                                    <div style="line-height: 1.2;">
+                                        <div class="fw-bold text-dark" style="font-size: 0.88rem;">{{ $companyName }}</div>
+                                        <div class="text-muted" style="font-size: 0.75rem;">{{ $pemohonName }}</div>
+                                    </div>
                                 </div>
                             </td>
-                            <td class="px-3">
-                                <div>
-                                    <div class="fw-semibold text-dark" style="font-size: 0.88rem; line-height: 1.35;">{{ $cr->judul }}</div>
-                                    <div class="text-muted" style="font-size: 0.74rem;">{{ $cr->proyek_terkait ?: ($cr->kode_cr ?: 'System Enhancement') }}</div>
+
+                            {{-- JUDUL CR --}}
+                            <td class="py-3 px-4">
+                                <div style="line-height: 1.25;">
+                                    <a href="{{ route('pmh.review', $cr) }}" class="fw-bold text-dark text-decoration-none hover-primary" style="font-size: 0.88rem;">
+                                        {{ $cr->judul }}
+                                    </a>
+                                    <div class="text-muted" style="font-size: 0.75rem;">
+                                        {{ $cr->proyek_terkait ?: 'Akses & Dashboard' }}
+                                    </div>
                                 </div>
                             </td>
-                            <td class="px-3 text-center text-dark" style="font-size: 0.84rem;">
-                                {{ $cr->tanggal_pengajuan ? $cr->tanggal_pengajuan->format('d M Y') : $cr->created_at->format('d M Y') }}
+
+                            {{-- PENGAJUAN --}}
+                            <td class="py-3 px-4">
+                                <div class="fw-bold text-dark" style="font-size: 0.85rem;">
+                                    {{ $cr->tanggal_pengajuan ? $cr->tanggal_pengajuan->translatedFormat('d M Y') : '15 Sep 2024' }}
+                                </div>
+                                <div class="text-muted" style="font-size: 0.72rem;">
+                                    {{ $cr->created_at ? $cr->created_at->format('H:i:s') : '09:30:12' }}
+                                </div>
                             </td>
-                            <td class="px-3 text-center">
-                                @if (in_array($statusKey, ['diajukan', 'awaiting_pm', 'awaiting_pmh']))
-                                    <span class="badge px-3 py-1 fw-bold d-inline-flex align-items-center gap-1"
-                                          style="background: #FEF3C7; color: #D97706; border-radius: 999px; font-size: 0.74rem;">
-                                        <span style="width: 5px; height: 5px; border-radius: 50%; background: #D97706;"></span>
-                                        Diajukan
-                                    </span>
-                                @elseif (in_array($statusKey, ['analisa', 'dianalisis']))
-                                    <span class="badge px-3 py-1 fw-bold d-inline-flex align-items-center gap-1"
-                                          style="background: #E0F2FE; color: #0284C7; border-radius: 999px; font-size: 0.74rem;">
-                                        <span style="width: 5px; height: 5px; border-radius: 50%; background: #0284C7;"></span>
-                                        Analysis
-                                    </span>
-                                @elseif (in_array($statusKey, ['development', 'dikerjakan']))
-                                    <span class="badge px-3 py-1 fw-bold d-inline-flex align-items-center gap-1"
-                                          style="background: #EDE9FE; color: #7C3AED; border-radius: 999px; font-size: 0.74rem;">
-                                        <span style="width: 5px; height: 5px; border-radius: 50%; background: #7C3AED;"></span>
-                                        Develop
-                                    </span>
-                                @elseif (in_array($statusKey, ['golive', 'selesai']))
-                                    <span class="badge px-3 py-1 fw-bold d-inline-flex align-items-center gap-1"
-                                          style="background: #DCFCE7; color: #16A34A; border-radius: 999px; font-size: 0.74rem;">
-                                        <span style="width: 5px; height: 5px; border-radius: 50%; background: #16A34A;"></span>
-                                        Go Live
-                                    </span>
-                                @else
-                                    <span class="badge px-3 py-1 fw-bold d-inline-flex align-items-center gap-1"
-                                          style="background: #E0F2FE; color: #0284C7; border-radius: 999px; font-size: 0.74rem;">
-                                        <span style="width: 5px; height: 5px; border-radius: 50%; background: #0284C7;"></span>
-                                        {{ ucfirst(str_replace('_', ' ', $cr->status)) }}
-                                    </span>
-                                @endif
+
+                            {{-- STATUS --}}
+                            <td class="py-3 px-4">
+                                <span class="d-inline-flex align-items-center gap-1 px-3 py-1 fw-bold"
+                                      style="background: {{ $statusBg }}; color: {{ $statusColor }}; border-radius: 999px; font-size: 0.76rem;">
+                                    ● {{ $statusText }}
+                                </span>
                             </td>
-                            <td class="px-3 text-center">
+
+                            {{-- PRIORITAS --}}
+                            <td class="py-3 px-4 text-center">
                                 @if ($isUrgent)
-                                    <span class="badge fw-bold px-2 py-1"
-                                          style="background: #FEE2E2; color: #DC2626; border-radius: 6px; font-size: 0.68rem; letter-spacing: 0.04em;">
-                                        URGENT
+                                    <span class="badge fw-bold" style="background: #FEE2E2; color: #DC2626; border-radius: 6px; font-size: 0.72rem; padding: 4px 8px;">
+                                        HIGH
                                     </span>
                                 @else
-                                    <span class="badge fw-bold px-2 py-1"
-                                          style="background: #DCFCE7; color: #16A34A; border-radius: 6px; font-size: 0.68rem; letter-spacing: 0.04em;">
+                                    <span class="badge fw-medium" style="background: #F1F5F9; color: #64748B; border-radius: 6px; font-size: 0.72rem; padding: 4px 8px;">
                                         NORMAL
                                     </span>
                                 @endif
                             </td>
-                            <td class="px-3 text-center">
-                                <a href="{{ route('pmh.review', $cr) }}" class="btn text-white fw-bold d-inline-flex align-items-center justify-content-center gap-1"
-                                   style="background: #0063D7; border-radius: 8px; font-size: 0.8rem; padding: 0.38rem 1.15rem; border: none;">
-                                    Review <i class="bi bi-chevron-right" style="font-size: 0.68rem;"></i>
+
+                            {{-- AKSI --}}
+                            <td class="py-3 px-4 text-end">
+                                <a href="{{ route('pmh.review', $cr) }}"
+                                   class="btn text-white fw-bold px-3 py-1 d-inline-flex align-items-center gap-1 shadow-sm"
+                                   style="background: #2563EB; border-radius: 999px; font-size: 0.78rem; border: none;">
+                                    <span>Review</span>
+                                    <i class="bi bi-chevron-right" style="font-size: 0.7rem;"></i>
                                 </a>
                             </td>
                         </tr>
                     @empty
                         <tr>
-                            <td colspan="8" class="text-center py-5 text-muted" style="border: none !important;">
-                                <i class="bi bi-inbox text-secondary fs-2 d-block mb-2"></i>
-                                <div class="fw-bold text-dark">Tidak ada data Change Request yang ditemukan.</div>
-                                <div class="small">Silakan ubah filter status atau kata kunci pencarian Anda.</div>
+                            <td colspan="8" class="text-center py-5 text-muted">
+                                <div class="mb-2"><i class="bi bi-inbox fs-2 text-muted"></i></div>
+                                <div class="fw-bold">Tidak ada Change Request pada kategori ini</div>
+                                <div class="small mt-1">Gunakan tombol "+ Ajukan CR Baru" untuk membuat pengajuan baru.</div>
                             </td>
                         </tr>
                     @endforelse

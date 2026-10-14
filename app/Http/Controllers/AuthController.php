@@ -43,6 +43,9 @@ class AuthController extends Controller
         if ($email && Auth::attempt(['email' => $email, 'password' => $request->input('password')], $request->boolean('remember'))) {
             $request->session()->regenerate();
 
+            if (Auth::user()->isPmh()) {
+                return redirect()->intended(route('pmh.change-requests'));
+            }
             return redirect()->intended(route('change-requests.index'));
         }
 
