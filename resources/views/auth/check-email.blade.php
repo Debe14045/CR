@@ -19,7 +19,7 @@
         }
 
         :root {
-            --bg-outer: #02376A;
+            --bg-outer: #FFFFFF;
             --title-navy: #1D2E7C;
             --text-muted: #64748B;
             --card-border: #BAE6FD;
@@ -33,42 +33,47 @@
 
         body {
             font-family: var(--font-main);
-            background-color: var(--bg-outer);
+            background-color: #FFFFFF;
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 1.5rem;
+            padding: 2rem 1.5rem;
             -webkit-font-smoothing: antialiased;
             color: #2D3748;
         }
 
-        /* ── Main Outer White Card ── */
+        /* ── Main Full-Screen Center Container (No Outer Canvas Background) ── */
         .auth-card-container {
             width: 100%;
-            max-width: 900px;
-            min-height: 520px;
+            max-width: 980px;
+            min-height: 560px;
             background: #FFFFFF;
-            border-radius: 20px;
-            box-shadow: 0 25px 60px -10px rgba(0, 15, 45, 0.4);
+            border-radius: 0;
+            box-shadow: none;
             display: flex;
-            padding: 20px;
-            gap: 20px;
+            align-items: center;
+            justify-content: center;
+            padding: 0;
+            gap: 46px;
             position: relative;
         }
 
         /* ── Left Hero Panel (Skyscrapers) ── */
         .hero-panel {
             flex: 1.05;
-            border-radius: 16px;
+            width: 100%;
+            max-width: 508px;
+            height: 562px;
+            border-radius: 28px;
             position: relative;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            padding: 2.2rem 1.8rem;
-            background: #183358 url('/images/skyscrapers.jpg') no-repeat center center;
+            padding: 2.8rem 2.2rem 2.8rem;
+            background: #153E75 url('/images/skyscrapers.jpg') no-repeat center center;
             background-size: cover;
         }
 
@@ -76,7 +81,7 @@
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(180deg, rgba(20, 50, 95, 0.35) 0%, rgba(10, 30, 70, 0.45) 45%, rgba(5, 20, 55, 0.8) 100%);
+            background: linear-gradient(180deg, rgba(20, 50, 95, 0.3) 0%, rgba(10, 30, 70, 0.45) 45%, rgba(5, 20, 55, 0.78) 100%);
             pointer-events: none;
             z-index: 1;
         }
@@ -90,9 +95,10 @@
         }
 
         .hero-logo-img {
-            height: 48px;
+            height: 52px;
             width: auto;
             display: block;
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
         }
 
         .hero-bottom-text {
@@ -103,40 +109,46 @@
         }
 
         .hero-headline {
-            font-size: 1.85rem;
+            font-size: 2.2rem;
             font-weight: 800;
-            line-height: 1.2;
-            margin-bottom: 0.5rem;
-            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.3);
+            color: #FFFFFF;
+            letter-spacing: -0.02em;
+            margin-bottom: 0.6rem;
+            text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
         }
 
         .hero-subtext {
-            font-size: 0.92rem;
-            color: rgba(255, 255, 255, 0.92);
+            font-size: 0.95rem;
+            color: rgba(255, 255, 255, 0.95);
             line-height: 1.5;
-            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.3);
+            font-weight: 500;
+            max-width: 290px;
+            margin: 0 auto;
+            text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
         }
 
         /* ── Right Content Panel (Bordered Info Card) ── */
         .form-panel {
             flex: 1;
+            width: 100%;
+            max-width: 416px;
             display: flex;
             align-items: center;
             justify-content: center;
         }
 
         .form-inner-box {
-            border: 1px solid var(--card-border);
-            border-radius: 16px;
-            padding: 2.8rem 2rem;
             width: 100%;
-            height: 100%;
+            border: 1.5px solid var(--card-border);
+            border-radius: 24px;
+            padding: 2.6rem 2.3rem;
+            background: #FFFFFF;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
             text-align: center;
-            background: #FFFFFF;
         }
 
         .email-icon-box {
@@ -191,24 +203,40 @@
             text-decoration: underline;
         }
 
-        @media (max-width: 768px) {
+        @media (max-width: 900px) {
+            body {
+                padding: 1.5rem 1rem;
+            }
             .auth-card-container {
                 flex-direction: column;
                 max-width: 440px;
-                padding: 16px;
+                padding: 0;
+                gap: 20px;
             }
 
             .hero-panel {
-                min-height: 200px;
-                padding: 1.5rem;
+                max-width: 100%;
+                height: auto;
+                min-height: 250px;
+                padding: 2rem 1.5rem;
+                border-radius: 20px;
             }
 
             .hero-headline {
-                font-size: 1.5rem;
+                font-size: 1.75rem;
+            }
+
+            .hero-subtext {
+                font-size: 0.88rem;
+            }
+
+            .form-panel {
+                max-width: 100%;
             }
 
             .form-inner-box {
-                padding: 2.2rem 1.5rem;
+                padding: 2rem 1.5rem;
+                border-radius: 20px;
             }
         }
     </style>
