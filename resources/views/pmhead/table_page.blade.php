@@ -1,6 +1,51 @@
 @extends('layouts.app')
 
-@section('title', $pageTitle . ' • PM Head Monitoring CR')
+@php
+    $currentRoute = Route::currentRouteName() ?: 'pmh.change-requests';
+    $curTab = $activeTab ?? request('tab', 'semua');
+    $statusParam = strtolower(request('status', ''));
+
+    // Dynamic title mapping based on clicked status or tab
+    $statusTitleMap = [
+        'diajukan' => 'Diajukan',
+        'awaiting_pm' => 'Diajukan',
+        'awaiting_pmh' => 'Diajukan',
+        'persetujuan' => 'Diajukan',
+        'analisa' => 'Analysis',
+        'analysis' => 'Analysis',
+        'dianalisis' => 'Analysis',
+        'development' => 'Develop',
+        'develop' => 'Develop',
+        'dikerjakan' => 'Develop',
+        'golive' => 'Go Live',
+        'go-live' => 'Go Live',
+        'selesai' => 'Go Live',
+    ];
+
+    if ($statusParam && isset($statusTitleMap[$statusParam])) {
+        $computedTitle = $statusTitleMap[$statusParam];
+        $computedSubtitle = 'Pantau seluruh permintaan perubahan berstatus ' . $computedTitle;
+    } elseif ($curTab === 'aktif') {
+        $computedTitle = 'CR Aktif';
+        $computedSubtitle = 'Pantau seluruh permintaan perubahan yang sedang aktif berjalan';
+    } elseif ($curTab === 'selesai') {
+        $computedTitle = 'CR Selesai';
+        $computedSubtitle = 'Daftar riwayat seluruh permintaan perubahan yang telah selesai';
+    } else {
+        $computedTitle = $pageTitle ?? 'Change Request';
+        $computedSubtitle = 'Pantau seluruh permintaan perubahan Anda';
+    }
+
+    $statusDisplay = match($statusParam) {
+        'diajukan', 'awaiting_pm', 'persetujuan' => 'Diajukan',
+        'analisa', 'analysis' => 'Analysis',
+        'development', 'develop' => 'Develop',
+        'golive', 'go-live' => 'Go Live',
+        default => request('status') ? ucfirst(str_replace('_', ' ', request('status'))) : 'Semua Status'
+    };
+@endphp
+
+@section('title', $computedTitle . ' • PM Head Monitoring CR')
 
 @section('content')
 <style>
@@ -9,16 +54,16 @@
         border-radius: 14px !important;
         background: #FFFFFF !important;
         overflow: hidden;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.03);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.02);
     }
     .pm-table thead th {
         background-color: #EBF2FA !important;
         color: #0F172A !important;
         font-weight: 700 !important;
         font-size: 0.72rem !important;
-        letter-spacing: 0.04em !important;
-        padding-top: 0.85rem !important;
-        padding-bottom: 0.85rem !important;
+        letter-spacing: 0.05em !important;
+        padding-top: 0.9rem !important;
+        padding-bottom: 0.9rem !important;
         border-bottom: 1px solid #D0DCEB !important;
         border-top: none !important;
     }
@@ -54,7 +99,7 @@
         align-items: center;
         justify-content: center;
         border: 1.5px solid #CBD5E1;
-        border-radius: 8px;
+        border-radius: 6px;
         background: #FFFFFF;
         color: #334155;
         font-size: 0.76rem;
@@ -72,7 +117,7 @@
         cursor: not-allowed;
     }
 
-    /* Segmented Tab Bar - Full Bleed Block (No Outer Inset Padding) */
+    /* Segmented Tab Bar - Full Bleed Block */
     .pm-filter-container {
         display: flex;
         align-items: stretch;
@@ -98,7 +143,7 @@
         position: relative;
     }
     .pm-filter-tab.active {
-        background: #0B6EBD !important;
+        background: #0063D7 !important;
         color: #FFFFFF !important;
         box-shadow: none !important;
     }
@@ -116,29 +161,25 @@
 <div class="page-shell pb-5">
 
     <div class="mb-3">
-        <h1 class="fw-bold mb-1" style="color: #000000; font-size: 2.1rem; font-weight: 800; letter-spacing: -0.025em; line-height: 1.2;">
-            Change Request
+        <h1 class="fw-bold mb-1" style="color: #000000; font-size: 2.15rem; font-weight: 800; letter-spacing: -0.025em; line-height: 1.2;">
+            {{ $computedTitle }}
         </h1>
-        <p class="mb-0" style="font-size: 0.88rem; color: #64748B; font-weight: 500;">Pantau seluruh permintaan perubahan Anda</p>
+        <p class="mb-0" style="font-size: 0.88rem; color: #64748B; font-weight: 500;">{{ $computedSubtitle }}</p>
     </div>
 
-    @php
-        $currentRoute = Route::currentRouteName();
-        $curTab = $activeTab ?? 'semua';
-    @endphp
     <div class="pm-filter-container">
-        <a href="{{ route($currentRoute, array_merge(request()->query(), ['tab' => 'semua'])) }}"
+        <a href="{{ route($currentRoute, array_merge(request()->except('page', 'tab'), ['tab' => 'semua'])) }}"
            class="pm-filter-tab {{ $curTab === 'semua' ? 'active' : '' }}"
            style="{{ $curTab === 'semua' ? 'border-top-left-radius: 11px; border-bottom-left-radius: 11px;' : '' }}">
             Semua CR
         </a>
         <div class="pm-filter-divider" style="{{ ($curTab === 'semua' || $curTab === 'aktif') ? 'visibility: hidden;' : '' }}"></div>
-        <a href="{{ route($currentRoute, array_merge(request()->query(), ['tab' => 'aktif'])) }}"
+        <a href="{{ route($currentRoute, array_merge(request()->except('page', 'tab'), ['tab' => 'aktif'])) }}"
            class="pm-filter-tab {{ $curTab === 'aktif' ? 'active' : '' }}">
             CR Aktif
         </a>
         <div class="pm-filter-divider" style="{{ ($curTab === 'aktif' || $curTab === 'selesai') ? 'visibility: hidden;' : '' }}"></div>
-        <a href="{{ route($currentRoute, array_merge(request()->query(), ['tab' => 'selesai'])) }}"
+        <a href="{{ route($currentRoute, array_merge(request()->except('page', 'tab'), ['tab' => 'selesai'])) }}"
            class="pm-filter-tab {{ $curTab === 'selesai' ? 'active' : '' }}"
            style="{{ $curTab === 'selesai' ? 'border-top-right-radius: 11px; border-bottom-right-radius: 11px;' : '' }}">
             CR Selesai
@@ -148,6 +189,9 @@
     <div class="d-flex justify-content-between align-items-center gap-3 mb-4 flex-wrap">
         <form method="GET" action="{{ route($currentRoute) }}" class="m-0" style="flex: 1; max-width: 380px;">
             <input type="hidden" name="tab" value="{{ $curTab }}">
+            @if(request('status'))
+                <input type="hidden" name="status" value="{{ request('status') }}">
+            @endif
             <div style="position: relative; display: flex; align-items: center;">
                 <i class="bi bi-search" style="position: absolute; left: 16px; color: #64748B; font-size: 0.92rem; pointer-events: none;"></i>
                 <input type="text" name="search" value="{{ request('search') }}"
@@ -158,48 +202,42 @@
         </form>
 
         <div class="dropdown">
-            @php
-                $statusDisplay = match(strtolower(request('status', ''))) {
-                    'diajukan', 'awaiting_pm', 'persetujuan' => 'Diajukan',
-                    'analisa', 'analysis' => 'Analysis',
-                    'development', 'develop' => 'Develop',
-                    'golive', 'go-live' => 'Go Live',
-                    default => request('status') ? ucfirst(str_replace('_', ' ', request('status'))) : 'Semua Status'
-                };
-            @endphp
             <button class="btn btn-white bg-white dropdown-toggle px-3 py-2 d-flex align-items-center justify-content-between shadow-none"
                     type="button" id="statusFilterBtn" data-bs-toggle="dropdown" aria-expanded="false"
-                    style="border: 1.5px solid #D6D3CD; border-radius: 12px; font-size: 0.86rem; font-weight: 600; color: #475569; min-width: 145px; gap: 0.85rem;">
+                    style="border: 1.5px solid #D6D3CD; border-radius: 10px; font-size: 0.86rem; font-weight: 600; color: #475569; min-width: 145px; gap: 0.85rem;">
                 <span>{{ $statusDisplay }}</span>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border p-1 mt-1" style="border-radius: 10px; min-width: 160px; border-color: #E2E8F0;" aria-labelledby="statusFilterBtn">
-                <li><a class="dropdown-item py-1 px-3 small" href="{{ route($currentRoute, ['tab' => $curTab, 'search' => request('search')]) }}">Semua Status</a></li>
-                <li><a class="dropdown-item py-1 px-3 small" href="{{ route($currentRoute, ['tab' => $curTab, 'status' => 'diajukan', 'search' => request('search')]) }}">Diajukan</a></li>
-                <li><a class="dropdown-item py-1 px-3 small" href="{{ route($currentRoute, ['tab' => $curTab, 'status' => 'analisa', 'search' => request('search')]) }}">Analysis</a></li>
-                <li><a class="dropdown-item py-1 px-3 small" href="{{ route($currentRoute, ['tab' => $curTab, 'status' => 'development', 'search' => request('search')]) }}">Develop</a></li>
-                <li><a class="dropdown-item py-1 px-3 small" href="{{ route($currentRoute, ['tab' => $curTab, 'status' => 'golive', 'search' => request('search')]) }}">Go Live</a></li>
+                <li><a class="dropdown-item py-1.5 px-3 small fw-semibold" href="{{ route($currentRoute, array_merge(request()->except('page', 'status'), [])) }}">Semua Status</a></li>
+                <li><a class="dropdown-item py-1.5 px-3 small fw-semibold" href="{{ route($currentRoute, array_merge(request()->except('page'), ['status' => 'diajukan'])) }}">Diajukan</a></li>
+                <li><a class="dropdown-item py-1.5 px-3 small fw-semibold" href="{{ route($currentRoute, array_merge(request()->except('page'), ['status' => 'analisa'])) }}">Analysis</a></li>
+                <li><a class="dropdown-item py-1.5 px-3 small fw-semibold" href="{{ route($currentRoute, array_merge(request()->except('page'), ['status' => 'development'])) }}">Develop</a></li>
+                <li><a class="dropdown-item py-1.5 px-3 small fw-semibold" href="{{ route($currentRoute, array_merge(request()->except('page'), ['status' => 'golive'])) }}">Go Live</a></li>
             </ul>
         </div>
     </div>
 
-    <div class="card overflow-hidden shadow-sm border-0 mb-4" style="border: 1px solid #E2E8F0 !important; border-radius: 20px; background: #FFFFFF;">
-        <div class="table-responsive">
-            <table class="table mb-0 align-middle" style="border-collapse: separate; border-spacing: 0;">
-                <thead style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0;">
+    {{-- Cyan accent line matching Figma exact --}}
+    <div style="height: 3px; background: #BAE6FD; border-radius: 999px; margin-bottom: 1.25rem;"></div>
+
+    <div class="card pm-table-container mb-4">
+        <div class="table-responsive m-0">
+            <table class="table pm-table mb-0 align-middle" style="border-collapse: collapse; border: none !important;">
+                <thead>
                     <tr>
-                        <th class="py-3 px-4 text-muted fw-bold text-uppercase" data-i18n="th_no" style="font-size: 0.72rem; letter-spacing: 0.06em; width: 60px;">NO</th>
-                        <th class="py-3 px-4 text-muted fw-bold text-uppercase" data-i18n="th_kode_cr" style="font-size: 0.72rem; letter-spacing: 0.06em;">KODE CR</th>
-                        <th class="py-3 px-4 text-muted fw-bold text-uppercase" data-i18n="th_requester" style="font-size: 0.72rem; letter-spacing: 0.06em;">PEMOHON</th>
-                        <th class="py-3 px-4 text-muted fw-bold text-uppercase" data-i18n="th_cr_title" style="font-size: 0.72rem; letter-spacing: 0.06em;">JUDUL CR</th>
-                        <th class="py-3 px-4 text-muted fw-bold text-uppercase" data-i18n="th_submission_date" style="font-size: 0.72rem; letter-spacing: 0.06em; width: 140px;">PENGAJUAN</th>
-                        <th class="py-3 px-4 text-muted fw-bold text-uppercase" data-i18n="th_status" style="font-size: 0.72rem; letter-spacing: 0.06em; width: 150px;">STATUS</th>
-                        <th class="py-3 px-4 text-muted fw-bold text-uppercase text-center" data-i18n="th_priority" style="font-size: 0.72rem; letter-spacing: 0.06em; width: 120px;">PRIORITAS</th>
-                        <th class="py-3 px-4 text-muted fw-bold text-uppercase text-end" data-i18n="th_action" style="font-size: 0.72rem; letter-spacing: 0.06em; width: 130px;">AKSI</th>
+                        <th class="py-3 px-3 text-center" style="width: 55px;">NO</th>
+                        <th class="py-3 px-3">NAMA PM</th>
+                        <th class="py-3 px-3">PEMOHON</th>
+                        <th class="py-3 px-3">JUDUL CR</th>
+                        <th class="py-3 px-3" style="width: 130px;">PENGAJUAN</th>
+                        <th class="py-3 px-3" style="width: 140px;">STATUS</th>
+                        <th class="py-3 px-3 text-center" style="width: 110px;">PRIORITAS</th>
+                        <th class="py-3 px-4 text-center" style="width: 130px;">AKSI</th>
                     </tr>
                 </thead>
                 <tbody>
                     @php
-                        $avatarColors = ['#F59E0B', '#10B981', '#3B82F6', '#EF4444', '#8B5CF6', '#EC4899', '#06B6D4'];
+                        $avatarColors = ['#8B5CF6', '#EF4444', '#10B981', '#8B5CF6', '#6366F1', '#EF4444', '#3B82F6', '#EC4899'];
                     @endphp
 
                     @forelse ($changeRequests as $index => $cr)
@@ -207,115 +245,120 @@
                             $colorIndex = $index % count($avatarColors);
                             $avColor = $avatarColors[$colorIndex];
 
-                            $pemohonName = $cr->owner_cr ?: ($cr->user?->name ?: 'Totok Antok');
-                            $pemohonInitials = strtoupper(substr($pemohonName, 0, 1));
-                            $companyName = $cr->klien ?: ($cr->client?->company ?: 'PT Maju Bersama');
+                            $companyName = $cr->klien ?: ($cr->client?->company ?: 'PT Delta Solusi');
 
-                            // Status badge mapping
-                            $statusText = 'Diajukan';
-                            $statusBg = '#FEF3C7';
-                            $statusColor = '#D97706';
+                            // Extract initials
+                            $cleanCompany = trim(preg_replace('/^(pt\.?|cv\.?)\s+/i', '', $companyName));
+                            $words = preg_split('/\s+/', $cleanCompany);
+                            $initials = '';
+                            if (!empty($words[0])) $initials .= strtoupper(substr($words[0], 0, 1));
+                            if (!empty($words[1])) $initials .= strtoupper(substr($words[1], 0, 1));
+                            if (!$initials) $initials = strtoupper(substr($cleanCompany, 0, 2)) ?: 'DS';
 
-                            if (in_array(strtolower($cr->status), ['analisa', 'dianalisis'])) {
-                                $statusText = 'Analisis';
-                                $statusBg = '#DBEAFE';
-                                $statusColor = '#2563EB';
-                            } elseif (in_array(strtolower($cr->status), ['development', 'dikerjakan'])) {
+                            // Status badge mapping matching Figma exactly
+                            $st = strtolower($cr->status ?? '');
+                            if (in_array($st, ['diajukan', 'awaiting_pm', 'awaiting_pmh', 'pending'])) {
+                                $statusText = 'Diajukan';
+                                $statusBg = '#FEF9C3';
+                                $statusColor = '#D97706';
+                                $dotColor = '#D97706';
+                            } elseif (in_array($st, ['analisa', 'dianalisis', 'analysis'])) {
+                                $statusText = 'Analysis';
+                                $statusBg = '#E0F2FE';
+                                $statusColor = '#0284C7';
+                                $dotColor = '#0284C7';
+                            } elseif (in_array($st, ['development', 'dikerjakan', 'develop'])) {
                                 $statusText = 'Develop';
                                 $statusBg = '#EDE9FE';
                                 $statusColor = '#7C3AED';
-                            } elseif (in_array(strtolower($cr->status), ['uat', 'sit'])) {
-                                $statusText = 'UAT';
-                                $statusBg = '#FCE7F3';
-                                $statusColor = '#DB2777';
-                            } elseif (in_array(strtolower($cr->status), ['golive', 'selesai', 'invoicing'])) {
+                                $dotColor = '#7C3AED';
+                            } elseif (in_array($st, ['golive', 'selesai', 'go-live', 'go_live', 'validated'])) {
                                 $statusText = 'Go-Live';
-                                $statusBg = '#D1FAE5';
-                                $statusColor = '#059669';
+                                $statusBg = '#DCFCE7';
+                                $statusColor = '#16A34A';
+                                $dotColor = '#16A34A';
+                            } else {
+                                $statusText = ucfirst(str_replace('_', ' ', $cr->status));
+                                $statusBg = '#E0F2FE';
+                                $statusColor = '#0284C7';
+                                $dotColor = '#0284C7';
                             }
 
-                            // Priority badge
+                            // Priority matching Figma: URGENT is soft red, NORMAL is soft green
                             $isUrgent = in_array(strtolower($cr->prioritas ?? ''), ['urgent', 'kritis', 'tinggi', 'high']);
-                            
+
                             $rowNo = method_exists($changeRequests, 'firstItem') ? ($changeRequests->firstItem() + $index) : ($index + 1);
                         @endphp
-                        <tr style="border-bottom: 1px solid #F1F5F9; transition: background 0.15s ease;" onmouseover="this.style.background='#F8FAFC';" onmouseout="this.style.background='#FFFFFF';">
+                        <tr>
                             {{-- NO --}}
-                            <td class="py-3 px-4 text-muted fw-medium" style="font-size: 0.85rem;">
-                                {{ str_pad($rowNo, 2, '0', STR_PAD_LEFT) }}
+                            <td class="py-3 px-3 text-center fw-bold text-dark" style="font-size: 0.88rem;">
+                                {{ $rowNo }}
                             </td>
-                            
-                            {{-- KODE CR --}}
-                            <td class="py-3 px-4">
-                                <div class="fw-bold text-dark" style="font-size: 0.85rem;">
-                                    {{ $cr->kode_cr ?? 'CR-'.str_pad($cr->id, 4, '0', STR_PAD_LEFT) }}
-                                </div>
+
+                            {{-- NAMA PM --}}
+                            <td class="py-3 px-3 fw-bold text-dark" style="font-size: 0.88rem; font-weight: 700;">
+                                {{ $cr->nama_pm ?: ($cr->user?->name ?: 'Danendra dada') }}
                             </td>
 
                             {{-- PEMOHON --}}
-                            <td class="py-3 px-4">
-                                <div class="d-flex align-items-center gap-2">
+                            <td class="py-3 px-3">
+                                <div class="d-flex align-items-center gap-2.5">
                                     <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold flex-shrink-0"
-                                         style="width: 34px; height: 34px; background: {{ $avColor }}; font-size: 0.82rem;">
-                                        {{ strtoupper(substr($companyName, 0, 2)) }}
+                                         style="width: 32px; height: 32px; background: {{ $avColor }}; font-size: 0.76rem; letter-spacing: -0.02em;">
+                                        {{ $initials }}
                                     </div>
-                                    <div style="line-height: 1.2;">
-                                        <div class="fw-bold text-dark" style="font-size: 0.88rem;">{{ $companyName }}</div>
-                                        <div class="text-muted" style="font-size: 0.75rem;">{{ $pemohonName }}</div>
-                                    </div>
+                                    <span class="fw-bold text-dark" style="font-size: 0.88rem;">
+                                        {{ $companyName }}
+                                    </span>
                                 </div>
                             </td>
 
                             {{-- JUDUL CR --}}
-                            <td class="py-3 px-4">
-                                <div style="line-height: 1.25;">
-                                    <a href="{{ route('pmh.review', $cr) }}" class="fw-bold text-dark text-decoration-none hover-primary" style="font-size: 0.88rem;">
+                            <td class="py-3 px-3">
+                                <div style="line-height: 1.3;">
+                                    <div class="fw-semibold text-dark" style="font-size: 0.88rem;">
                                         {{ $cr->judul }}
-                                    </a>
-                                    <div class="text-muted" style="font-size: 0.75rem;">
-                                        {{ $cr->proyek_terkait ?: 'Akses & Dashboard' }}
+                                    </div>
+                                    <div class="text-muted" style="font-size: 0.74rem; margin-top: 2px;">
+                                        {{ $cr->proyek_terkait ?: ($cr->main_desk ?: ($cr->kode_cr ?: 'System Enhancement')) }}
                                     </div>
                                 </div>
                             </td>
 
                             {{-- PENGAJUAN --}}
-                            <td class="py-3 px-4">
-                                <div class="fw-bold text-dark" style="font-size: 0.85rem;">
-                                    {{ $cr->tanggal_pengajuan ? $cr->tanggal_pengajuan->translatedFormat('d M Y') : '15 Sep 2024' }}
-                                </div>
-                                <div class="text-muted" style="font-size: 0.72rem;">
-                                    {{ $cr->created_at ? $cr->created_at->format('H:i:s') : '09:30:12' }}
-                                </div>
+                            <td class="py-3 px-3" style="font-size: 0.85rem; color: #334155; font-weight: 500;">
+                                {{ $cr->tanggal_pengajuan ? $cr->tanggal_pengajuan->format('d M Y') : $cr->created_at->format('d M Y') }}
                             </td>
 
                             {{-- STATUS --}}
-                            <td class="py-3 px-4">
-                                <span class="d-inline-flex align-items-center gap-1 px-3 py-1 fw-bold"
+                            <td class="py-3 px-3">
+                                <span class="d-inline-flex align-items-center gap-1.5 px-3 py-1 fw-bold"
                                       style="background: {{ $statusBg }}; color: {{ $statusColor }}; border-radius: 999px; font-size: 0.76rem;">
-                                    ● {{ $statusText }}
+                                    <span style="display: inline-block; width: 6px; height: 6px; border-radius: 50%; background: {{ $dotColor }};"></span>
+                                    {{ $statusText }}
                                 </span>
                             </td>
 
                             {{-- PRIORITAS --}}
-                            <td class="py-3 px-4 text-center">
+                            <td class="py-3 px-3 text-center">
                                 @if ($isUrgent)
-                                    <span class="badge fw-bold" style="background: #FEE2E2; color: #DC2626; border-radius: 6px; font-size: 0.72rem; padding: 4px 8px;">
-                                        HIGH
+                                    <span class="badge fw-bold" style="background: #FEE2E2; color: #DC2626; border-radius: 4px; font-size: 0.72rem; padding: 4px 8px; letter-spacing: 0.02em;">
+                                        URGENT
                                     </span>
                                 @else
-                                    <span class="badge fw-medium" style="background: #F1F5F9; color: #64748B; border-radius: 6px; font-size: 0.72rem; padding: 4px 8px;">
+                                    <span class="badge fw-bold" style="background: #DCFCE7; color: #16A34A; border-radius: 4px; font-size: 0.72rem; padding: 4px 8px; letter-spacing: 0.02em;">
                                         NORMAL
                                     </span>
                                 @endif
                             </td>
 
                             {{-- AKSI --}}
-                            <td class="py-3 px-4 text-end">
+                            <td class="py-3 px-4 text-center">
                                 <a href="{{ route('pmh.review', $cr) }}"
-                                   class="btn text-white fw-bold px-3 py-1 d-inline-flex align-items-center gap-1 shadow-sm"
-                                   style="background: #2563EB; border-radius: 999px; font-size: 0.78rem; border: none;">
+                                   class="btn text-white fw-bold d-inline-flex align-items-center justify-content-center gap-1 shadow-none"
+                                   style="background: #0063D7; border-radius: 9999px; font-size: 0.78rem; border: none; padding: 0.38rem 1.15rem;">
                                     <span>Review</span>
-                                    <i class="bi bi-chevron-right" style="font-size: 0.7rem;"></i>
+                                    <i class="bi bi-chevron-right" style="font-size: 0.68rem;"></i>
                                 </a>
                             </td>
                         </tr>
@@ -324,7 +367,7 @@
                             <td colspan="8" class="text-center py-5 text-muted">
                                 <div class="mb-2"><i class="bi bi-inbox fs-2 text-muted"></i></div>
                                 <div class="fw-bold">Tidak ada Change Request pada kategori ini</div>
-                                <div class="small mt-1">Gunakan tombol "+ Ajukan CR Baru" untuk membuat pengajuan baru.</div>
+                                <div class="small mt-1">Ubah filter status atau kata kunci pencarian Anda.</div>
                             </td>
                         </tr>
                     @endforelse
@@ -346,9 +389,9 @@
             <div class="d-flex align-items-center gap-2" style="color: #0F172A; letter-spacing: 0.02em;">
                 <span>ROWS PER PAGE</span>
                 <div class="dropdown">
-                    <button class="btn btn-white bg-white dropdown-toggle px-2 py-1 d-flex align-items-center gap-2 shadow-none"
+                    <button class="btn btn-white bg-white dropdown-toggle px-2.5 py-1 d-flex align-items-center gap-2 shadow-none"
                             type="button" data-bs-toggle="dropdown" aria-expanded="false"
-                            style="border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 0.82rem; font-weight: 700; color: #0F172A; line-height: 1.2;">
+                            style="border: 1.5px solid #CBD5E1; border-radius: 6px; font-size: 0.82rem; font-weight: 700; color: #0F172A; line-height: 1.2;">
                         <span>{{ $perPage }}</span>
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border p-1" style="min-width: 80px; border-radius: 8px; border-color: #E2E8F0;">
@@ -361,7 +404,7 @@
             <div style="color: #0F172A; letter-spacing: 0.02em;">
                 PAGE {{ $currentPage }} OF {{ $lastPage }}
             </div>
-            <div class="d-flex align-items-center gap-1">
+            <div class="d-flex align-items-center gap-1.5">
                 <a href="{{ $changeRequests->url(1) }}" class="pagination-arrow-btn {{ $currentPage <= 1 ? 'disabled' : '' }}" title="First Page">
                     <i class="bi bi-chevron-double-left"></i>
                 </a>

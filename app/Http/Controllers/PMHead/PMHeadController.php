@@ -49,10 +49,12 @@ class PMHeadController extends Controller
         }
 
         $activeTab = $request->query('tab', 'semua');
-        if ($activeTab === 'aktif') {
-            $query->whereIn('status', ['awaiting_pmh', 'diajukan', 'dianalisis', 'validated', 'disetujui', 'analisa', 'development', 'dikerjakan', 'sit', 'uat', 'training']);
-        } elseif ($activeTab === 'selesai') {
-            $query->whereIn('status', ['golive', 'selesai', 'invoicing', 'ditolak', 'revision_needed']);
+        if (!$request->filled('status') || $request->status === 'all') {
+            if ($activeTab === 'aktif') {
+                $query->whereIn('status', ['awaiting_pmh', 'diajukan', 'dianalisis', 'validated', 'disetujui', 'analisa', 'development', 'dikerjakan', 'sit', 'uat', 'training']);
+            } elseif ($activeTab === 'selesai') {
+                $query->whereIn('status', ['golive', 'selesai', 'invoicing', 'ditolak', 'revision_needed']);
+            }
         }
 
         if ($request->filled('status') && $request->status !== 'all') {
@@ -87,8 +89,9 @@ class PMHeadController extends Controller
 
     public function semuaCr(Request $request)
     {
+        $perPage = max(5, min(100, $request->integer('per_page', 10)));
         $query = $this->buildCrQuery($request);
-        $changeRequests = $query->latest()->paginate(10)->withQueryString();
+        $changeRequests = $query->latest()->paginate($perPage)->withQueryString();
 
         return view('pmhead.table_page', [
             'pageTitle' => 'Change Request',
@@ -103,8 +106,9 @@ class PMHeadController extends Controller
 
     public function persetujuan(Request $request)
     {
+        $perPage = max(5, min(100, $request->integer('per_page', 10)));
         $query = $this->buildCrQuery($request, ['awaiting_pmh', 'diajukan', 'dianalisis']);
-        $changeRequests = $query->latest()->paginate(10)->withQueryString();
+        $changeRequests = $query->latest()->paginate($perPage)->withQueryString();
 
         return view('pmhead.table_page', [
             'pageTitle' => 'Butuh Persetujuan',
@@ -119,8 +123,9 @@ class PMHeadController extends Controller
 
     public function development(Request $request)
     {
+        $perPage = max(5, min(100, $request->integer('per_page', 10)));
         $query = $this->buildCrQuery($request, ['development', 'dikerjakan', 'analisa', 'sit', 'uat', 'training']);
-        $changeRequests = $query->latest()->paginate(10)->withQueryString();
+        $changeRequests = $query->latest()->paginate($perPage)->withQueryString();
 
         return view('pmhead.table_page', [
             'pageTitle' => 'Development',
@@ -135,8 +140,9 @@ class PMHeadController extends Controller
 
     public function golive(Request $request)
     {
+        $perPage = max(5, min(100, $request->integer('per_page', 10)));
         $query = $this->buildCrQuery($request, ['golive', 'selesai', 'awaiting_golive_validation']);
-        $changeRequests = $query->latest()->paginate(10)->withQueryString();
+        $changeRequests = $query->latest()->paginate($perPage)->withQueryString();
 
         return view('pmhead.table_page', [
             'pageTitle' => 'GO LIVE',

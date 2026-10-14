@@ -691,7 +691,7 @@
                             <th style="min-width: 200px;">TERMIN OF PAYMENT</th>
                             <th style="min-width: 380px;">KETERANGAN / MILESTONE DELIVERABLE</th>
                             <th class="text-end" style="min-width: 150px;">NOMINAL (IDR)</th>
-                            <th class="text-center" style="width: 150px;">AKSI</th>
+                            <th class="text-center" style="width: 170px;">AKSI</th>
                         </tr>
                     </thead>
                     <tbody id="terminTableBody">
@@ -714,14 +714,14 @@
                                 Rp 5.000.000
                             </td>
                             <td class="text-center">
-                                <div class="d-inline-flex align-items-center gap-1.5 justify-content-center">
-                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1"
-                                            style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none;"
+                                <div class="d-inline-flex align-items-center justify-content-center" style="gap: 8px;">
+                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
+                                            style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
                                             onclick="openEditTerminModal(0)">
                                         <i class="bi bi-pencil-square"></i> Edit
                                     </button>
-                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1"
-                                            style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none;"
+                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
+                                            style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
                                             onclick="deleteTermin(0)">
                                         <i class="bi bi-trash3-fill"></i> Hapus
                                     </button>
@@ -747,14 +747,14 @@
                                 Rp 7.000.000
                             </td>
                             <td class="text-center">
-                                <div class="d-inline-flex align-items-center gap-1.5 justify-content-center">
-                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1"
-                                            style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none;"
+                                <div class="d-inline-flex align-items-center justify-content-center" style="gap: 8px;">
+                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
+                                            style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
                                             onclick="openEditTerminModal(1)">
                                         <i class="bi bi-pencil-square"></i> Edit
                                     </button>
-                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1"
-                                            style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none;"
+                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
+                                            style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
                                             onclick="deleteTermin(1)">
                                         <i class="bi bi-trash3-fill"></i> Hapus
                                     </button>
@@ -780,14 +780,14 @@
                                 Rp 8.000.000
                             </td>
                             <td class="text-center">
-                                <div class="d-inline-flex align-items-center gap-1.5 justify-content-center">
-                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1"
-                                            style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none;"
+                                <div class="d-inline-flex align-items-center justify-content-center" style="gap: 8px;">
+                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
+                                            style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
                                             onclick="openEditTerminModal(2)">
                                         <i class="bi bi-pencil-square"></i> Edit
                                     </button>
-                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1"
-                                            style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none;"
+                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
+                                            style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
                                             onclick="deleteTermin(2)">
                                         <i class="bi bi-trash3-fill"></i> Hapus
                                     </button>
@@ -1199,14 +1199,14 @@
                     ${formatRupiah(item.nominal)}
                 </td>
                 <td class="text-center">
-                    <div class="d-inline-flex align-items-center gap-1.5 justify-content-center">
-                        <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1"
-                                style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none;"
+                    <div class="d-inline-flex align-items-center justify-content-center" style="gap: 8px;">
+                        <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
+                                style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
                                 onclick="openEditTerminModal(${idx})">
                             <i class="bi bi-pencil-square"></i> Edit
                         </button>
-                        <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1 px-2.5 py-1"
-                                style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none;"
+                        <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
+                                style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
                                 onclick="deleteTermin(${idx})">
                             <i class="bi bi-trash3-fill"></i> Hapus
                         </button>
