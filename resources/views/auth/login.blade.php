@@ -19,12 +19,13 @@
         }
 
         :root {
-            --primary-blue: #00A3FF;
-            --primary-hover: #008FE0;
+            --bg-canvas: #063970;
+            --primary-blue: #38BDF8;
+            --primary-hover: #0284C7;
             --text-navy: #1E2958;
             --text-muted: #64748B;
-            --input-bg: #F0F7FD;
-            --input-border: #D5E7F7;
+            --input-bg: #F0F9FF;
+            --input-border: #BAE6FD;
             --card-border: #BAE6FD;
             --link-purple: #6366F1;
             --font-main: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
@@ -36,52 +37,70 @@
 
         body {
             font-family: var(--font-main);
-            background-color: #FFFFFF;
+            background-color: var(--bg-canvas);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 2rem 1.5rem;
+            padding: 2rem 1.25rem;
             -webkit-font-smoothing: antialiased;
             color: #2D3748;
+            position: relative;
+            overflow-x: hidden;
         }
 
-        /* ── Main Full-Screen Center Container (No Outer Canvas Background) ── */
+        /* Ambient White Halo Glow behind Card */
+        .ambient-glow {
+            position: fixed;
+            width: 760px;
+            height: 760px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.12) 35%, rgba(255, 255, 255, 0) 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Main White Container Card (Figma MacBook Pro 14" - 27) ── */
         .auth-container {
+            position: relative;
+            z-index: 1;
             width: 100%;
-            max-width: 980px;
+            max-width: 960px;
             min-height: 560px;
             background: #FFFFFF;
+            border-radius: 36px;
+            box-shadow: 0 0 50px 10px rgba(255, 255, 255, 0.45), 0 24px 60px rgba(0, 40, 90, 0.28);
             display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            gap: 46px;
+            align-items: stretch;
+            overflow: hidden;
+            padding: 22px;
+            gap: 22px;
         }
 
         /* ── Left Hero Panel (Skyscrapers + Authentic ITPI Logo) ── */
         .hero-panel {
             flex: 1.05;
-            width: 100%;
-            max-width: 508px;
-            height: 562px;
-            border-radius: 28px;
+            border-radius: 26px;
             position: relative;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            padding: 2.8rem 2.2rem 2.8rem;
+            padding: 2.6rem 2rem 2.6rem;
             background: #153E75 url('/images/skyscrapers.jpg') no-repeat center center;
             background-size: cover;
+            min-height: 520px;
         }
 
         .hero-panel::before {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(180deg, rgba(20, 50, 95, 0.3) 0%, rgba(10, 30, 70, 0.45) 45%, rgba(5, 20, 55, 0.78) 100%);
+            background: linear-gradient(180deg, rgba(20, 50, 95, 0.25) 0%, rgba(10, 30, 70, 0.4) 45%, rgba(5, 20, 55, 0.76) 100%);
             pointer-events: none;
             z-index: 1;
         }
@@ -91,13 +110,17 @@
             z-index: 2;
             display: flex;
             justify-content: center;
+            align-items: center;
             width: 100%;
+            padding-top: 0.5rem;
         }
 
         .hero-logo-img {
-            height: 52px;
+            height: 68px;
             width: auto;
+            max-width: 155px;
             display: block;
+            object-fit: contain;
             filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
         }
 
@@ -106,6 +129,7 @@
             z-index: 2;
             text-align: center;
             color: #FFFFFF;
+            margin-bottom: 0.5rem;
         }
 
         .hero-title {
@@ -113,83 +137,87 @@
             font-weight: 800;
             color: #FFFFFF;
             letter-spacing: -0.02em;
-            margin-bottom: 0.6rem;
+            margin-bottom: 0.5rem;
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
         }
 
         .hero-subtitle {
-            font-size: 0.95rem;
-            color: rgba(255, 255, 255, 0.95);
-            line-height: 1.5;
+            font-size: 0.92rem;
+            color: #FFFFFF;
+            line-height: 1.45;
             font-weight: 500;
-            max-width: 290px;
+            max-width: 270px;
             margin: 0 auto;
             text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+            opacity: 0.96;
         }
 
         /* ── Right Form Panel (Bordered Card in Figma) ── */
         .form-panel {
             flex: 1;
-            width: 100%;
-            max-width: 416px;
             display: flex;
-            align-items: center;
+            flex-direction: column;
             justify-content: center;
+            align-items: center;
+            padding: 0.5rem;
         }
 
         .form-wrapper-box {
             width: 100%;
+            max-width: 380px;
             border: 1.5px solid var(--card-border);
-            border-radius: 24px;
-            padding: 2.6rem 2.3rem;
+            border-radius: 22px;
+            padding: 2.25rem 2rem;
             background: #FFFFFF;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
         }
 
         .auth-heading {
-            font-size: 1.6rem;
+            font-size: 1.55rem;
             font-weight: 800;
             color: var(--text-navy);
             text-align: center;
             letter-spacing: -0.015em;
-            margin-bottom: 1.6rem;
+            margin-bottom: 1.4rem;
         }
 
         /* ── Form Inputs ── */
         .input-group-custom {
-            margin-bottom: 1.15rem;
+            margin-bottom: 0.95rem;
             text-align: left;
         }
 
         .custom-label {
             display: block;
-            font-size: 0.82rem;
+            font-size: 0.78rem;
             font-weight: 600;
             color: var(--text-muted);
-            margin-bottom: 0.4rem;
+            margin-bottom: 0.35rem;
         }
 
         .custom-input {
             width: 100%;
-            height: 44px;
+            height: 42px;
             background: var(--input-bg);
             border: 1.5px solid var(--input-border);
             border-radius: 8px;
-            padding: 0 1rem;
-            font-size: 0.9rem;
+            padding: 0 0.95rem;
+            font-size: 0.88rem;
             color: #1A202C;
             font-family: var(--font-main);
             outline: none;
             transition: all 0.2s ease;
         }
 
+        .custom-input::placeholder {
+            color: #A0AEC0;
+            font-size: 0.82rem;
+        }
+
         .custom-input:focus {
             background: #FFFFFF;
             border-color: var(--primary-blue);
-            box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.18);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
         }
 
         .custom-input.is-invalid {
@@ -201,12 +229,12 @@
         .forgot-link-wrap {
             display: flex;
             justify-content: flex-end;
-            margin-top: 0.35rem;
-            margin-bottom: 1.35rem;
+            margin-top: 0.25rem;
+            margin-bottom: 1.15rem;
         }
 
         .forgot-link {
-            font-size: 0.78rem;
+            font-size: 0.75rem;
             color: #64748B;
             text-decoration: none;
             font-weight: 500;
@@ -214,19 +242,19 @@
         }
 
         .forgot-link:hover {
-            color: var(--primary-blue);
+            color: var(--primary-hover);
             text-decoration: underline;
         }
 
         /* ── Submit Button (SIGN IN) ── */
         .btn-sign-in {
             width: 100%;
-            height: 44px;
+            height: 42px;
             background: var(--primary-blue);
             border: none;
-            border-radius: 10px;
+            border-radius: 8px;
             color: #FFFFFF;
-            font-size: 0.92rem;
+            font-size: 0.9rem;
             font-weight: 700;
             letter-spacing: 0.5px;
             cursor: pointer;
@@ -234,13 +262,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 14px rgba(0, 163, 255, 0.35);
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
         }
 
         .btn-sign-in:hover {
             background: var(--primary-hover);
             transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(0, 163, 255, 0.45);
+            box-shadow: 0 6px 18px rgba(56, 189, 248, 0.45);
         }
 
         /* ── Divider: Our Continue With ── */
@@ -248,18 +276,18 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 0.85rem;
-            margin: 1.35rem 0 1.2rem 0;
+            gap: 0.75rem;
+            margin: 1.15rem 0 1.05rem 0;
         }
 
         .divider-line {
-            width: 48px;
+            width: 45px;
             height: 1.5px;
-            background: #CBD5E1;
+            background: #1E293B;
         }
 
         .divider-text {
-            font-size: 0.76rem;
+            font-size: 0.72rem;
             font-weight: 600;
             color: #64748B;
             white-space: nowrap;
@@ -271,12 +299,12 @@
             justify-content: center;
             align-items: center;
             gap: 1.25rem;
-            margin-bottom: 1.4rem;
+            margin-bottom: 1.35rem;
         }
 
         .btn-social {
-            width: 40px;
-            height: 40px;
+            width: 38px;
+            height: 38px;
             border-radius: 50%;
             background: #FFFFFF;
             border: 1.5px solid #E2E8F0;
@@ -296,15 +324,16 @@
         }
 
         .btn-social svg {
-            width: 19px;
-            height: 19px;
+            width: 18px;
+            height: 18px;
         }
 
         /* ── Footer Link ── */
         .auth-footer {
             text-align: center;
-            font-size: 0.82rem;
+            font-size: 0.78rem;
             color: #64748B;
+            margin-top: 0.25rem;
         }
 
         .auth-footer a {
@@ -340,40 +369,40 @@
             color: #15803D;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 850px) {
             body {
                 padding: 1.5rem 1rem;
             }
             .auth-container {
                 flex-direction: column;
                 max-width: 440px;
-                padding: 0;
-                gap: 20px;
+                padding: 14px;
+                gap: 16px;
             }
             .hero-panel {
-                max-width: 100%;
-                height: auto;
-                min-height: 250px;
-                padding: 2rem 1.5rem;
-                border-radius: 20px;
+                min-height: 240px;
+                padding: 1.75rem 1.5rem;
             }
             .hero-title {
                 font-size: 1.75rem;
             }
             .hero-subtitle {
-                font-size: 0.88rem;
+                font-size: 0.85rem;
             }
             .form-panel {
-                max-width: 100%;
+                padding: 0.5rem;
+                width: 100%;
             }
             .form-wrapper-box {
-                padding: 2rem 1.5rem;
-                border-radius: 20px;
+                padding: 1.75rem 1.25rem;
+                max-width: 100%;
             }
         }
     </style>
 </head>
 <body>
+
+    <div class="ambient-glow"></div>
 
     <div class="auth-container">
         <!-- SISI KIRI: Visual Skyscraper & Authentic ITPI Technology Logo -->
@@ -467,6 +496,20 @@
                     </a>
                 </div>
 
+                <!-- Quick Demo Account Pills -->
+                <div style="margin-top: 14px; padding: 10px 12px; background: #F8FAFC; border: 1px dashed #BAE6FD; border-radius: 8px; font-size: 0.75rem; color: #475569;">
+                    <div style="font-weight: 700; color: #0284C7; margin-bottom: 6px; display: flex; align-items: center; justify-content: space-between;">
+                        <span><i class="bi bi-person-badge-fill me-1"></i> Akun Demo Cepat (Klik untuk isi):</span>
+                    </div>
+                    <div style="display: flex; flex-wrap: wrap; gap: 5px;">
+                        <button type="button" onclick="fillDemo('client@itpi.test', 'password')" style="border: 1px solid #CBD5E1; background: #FFFFFF; border-radius: 4px; padding: 3px 8px; font-size: 0.72rem; cursor: pointer; font-weight: 600; color: #0F172A;">Client</button>
+                        <button type="button" onclick="fillDemo('pm@itpi.test', 'password')" style="border: 1px solid #BAE6FD; background: #F0F9FF; border-radius: 4px; padding: 3px 8px; font-size: 0.72rem; cursor: pointer; font-weight: 600; color: #0284C7;">PM</button>
+                        <button type="button" onclick="fillDemo('pmh@itpi.test', 'password')" style="border: 1px solid #E9D5FF; background: #FAF5FF; border-radius: 4px; padding: 3px 8px; font-size: 0.72rem; cursor: pointer; font-weight: 600; color: #7C3AED;">PM Head</button>
+                        <button type="button" onclick="fillDemo('presales@itpi.test', 'password')" style="border: 1px solid #A7F3D0; background: #ECFDF5; border-radius: 4px; padding: 3px 8px; font-size: 0.72rem; cursor: pointer; font-weight: 600; color: #059669;">Presales</button>
+                        <button type="button" onclick="fillDemo('admin@itpi.test', 'password')" style="border: 1px solid #FDE68A; background: #FFFBEB; border-radius: 4px; padding: 3px 8px; font-size: 0.72rem; cursor: pointer; font-weight: 600; color: #D97706;">Admin</button>
+                    </div>
+                </div>
+
                 <!-- Footer: Register Switch -->
                 <div class="auth-footer">
                     Don't have an account? <a href="{{ route('register') }}">Sign Up</a>
@@ -474,6 +517,13 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function fillDemo(email, password) {
+            document.getElementById('email').value = email;
+            document.getElementById('password').value = password;
+        }
+    </script>
 
 </body>
 </html>

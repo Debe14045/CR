@@ -19,16 +19,16 @@
         }
 
         :root {
-            --bg-outer: #FFFFFF;
-            --btn-blue: #38BDF8;
-            --btn-blue-hover: #0284C7;
-            --title-navy: #1D2E7C;
-            --label-color: #475569;
+            --bg-canvas: #063970;
+            --primary-blue: #38BDF8;
+            --primary-hover: #0284C7;
+            --text-navy: #1E2958;
+            --text-muted: #64748B;
             --input-bg: #F0F9FF;
             --input-border: #BAE6FD;
             --card-border: #BAE6FD;
-            --link-purple: #8B5CF6;
-            --font-main: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+            --link-purple: #6366F1;
+            --font-main: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
         html, body {
@@ -37,348 +37,366 @@
 
         body {
             font-family: var(--font-main);
-            background-color: #FFFFFF;
+            background-color: var(--bg-canvas);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 2rem 1.5rem;
+            padding: 2rem 1.25rem;
             -webkit-font-smoothing: antialiased;
             color: #2D3748;
+            position: relative;
+            overflow-x: hidden;
         }
 
-        /* ── Main Full-Screen Center Container (No Outer Canvas Background) ── */
-        .auth-card-container {
+        /* Ambient White Halo Glow behind Card */
+        .ambient-glow {
+            position: fixed;
+            width: 760px;
+            height: 760px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.12) 35%, rgba(255, 255, 255, 0) 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Main White Container Card ── */
+        .auth-container {
+            position: relative;
+            z-index: 1;
             width: 100%;
-            max-width: 980px;
+            max-width: 960px;
             min-height: 560px;
             background: #FFFFFF;
-            border-radius: 0;
-            box-shadow: none;
+            border-radius: 36px;
+            box-shadow: 0 0 50px 10px rgba(255, 255, 255, 0.45), 0 24px 60px rgba(0, 40, 90, 0.28);
             display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            gap: 46px;
-            position: relative;
+            align-items: stretch;
+            overflow: hidden;
+            padding: 22px;
+            gap: 22px;
         }
 
-        /* ── Left Hero Panel (Skyscrapers) ── */
+        /* ── Left Hero Panel (Skyscrapers + Authentic ITPI Logo) ── */
         .hero-panel {
             flex: 1.05;
-            width: 100%;
-            max-width: 508px;
-            height: 562px;
-            border-radius: 28px;
+            border-radius: 26px;
             position: relative;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            padding: 2.8rem 2.2rem 2.8rem;
+            padding: 2.6rem 2rem 2.6rem;
             background: #153E75 url('/images/skyscrapers.jpg') no-repeat center center;
             background-size: cover;
+            min-height: 520px;
         }
 
         .hero-panel::before {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(180deg, rgba(20, 50, 95, 0.3) 0%, rgba(10, 30, 70, 0.45) 45%, rgba(5, 20, 55, 0.78) 100%);
+            background: linear-gradient(180deg, rgba(20, 50, 95, 0.25) 0%, rgba(10, 30, 70, 0.4) 45%, rgba(5, 20, 55, 0.76) 100%);
             pointer-events: none;
             z-index: 1;
         }
 
-        .hero-top-logo {
+        .hero-logo-box {
             position: relative;
             z-index: 2;
             display: flex;
             justify-content: center;
+            align-items: center;
             width: 100%;
+            padding-top: 0.5rem;
         }
 
         .hero-logo-img {
-            height: 52px;
+            height: 68px;
             width: auto;
+            max-width: 155px;
             display: block;
+            object-fit: contain;
             filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
         }
 
-        .hero-bottom-text {
+        .hero-caption {
             position: relative;
             z-index: 2;
             text-align: center;
             color: #FFFFFF;
+            margin-bottom: 0.5rem;
         }
 
-        .hero-headline {
+        .hero-title {
             font-size: 2.2rem;
             font-weight: 800;
             color: #FFFFFF;
             letter-spacing: -0.02em;
-            margin-bottom: 0.6rem;
+            margin-bottom: 0.5rem;
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
         }
 
-        .hero-subtext {
-            font-size: 0.95rem;
-            color: rgba(255, 255, 255, 0.95);
-            line-height: 1.5;
+        .hero-subtitle {
+            font-size: 0.92rem;
+            color: #FFFFFF;
+            line-height: 1.45;
             font-weight: 500;
-            max-width: 290px;
+            max-width: 270px;
             margin: 0 auto;
             text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+            opacity: 0.96;
         }
 
-        /* ── Right Content Panel (Bordered Form Card) ── */
+        /* ── Right Form Panel (Bordered Card in Figma) ── */
         .form-panel {
             flex: 1;
-            width: 100%;
-            max-width: 416px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .form-inner-box {
-            width: 100%;
-            border: 1.5px solid var(--card-border);
-            border-radius: 24px;
-            padding: 2.6rem 2.3rem;
-            background: #FFFFFF;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
             display: flex;
             flex-direction: column;
             justify-content: center;
-        }
-
-        .padlock-icon-box {
-            margin-bottom: 1rem;
-            display: flex;
             align-items: center;
-            justify-content: center;
+            padding: 0.5rem;
         }
 
-        .padlock-icon-img {
-            width: 90px;
-            height: auto;
-            display: block;
-        }
-
-        .form-wrapper {
+        .form-wrapper-box {
             width: 100%;
-            max-width: 320px;
+            max-width: 380px;
+            border: 1.5px solid var(--card-border);
+            border-radius: 22px;
+            padding: 2.25rem 2rem;
+            background: #FFFFFF;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
         }
 
-        .form-group {
-            margin-bottom: 1rem;
+        .auth-heading {
+            font-size: 1.55rem;
+            font-weight: 800;
+            color: var(--text-navy);
+            text-align: center;
+            letter-spacing: -0.015em;
+            margin-bottom: 1.4rem;
+        }
+
+        /* ── Form Inputs ── */
+        .input-group-custom {
+            margin-bottom: 0.95rem;
             text-align: left;
         }
 
-        .field-label {
+        .custom-label {
             display: block;
-            font-size: 0.84rem;
-            font-weight: 500;
-            color: var(--label-color);
-            margin-bottom: 5px;
+            font-size: 0.78rem;
+            font-weight: 600;
+            color: var(--text-muted);
+            margin-bottom: 0.35rem;
         }
 
-        .field-input {
+        .custom-input {
             width: 100%;
             height: 42px;
             background: var(--input-bg);
-            border: 1px solid var(--input-border);
+            border: 1.5px solid var(--input-border);
             border-radius: 8px;
-            padding: 0 14px;
-            font-size: 0.9rem;
-            color: #1E293B;
-            font-family: inherit;
+            padding: 0 0.95rem;
+            font-size: 0.88rem;
+            color: #1A202C;
+            font-family: var(--font-main);
             outline: none;
             transition: all 0.2s ease;
         }
 
-        .field-input:focus {
-            border-color: #38BDF8;
+        .custom-input::placeholder {
+            color: #A0AEC0;
+            font-size: 0.82rem;
+        }
+
+        .custom-input:focus {
             background: #FFFFFF;
+            border-color: var(--primary-blue);
             box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
         }
 
-        .field-input.is-invalid {
+        .custom-input.is-invalid {
             border-color: #EF4444;
             background: #FEF2F2;
         }
 
-        .btn-submit {
+        /* ── Submit Button (Reset Password) ── */
+        .btn-sign-in {
             width: 100%;
             height: 42px;
-            background: var(--btn-blue);
-            color: #FFFFFF;
+            background: var(--primary-blue);
             border: none;
-            border-radius: 9999px;
-            font-size: 0.92rem;
-            font-weight: 600;
-            font-family: inherit;
+            border-radius: 8px;
+            color: #FFFFFF;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
             cursor: pointer;
-            transition: all 0.2s ease;
-            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
+            transition: all 0.18s ease;
             display: flex;
             align-items: center;
             justify-content: center;
-            margin-top: 1.2rem;
-            margin-bottom: 1.4rem;
-            text-decoration: none;
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
+            margin-top: 0.5rem;
+            margin-bottom: 1.35rem;
         }
 
-        .btn-submit:hover {
-            background: var(--btn-blue-hover);
+        .btn-sign-in:hover {
+            background: var(--primary-hover);
             transform: translateY(-1px);
             box-shadow: 0 6px 18px rgba(56, 189, 248, 0.45);
         }
 
-        .bottom-links {
+        /* ── Footer Link ── */
+        .auth-footer {
             text-align: center;
-            font-size: 0.84rem;
+            font-size: 0.78rem;
             color: #64748B;
         }
 
-        .link-signup {
+        .auth-footer a {
             color: var(--link-purple);
-            font-weight: 600;
+            font-weight: 700;
             text-decoration: none;
-            transition: color 0.15s ease;
+            margin-left: 3px;
         }
 
-        .link-signup:hover {
-            color: #6D28D9;
+        .auth-footer a:hover {
             text-decoration: underline;
+        }
+
+        .alert-box {
+            padding: 0.65rem 0.9rem;
+            border-radius: 8px;
+            font-size: 0.8rem;
+            margin-bottom: 1rem;
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
         }
 
         .alert-error {
             background: #FEF2F2;
             border: 1px solid #FECACA;
-            color: #DC2626;
-            font-size: 0.82rem;
-            border-radius: 8px;
-            padding: 8px 12px;
-            margin-bottom: 0.8rem;
-            text-align: left;
+            color: #B91C1C;
         }
 
-        @media (max-width: 900px) {
+        .alert-success {
+            background: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            color: #15803D;
+        }
+
+        @media (max-width: 850px) {
             body {
                 padding: 1.5rem 1rem;
             }
-            .auth-card-container {
+            .auth-container {
                 flex-direction: column;
                 max-width: 440px;
-                padding: 0;
-                gap: 20px;
+                padding: 14px;
+                gap: 16px;
             }
-
             .hero-panel {
-                max-width: 100%;
-                height: auto;
-                min-height: 250px;
-                padding: 2rem 1.5rem;
-                border-radius: 20px;
+                min-height: 240px;
+                padding: 1.75rem 1.5rem;
             }
-
-            .hero-headline {
+            .hero-title {
                 font-size: 1.75rem;
             }
-
-            .hero-subtext {
-                font-size: 0.88rem;
+            .hero-subtitle {
+                font-size: 0.85rem;
             }
-
             .form-panel {
-                max-width: 100%;
+                padding: 0.5rem;
+                width: 100%;
             }
-
-            .form-inner-box {
-                padding: 2rem 1.5rem;
-                border-radius: 20px;
+            .form-wrapper-box {
+                padding: 1.75rem 1.25rem;
+                max-width: 100%;
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="auth-card-container">
-        
-        <!-- Left: Skyscraper Hero Panel -->
+    <div class="ambient-glow"></div>
+
+    <div class="auth-container">
+        <!-- SISI KIRI: Visual Skyscraper & Authentic ITPI Technology Logo -->
         <div class="hero-panel">
-            <div class="hero-top-logo">
+            <div class="hero-logo-box">
                 <img src="/images/itpi_logo_tight.png" alt="ITPI TECHNOLOGY" class="hero-logo-img">
             </div>
 
-            <div class="hero-bottom-text">
-                <h1 class="hero-headline">Welcome back!</h1>
-                <p class="hero-subtext">Please enter your details to monitor your CR.</p>
+            <div class="hero-caption">
+                <h1 class="hero-title">Welcome back!</h1>
+                <p class="hero-subtitle">Please enter your details to monitor your CR.</p>
             </div>
         </div>
 
-        <!-- Right: Reset Password Form in Bordered Card -->
+        <!-- SISI KANAN: Form Box Reset Password -->
         <div class="form-panel">
-            <div class="form-inner-box">
-                
-                <div class="padlock-icon-box">
-                    <img src="/images/icon_padlock_reset.svg" alt="Reset Password" class="padlock-icon-img">
-                </div>
+            <div class="form-wrapper-box">
+                <h2 class="auth-heading">Reset Password</h2>
 
-                <div class="form-wrapper">
-                    
-                    @if ($errors->any())
-                        <div class="alert-error">
-                            @foreach ($errors->all() as $error)
-                                <div>{{ $error }}</div>
-                            @endforeach
-                        </div>
-                    @endif
+                {{-- Alerts Flash --}}
+                @if ($errors->any())
+                    <div class="alert-box alert-error">
+                        <i class="bi bi-exclamation-circle-fill"></i>
+                        <div>{{ $errors->first() }}</div>
+                    </div>
+                @endif
 
-                    <form action="{{ route('password.update') }}" method="POST">
-                        @csrf
-                        <input type="hidden" name="token" value="{{ $token }}">
-                        <input type="hidden" name="email" value="{{ old('email', $email) }}">
+                <form method="POST" action="{{ route('password.update') }}">
+                    @csrf
 
-                        <div class="form-group">
-                            <label for="password" class="field-label">New Password</label>
-                            <input 
-                                type="password" 
-                                id="password" 
-                                name="password" 
-                                class="field-input @error('password') is-invalid @enderror" 
-                                required 
-                                autofocus
-                            >
-                        </div>
+                    <input type="hidden" name="token" value="{{ $token ?? request()->route('token') }}">
 
-                        <div class="form-group">
-                            <label for="password_confirmation" class="field-label">Confirm New Password</label>
-                            <input 
-                                type="password" 
-                                id="password_confirmation" 
-                                name="password_confirmation" 
-                                class="field-input @error('password_confirmation') is-invalid @enderror" 
-                                required
-                            >
-                        </div>
-
-                        <button type="submit" class="btn-submit">
-                            Send Reset Link
-                        </button>
-                    </form>
-
-                    <div class="bottom-links">
-                        Remember your password? <a href="{{ route('login') }}" class="link-signup">Sign Up</a>
+                    <!-- Email Input -->
+                    <div class="input-group-custom">
+                        <label class="custom-label" for="email">Email</label>
+                        <input type="email" id="email" name="email"
+                               class="custom-input @error('email') is-invalid @enderror"
+                               value="{{ $email ?? old('email') }}"
+                               required autofocus autocomplete="email">
                     </div>
 
-                </div>
+                    <!-- Password Baru -->
+                    <div class="input-group-custom">
+                        <label class="custom-label" for="password">Password Baru</label>
+                        <input type="password" id="password" name="password"
+                               class="custom-input @error('password') is-invalid @enderror"
+                               required autocomplete="new-password"
+                               placeholder="Minimal 8 karakter">
+                    </div>
 
+                    <!-- Konfirmasi Password -->
+                    <div class="input-group-custom">
+                        <label class="custom-label" for="password_confirmation">Konfirmasi Password</label>
+                        <input type="password" id="password_confirmation" name="password_confirmation"
+                               class="custom-input"
+                               required autocomplete="new-password"
+                               placeholder="Ulangi password baru">
+                    </div>
+
+                    <!-- Submit Button Reset Password -->
+                    <button type="submit" class="btn-sign-in">
+                        Reset Password
+                    </button>
+                </form>
+
+                <!-- Footer: Return to Login -->
+                <div class="auth-footer">
+                    Remember your account? <a href="{{ route('login') }}">Sign In</a>
+                </div>
             </div>
         </div>
-
     </div>
 
 </body>

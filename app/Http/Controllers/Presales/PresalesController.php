@@ -157,21 +157,20 @@ class PresalesController extends Controller
 
     public function persetujuan(Request $request)
     {
-        $emptyPaginator = new \Illuminate\Pagination\LengthAwarePaginator([], 0, 10, 1, [
-            'path' => $request->url(),
-            'query' => $request->query(),
-        ]);
+        $perPage = (int) $request->query('per_page', 10);
+        $query = $this->buildCrQuery($request, ['validated', 'disetujui']);
+        $changeRequests = $query->latest()->paginate($perPage)->withQueryString();
 
         return view('presales.table_page', [
             'pageTitle'      => 'Butuh Persetujuan',
             'activeMenu'     => 'persetujuan',
-            'changeRequests' => $emptyPaginator,
-            'totalData'      => 0,
+            'changeRequests' => $changeRequests,
+            'totalData'      => $changeRequests->total(),
             'activeTab'      => $request->query('tab', 'semua'),
             'search'         => $request->query('search', ''),
             'selectedStatus' => $request->query('status', 'all'),
-            'isEmptyState'   => true,
-            'emptyMessage'   => 'Halaman / baris kosong. Filter status Butuh Persetujuan dapat dipantau langsung pada halaman Semua CR.',
+            'isEmptyState'   => $changeRequests->total() === 0,
+            'emptyMessage'   => 'Belum ada Change Request yang menunggu penawaran (Quotation). CR yang telah disetujui PM Head akan otomatis muncul di antrean ini.',
         ]);
     }
 

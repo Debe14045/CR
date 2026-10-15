@@ -408,6 +408,10 @@
         <div class="stat-pill-number" style="color:#10B981;">{{ $roleMetrics['history_tab_count'] ?? 0 }}</div>
         <div class="stat-pill-label">History / Selesai</div>
     </a>
+    <a href="{{ route('change-requests.index', ['view' => 'draft']) }}" class="stat-pill text-decoration-none">
+        <div class="stat-pill-number" style="color:#64748B;">{{ $roleMetrics['draft_count'] ?? \App\Models\ChangeRequest::where('user_id', auth()->id())->where('status', 'draft')->count() }}</div>
+        <div class="stat-pill-label">Draft CR</div>
+    </a>
 </div>
 
 {{-- ── 3. PEMISAHAN KATEGORI MENU DATA CR (4 Kategori / Tabs) ── --}}
@@ -415,9 +419,14 @@
     $currentTab = request('tab', 'all');
 @endphp
 <div class="client-nav-tabs">
-    <a href="{{ route('change-requests.index') }}" class="client-nav-tab {{ $currentTab === 'all' && !request('status') ? 'active' : '' }}">
+    <a href="{{ route('change-requests.index') }}" class="client-nav-tab {{ $currentTab === 'all' && !request('status') && !request('view') ? 'active' : '' }}">
         <span>Semua Data</span>
         <span class="tab-badge">{{ $roleMetrics['total'] ?? 0 }}</span>
+    </a>
+    <a href="{{ route('change-requests.index', ['view' => 'draft']) }}" class="client-nav-tab {{ request('view') === 'draft' ? 'active' : '' }}">
+        <i class="bi bi-file-earmark-text"></i>
+        <span>Draft CR</span>
+        <span class="tab-badge">{{ $roleMetrics['draft_count'] ?? \App\Models\ChangeRequest::where('user_id', auth()->id())->where('status', 'draft')->count() }}</span>
     </a>
     <a href="{{ route('change-requests.index', ['tab' => 'pending']) }}" class="client-nav-tab {{ $currentTab === 'pending' ? 'active' : '' }}">
         <i class="bi bi-clock-history"></i>

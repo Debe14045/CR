@@ -35,7 +35,7 @@
         body {
             min-height: 100vh;
             font-family: var(--font);
-            background: #06091A;
+            background: #063970;
             display: flex;
             align-items: center;
             justify-content: center;
@@ -45,35 +45,26 @@
             overflow-x: hidden;
         }
 
-        /* Ambient Glow */
-        body::before {
-            content: '';
-            position: absolute;
-            top: -20%;
-            left: 20%;
-            width: 600px;
-            height: 600px;
-            background: radial-gradient(circle, rgba(37, 99, 235, 0.22) 0%, transparent 70%);
+        /* Ambient White Halo Glow behind Card */
+        .ambient-glow {
+            position: fixed;
+            width: 760px;
+            height: 760px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.12) 35%, rgba(255, 255, 255, 0) 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             pointer-events: none;
-        }
-
-        body::after {
-            content: '';
-            position: absolute;
-            bottom: -20%;
-            right: 20%;
-            width: 500px;
-            height: 500px;
-            background: radial-gradient(circle, rgba(16, 185, 129, 0.15) 0%, transparent 70%);
-            pointer-events: none;
+            z-index: 0;
         }
 
         .otp-card {
             width: 100%;
             max-width: 460px;
             background: #FFFFFF;
-            border-radius: 20px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.35);
+            border-radius: 28px;
+            box-shadow: 0 0 50px 10px rgba(255, 255, 255, 0.45), 0 24px 60px rgba(0, 40, 90, 0.28);
             padding: 3rem 2.5rem;
             position: relative;
             z-index: 10;
@@ -159,24 +150,24 @@
             justify-content: center;
             gap: 0.5rem;
             width: 100%;
-            padding: 0.85rem;
-            background: linear-gradient(135deg, #2563EB, #1D4ED8);
+            height: 44px;
+            background: #38BDF8;
             color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 10px;
             font-size: 0.95rem;
             font-weight: 700;
             font-family: var(--font);
             cursor: pointer;
             transition: all 0.18s ease;
-            box-shadow: 0 4px 15px rgba(37, 99, 235, 0.35);
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
             margin-bottom: 1.25rem;
         }
 
         .btn-verify:hover {
-            background: linear-gradient(135deg, #1D4ED8, #1E40AF);
+            background: #0284C7;
             transform: translateY(-1px);
-            box-shadow: 0 6px 20px rgba(37, 99, 235, 0.45);
+            box-shadow: 0 6px 18px rgba(56, 189, 248, 0.45);
         }
 
         /* Resend Section */
@@ -262,6 +253,8 @@
     </style>
 </head>
 <body>
+
+    <div class="ambient-glow"></div>
 
     <div class="otp-card">
         <div class="logo-icon-wrap">

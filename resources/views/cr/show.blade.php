@@ -37,6 +37,10 @@
         $progressPct = 17;
     }
 
+    // Step 5 & 10: Tab Status CR baru terbuka jika CR sudah disetujui PM Head dan quotation selesai (status development dsb)
+    $isStatusCrUnlocked = in_array($statusKey, ['development', 'dikerjakan', 'sit', 'uat', 'training', 'awaiting_golive_validation', 'golive', 'invoicing', 'selesai'])
+        || ($changeRequest->harga_penawaran !== null && $changeRequest->isPmhApproved());
+
     $crJudul = $changeRequest->judul ?: 'Integrasi API Pembayaran OVO';
     $crKode = $changeRequest->kode_cr ?: 'CR-2026-09-0042';
     $firstChar = strtoupper(substr($crJudul, 0, 1)) ?: 'I';
@@ -199,15 +203,33 @@
 <div style="font-family: 'Plus Jakarta Sans', sans-serif; color: #0F172A; width: 100%; box-sizing: border-box; padding-bottom: 3.5rem;">
 
     {{-- ══ 1. HEADER JUDUL HALAMAN ══ --}}
-    <div style="margin-bottom: 20px;">
-        <h1 style="font-size: 1.65rem; font-weight: 800; color: #0F172A; letter-spacing: -0.02em; margin: 0 0 3px; line-height: 1.2;" data-i18n="detail_cr_title">
-            Detail Change Request
-        </h1>
-        <p style="font-size: 0.82rem; color: #64748B; margin: 0; font-weight: 400;" data-i18n="detail_cr_subtitle">
-            Melihat Data Lengkap CR
-        </p>
-        <div style="height: 1.5px; background: #E2E8F0; margin: 14px 0 0;"></div>
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 12px;">
+        <div>
+            <h1 style="font-size: 1.65rem; font-weight: 800; color: #0F172A; letter-spacing: -0.02em; margin: 0 0 3px; line-height: 1.2;" data-i18n="detail_cr_title">
+                {{ $statusKey === 'draft' ? 'Detail Draft Change Request' : 'Detail Change Request' }}
+            </h1>
+            <p style="font-size: 0.82rem; color: #64748B; margin: 0; font-weight: 400;" data-i18n="detail_cr_subtitle">
+                {{ $statusKey === 'draft' ? 'Draft Change Request belum diajukan ke Project Manager' : 'Melihat Data Lengkap CR' }}
+            </p>
+        </div>
+        @if($statusKey === 'draft' && (auth()->user()?->isClient() || auth()->user()?->isAdmin()))
+        <div style="display: flex; align-items: center; gap: 10px;">
+            <a href="{{ route('change-requests.edit', $changeRequest) }}" class="btn text-white fw-bold d-inline-flex align-items-center gap-1.5"
+               style="background: #F59E0B; border-radius: 8px; font-size: 0.82rem; padding: 7px 16px; border: none; text-decoration: none;">
+                <i class="bi bi-pencil-square"></i> Edit Draft
+            </a>
+            <form method="POST" action="{{ route('change-requests.destroy', $changeRequest) }}" onsubmit="return confirm('Apakah Anda yakin ingin menghapus draft ini?');" style="margin: 0;">
+                @csrf
+                @method('DELETE')
+                <button type="submit" class="btn text-white fw-bold d-inline-flex align-items-center gap-1.5"
+                        style="background: #EF4444; border-radius: 8px; font-size: 0.82rem; padding: 7px 16px; border: none;">
+                    <i class="bi bi-trash"></i> Hapus Draft
+                </button>
+            </form>
+        </div>
+        @endif
     </div>
+    <div style="height: 1.5px; background: #E2E8F0; margin: 0 0 20px;"></div>
 
     {{-- ══ 2. 3-TAB SEGMENTED CONTROL (FOR PM & INTERNAL ROLES) ══ --}}
     @if(!$isClientUser)
@@ -221,8 +243,13 @@
             Verifikasi CR
         </button>
         <button type="button" id="tabBtn-status" onclick="switchDetailTab('status')"
-                style="display: flex; align-items: center; justify-content: center; height: 42px; font-weight: 600; font-size: 0.88rem; border: none; border-left: 1.5px solid #CBD5E1; cursor: pointer; transition: all 0.15s ease; {{ $activeTab === 'status' ? 'background: #0070D2; color: #FFFFFF;' : 'background: #EEF2F6; color: #1E293B;' }}">
-            Status CR
+                style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 42px; font-weight: 600; font-size: 0.88rem; border: none; border-left: 1.5px solid #CBD5E1; cursor: pointer; transition: all 0.15s ease; {{ $activeTab === 'status' ? 'background: #0070D2; color: #FFFFFF;' : 'background: #EEF2F6; color: #1E293B;' }}">
+            @if(!$isStatusCrUnlocked)
+                <i class="bi bi-lock-fill" style="color: #EF4444; font-size: 0.84rem;"></i>
+                <span>Status CR <small style="color: #EF4444; font-weight: 700;">(Terkunci)</small></span>
+            @else
+                <span>Status CR</span>
+            @endif
         </button>
     </div>
     @endif
@@ -783,6 +810,25 @@
     <div id="tabPanel-status" class="{{ $activeTab === 'status' ? '' : 'd-none' }}">
         <div style="background: #F4F6F9; border: 1.5px solid #DCE6F1; border-radius: 18px; padding: 26px 28px; box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03); width: 100%; box-sizing: border-box;">
 
+            @if(!$isStatusCrUnlocked)
+            {{-- Lock Warning Banner Sesuai Ketentuan 5: Tab Status CR belum bisa diisi jika belum melakukan pembayaran/quotation --}}
+            <div style="background: #FEF2F2; border: 1.5px solid #FECACA; border-radius: 12px; padding: 18px 22px; margin-bottom: 24px; display: flex; align-items: flex-start; gap: 14px;">
+                <div style="width: 40px; height: 40px; border-radius: 50%; background: #FEE2E2; color: #DC2626; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
+                    <i class="bi bi-lock-fill"></i>
+                </div>
+                <div>
+                    <h4 style="font-size: 0.95rem; font-weight: 800; color: #991B1B; margin: 0 0 4px 0;">
+                        Tab Status CR Belum Bisa Diisi (Terkunci)
+                    </h4>
+                    <p style="font-size: 0.82rem; color: #B91C1C; margin: 0; line-height: 1.45;">
+                        Sesuai alur Change Request, tab Status CR belum dapat diisi karena CR belum menyelesaikan seluruh tahapan:
+                        <br><strong>1. Verifikasi CR oleh PM</strong> &bull; <strong>2. Validasi & Approval oleh PM Head</strong> &bull; <strong>3. Input Quotation & Konfirmasi Pembayaran oleh Presales</strong>.
+                        <br>Setelah data Quotation disimpan dan dikonfirmasi, status CR akan otomatis terbuka ke tahap <strong>Development</strong> sehingga progress pengerjaan dapat diupdate.
+                    </p>
+                </div>
+            </div>
+            @endif
+
             {{-- ── 1. Top Identity Row (Squircle + Title + Badge) ── --}}
             <div style="display: flex; align-items: center; gap: 14px; margin-bottom: 24px;">
                 <div style="width: 38px; height: 38px; border-radius: 10px; background: #0098EA; color: #FFFFFF; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; font-weight: 800; flex-shrink: 0;">
@@ -885,6 +931,7 @@
             <form method="POST" action="{{ route('change-requests.update', $changeRequest) }}" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
+                <input type="hidden" name="from_tab" value="status">
 
                 <div class="cr-grid-status-ba">
                     {{-- Left Card: UPDATE STATUS CR --}}
@@ -902,8 +949,8 @@
                                 STATUS BARU
                             </label>
                             <div style="position: relative;">
-                                <select name="status" id="select_status_cr" onchange="updateStepperPreview(this.value)"
-                                        style="width: 100%; height: 42px; background: #FFFFFF; border: 1.5px solid #0098EA; border-radius: 8px; padding: 0 36px 0 14px; font-size: 0.84rem; font-weight: 600; color: #0F172A; outline: none; appearance: none; -webkit-appearance: none; cursor: pointer; transition: border-color 0.15s ease;">
+                                <select name="status" id="select_status_cr" onchange="updateStepperPreview(this.value)" {{ !$isStatusCrUnlocked ? 'disabled' : '' }}
+                                        style="width: 100%; height: 42px; background: {{ !$isStatusCrUnlocked ? '#F1F5F9' : '#FFFFFF' }}; border: 1.5px solid {{ !$isStatusCrUnlocked ? '#CBD5E1' : '#0098EA' }}; border-radius: 8px; padding: 0 36px 0 14px; font-size: 0.84rem; font-weight: 600; color: {{ !$isStatusCrUnlocked ? '#94A3B8' : '#0F172A' }}; outline: none; appearance: none; -webkit-appearance: none; cursor: {{ !$isStatusCrUnlocked ? 'not-allowed' : 'pointer' }}; transition: border-color 0.15s ease;">
                                     <option value="diajukan" {{ in_array($statusKey, ['diajukan', 'awaiting_pm']) ? 'selected' : '' }}>Diajukan</option>
                                     <option value="analisa" {{ in_array($statusKey, ['analisa', 'dianalisis']) ? 'selected' : ($isFigmaDefault ? 'selected' : '') }}>Analysis</option>
                                     <option value="development" {{ in_array($statusKey, ['development', 'dikerjakan']) ? 'selected' : '' }}>Develop</option>
@@ -922,9 +969,9 @@
                             <label for="status_cr_notes" style="font-size: 0.72rem; font-weight: 800; color: #64748B; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 8px; display: block;">
                                 CR NOTES
                             </label>
-                            <textarea id="status_cr_notes" name="catatan_analisis" rows="4"
+                            <textarea id="status_cr_notes" name="catatan_analisis" rows="4" {{ !$isStatusCrUnlocked ? 'disabled' : '' }}
                                       placeholder="Tuliskan catatan review, alasan perubahan status, atau instruksi tindak lanjut..."
-                                      style="width: 100%; height: 95px; background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 12px 14px; font-size: 0.82rem; font-family: 'Plus Jakarta Sans', sans-serif; color: #0F172A; outline: none; resize: vertical; box-sizing: border-box; transition: border-color 0.15s ease;"
+                                      style="width: 100%; height: 95px; background: {{ !$isStatusCrUnlocked ? '#F1F5F9' : '#FFFFFF' }}; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 12px 14px; font-size: 0.82rem; font-family: 'Plus Jakarta Sans', sans-serif; color: {{ !$isStatusCrUnlocked ? '#94A3B8' : '#0F172A' }}; outline: none; resize: vertical; box-sizing: border-box; transition: border-color 0.15s ease; cursor: {{ !$isStatusCrUnlocked ? 'not-allowed' : 'text' }};"
                                       onfocus="this.style.borderColor='#0098EA'" onblur="this.style.borderColor='#CBD5E1'">{{ $changeRequest->catatan_analisis ?: $changeRequest->catatan_admin }}</textarea>
                         </div>
                     </div>
@@ -939,18 +986,20 @@
                         </div>
 
                         {{-- Upload Dropzone --}}
-                        <input type="file" id="ba_file_input" name="berita_acara_file" accept=".pdf,.doc,.docx" style="display: none;" onchange="handleBaStatusFile(this)">
-                        <div onclick="document.getElementById('ba_file_input').click()"
-                             style="border: 1.5px dashed #93C5FD; background: #FFFFFF; border-radius: 10px; height: 172px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; transition: all 0.15s ease;"
+                        <input type="file" id="ba_file_input" name="berita_acara_file" accept=".pdf,.doc,.docx" style="display: none;" onchange="handleBaStatusFile(this)" {{ !$isStatusCrUnlocked ? 'disabled' : '' }}>
+                        <div @if($isStatusCrUnlocked) onclick="document.getElementById('ba_file_input').click()" @endif
+                             style="border: 1.5px dashed {{ !$isStatusCrUnlocked ? '#CBD5E1' : '#93C5FD' }}; background: {{ !$isStatusCrUnlocked ? '#F8FAFC' : '#FFFFFF' }}; border-radius: 10px; height: 172px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: {{ !$isStatusCrUnlocked ? 'not-allowed' : 'pointer' }}; opacity: {{ !$isStatusCrUnlocked ? '0.7' : '1' }}; transition: all 0.15s ease;"
+                             @if($isStatusCrUnlocked)
                              onmouseover="this.style.borderColor='#0098EA'; this.style.background='#F0F9FF';"
-                             onmouseout="this.style.borderColor='#93C5FD'; this.style.background='#FFFFFF';">
+                             onmouseout="this.style.borderColor='#93C5FD'; this.style.background='#FFFFFF';"
+                             @endif>
                             <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" style="margin-bottom: 8px;">
                                 <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
                                 <polyline points="17 8 12 3 7 8"/>
                                 <line x1="12" y1="9" x2="12" y2="15"/>
                             </svg>
                             <span id="ba_file_status_label" style="font-size: 0.80rem; color: #64748B; font-weight: 500;">
-                                {{ $changeRequest->berita_acara_file ? basename($changeRequest->berita_acara_file) : 'Klik untuk upload PDF' }}
+                                {{ $changeRequest->berita_acara_file ? basename($changeRequest->berita_acara_file) : ($isStatusCrUnlocked ? 'Klik untuk upload PDF' : 'Terkunci (Belum bisa diunggah)') }}
                             </span>
                         </div>
                     </div>
@@ -958,12 +1007,20 @@
 
                 {{-- Action Button: Far Right --}}
                 <div style="display: flex; justify-content: flex-end; align-items: center; margin-top: 24px;">
-                    <button type="submit"
-                            style="background: #10B981; color: #FFFFFF; border: none; border-radius: 8px; padding: 10px 24px; font-size: 0.84rem; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: background 0.15s ease;"
-                            onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10B981'">
-                        <i class="bi bi-check-lg" style="font-size: 0.95rem;"></i>
-                        Update CR
-                    </button>
+                    @if(!$isStatusCrUnlocked)
+                        <button type="button" disabled
+                                style="background: #94A3B8; color: #FFFFFF; border: none; border-radius: 8px; padding: 10px 24px; font-size: 0.84rem; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; cursor: not-allowed; opacity: 0.85;">
+                            <i class="bi bi-lock-fill" style="font-size: 0.88rem;"></i>
+                            Status CR Belum Bisa Diisi
+                        </button>
+                    @else
+                        <button type="submit"
+                                style="background: #10B981; color: #FFFFFF; border: none; border-radius: 8px; padding: 10px 24px; font-size: 0.84rem; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: background 0.15s ease;"
+                                onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10B981'">
+                            <i class="bi bi-check-lg" style="font-size: 0.95rem;"></i>
+                            Update CR
+                        </button>
+                    @endif
                 </div>
             </form>
 

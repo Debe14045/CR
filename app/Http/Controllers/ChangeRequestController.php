@@ -244,6 +244,7 @@ class ChangeRequestController extends Controller
         $figmaDevCr = (clone $cardQuery)->whereIn('status', ['development', 'dikerjakan'])->count();
         $figmaUatCr = (clone $cardQuery)->whereIn('status', ['uat', 'sit'])->count();
         $figmaGoLiveCr = (clone $cardQuery)->whereIn('status', ['golive', 'selesai', 'invoicing'])->count();
+        $figmaDraftCr = (clone $cardQuery)->where('status', 'draft')->count();
 
         // Status breakdown counts for Donut Chart & Progress bars
         $statusCounts = [
@@ -277,6 +278,7 @@ class ChangeRequestController extends Controller
             'in_dev' => $figmaDevCr,
             'uat' => $figmaUatCr,
             'golive' => $figmaGoLiveCr,
+            'draft_count' => $figmaDraftCr,
         ];
 
         // ── Data Request dari PM (Hari Ini, Kemarin, dan Hari-hari Sebelumnya) ──
@@ -674,6 +676,9 @@ class ChangeRequestController extends Controller
 
         // For draft CRs, open submission form in edit mode
         if ($changeRequest->status === 'draft') {
+            if ($user?->isClient() && $changeRequest->user_id !== $user->id) {
+                abort(403, 'Anda tidak memiliki izin untuk mengedit draft ini.');
+            }
             $changeRequest->load(['client', 'solutionPaper']);
             $clients = Client::where('active', true)->orderBy('company')->get();
             $pegawais = Pegawai::where('is_active', true)->orderBy('name')->get();
@@ -917,10 +922,20 @@ class ChangeRequestController extends Controller
             }
         }
 
+        $newStatus = $request->input('status', $changeRequest->status);
+
+        // Enforce requirement 5: Tab Status CR belum bisa diisi jika belum melakukan pembayaran/quotation
+        if ($request->input('from_tab') === 'status') {
+            $isUnlocked = in_array($changeRequest->status, ['development', 'dikerjakan', 'sit', 'uat', 'training', 'awaiting_golive_validation', 'golive', 'invoicing', 'selesai'])
+                || ($changeRequest->harga_penawaran !== null && $changeRequest->isPmhApproved());
+            if (!$isUnlocked) {
+                return back()->with('error', 'Tab Status CR belum dapat diisi sebelum proses Verifikasi PM, Approval PM Head, dan Quotation/Pembayaran selesai.');
+            }
+        }
+
         // GO-LIVE TRIGGER:
         // When PM transitions status to "Go-Live" (or submits for Go-Live validation):
         // System must require PM to upload Berita Acara (BA) file and BA date!
-        $newStatus = $request->input('status', $changeRequest->status);
         if ($newStatus === 'golive' || $newStatus === 'awaiting_golive_validation') {
             $hasBaFile = $changeRequest->berita_acara_file || $request->hasFile('berita_acara_file');
             $hasBaDate = $changeRequest->berita_acara_date || $request->filled('berita_acara_date');
@@ -1002,6 +1017,11 @@ class ChangeRequestController extends Controller
             }
 
             $sp->save();
+        }
+
+        if ($request->input('from_tab') === 'status') {
+            return redirect()->route('change-requests.show', [$changeRequest, 'tab' => 'status'])
+                ->with('success', 'Status CR berhasil diperbarui menjadi ' . $changeRequest->statusLabel() . '.');
         }
 
         return redirect()->route('change-requests.index')
@@ -1181,6 +1201,18 @@ class ChangeRequestController extends Controller
         $user = auth()->user();
         abort_unless($user?->isPresales() || $user?->isAdmin(), 403, 'Akses ditolak. Modul ini adalah pencatatan internal Presales / Marketing.');
 
+        // Clean numeric values if formatted as string currency
+        $rawHarga = $request->input('harga_penawaran');
+        if (is_string($rawHarga)) {
+            $cleaned = preg_replace('/[^0-9]/', '', $rawHarga);
+            $request->merge(['harga_penawaran' => $cleaned !== '' ? (float) $cleaned : null]);
+        }
+        $rawBiaya = $request->input('biaya_pengerjaan');
+        if (is_string($rawBiaya)) {
+            $cleaned = preg_replace('/[^0-9]/', '', $rawBiaya);
+            $request->merge(['biaya_pengerjaan' => $cleaned !== '' ? (float) $cleaned : null]);
+        }
+
         $validated = $request->validate([
             'harga_penawaran' => 'required|numeric|min:0',
             'biaya_pengerjaan' => 'nullable|numeric|min:0',
@@ -1203,10 +1235,29 @@ class ChangeRequestController extends Controller
             $updateData['estimasi_resource'] = $validated['estimasi_resource'];
         }
 
+        // Step 10: Setelah quotation disimpan, status CR dibuka ke development & dikerjakan
+        $updateData['status'] = 'development';
+        $updateData['mulai_dikerjakan_pada'] = $changeRequest->mulai_dikerjakan_pada ?: now();
+        $updateData['quotation_approved_tp_at'] = $changeRequest->quotation_approved_tp_at ?: now();
+        $updateData['quotation_approved_client_at'] = $changeRequest->quotation_approved_client_at ?: now();
+
         $changeRequest->update($updateData);
 
         // Store into CrInvoice or update first invoice quotation
         $invoice = $changeRequest->invoices()->first() ?: new CrInvoice(['change_request_id' => $changeRequest->id]);
+        $invNum = $request->input('invoice_number', $request->input('nomor_invoice'));
+        if ($invNum) {
+            $invoice->invoice_number = $invNum;
+        } elseif (!$invoice->invoice_number) {
+            $invoice->invoice_number = 'INV-' . date('Ymd') . '-' . str_pad($changeRequest->id, 3, '0', STR_PAD_LEFT);
+        }
+        $invStatus = $request->input('payment_status', $request->input('status_invoice'));
+        if ($invStatus && in_array(strtolower($invStatus), ['pending', 'paid'], true)) {
+            $invoice->payment_status = strtolower($invStatus);
+        } elseif (!$invoice->payment_status) {
+            $invoice->payment_status = 'pending';
+        }
+
         if ($request->hasFile('quotation_file')) {
             $invoice->quotation_file = $request->file('quotation_file')->store('quotations', 'public');
         }
@@ -1217,7 +1268,32 @@ class ChangeRequestController extends Controller
         $invoice->created_by = auth()->id();
         $invoice->save();
 
-        return back()->with('success', 'Data Quotation internal berhasil disimpan.');
+        Notification::sendNotification([
+            'target_role'       => 'pm',
+            'change_request_id' => $changeRequest->id,
+            'title'             => 'Quotation CR Selesai - Siap Dikerjakan',
+            'message'           => "Presales telah menyimpan Quotation untuk {$changeRequest->kode_cr}. Status CR kini aktif dalam tahap Development dan pengerjaan dapat dimulai.",
+            'type'              => 'success',
+            'category'          => 'cr_approval',
+            'action_url'        => route('change-requests.show', $changeRequest->id),
+        ]);
+
+        Notification::sendNotification([
+            'user_id'           => $changeRequest->user_id,
+            'target_role'       => 'client',
+            'change_request_id' => $changeRequest->id,
+            'title'             => 'Quotation CR Selesai - Masuk Development',
+            'message'           => "Quotation untuk Change Request {$changeRequest->kode_cr} telah disimpan oleh Presales. Proyek kini memasuki tahap Development.",
+            'type'              => 'info',
+            'category'          => 'cr_approval',
+            'action_url'        => route('change-requests.show', $changeRequest->id),
+        ]);
+
+        if ($request->filled('redirect_to')) {
+            return redirect($request->input('redirect_to'))->with('success', 'Data Quotation berhasil disimpan. Status CR kini aktif dalam tahap Development dan pengerjaan dapat dimulai.');
+        }
+
+        return redirect()->route('presales.persetujuan')->with('success', 'Data Quotation berhasil disimpan. Status CR kini aktif dalam tahap Development dan pengerjaan dapat dimulai.');
     }
 
     public function storeInvoice(Request $request, ChangeRequest $changeRequest)
@@ -1315,6 +1391,9 @@ class ChangeRequestController extends Controller
 
         // If status is draft, allow deletion
         if ($changeRequest->status === 'draft') {
+            if ($user?->isClient() && $changeRequest->user_id !== $user->id) {
+                abort(403, 'Anda tidak memiliki izin untuk menghapus draft milik pengguna lain.');
+            }
             $changeRequest->delete();
             return redirect()->route('change-requests.index', ['view' => 'draft'])
                 ->with('success', 'Draft CR berhasil dihapus.');

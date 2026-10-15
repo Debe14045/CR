@@ -536,21 +536,28 @@
     {{-- ========================================================= --}}
     <div id="tabContentQuotation" class="cr-detail-container p-4 p-md-5 mb-4">
 
+        <form method="POST" action="{{ route('change-requests.quotation.save', $changeRequest) }}" enctype="multipart/form-data" id="presalesQuotationForm">
+            @csrf
+            <input type="hidden" name="harga_penawaran" id="formHargaPenawaran" value="{{ $changeRequest->harga_penawaran ?: 39500000 }}">
+            <input type="hidden" name="biaya_pengerjaan" id="formBiayaPengerjaan" value="{{ $changeRequest->biaya_pengerjaan ?: 35585586 }}">
+            <input type="hidden" name="estimasi_waktu" id="formEstimasiWaktu" value="{{ $changeRequest->estimasi_waktu ?: '30 Hari' }}">
+            <input type="hidden" name="estimasi_resource" id="formEstimasiResource" value="{{ $changeRequest->estimasi_resource ?: 'Frontend & Backend Developer' }}">
+
         {{-- Card Top Row: Header Badge & Quotation Dropdown --}}
         <div class="d-flex align-items-center justify-content-between gap-3 mb-4 flex-wrap">
             <div class="d-flex align-items-center gap-3">
                 <div class="rounded-circle d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
                      style="width: 42px; height: 42px; background: #0084FF; font-size: 1.35rem; flex-shrink: 0;">
-                    I
+                    {{ strtoupper(substr($changeRequest->judul ?: 'C', 0, 1)) }}
                 </div>
                 <div class="d-flex align-items-center gap-2 flex-wrap">
                     <h3 class="fw-bold mb-0" style="color: #0F172A; font-size: 1.35rem; font-weight: 800;">
-                        Integrasi API Pembayaran OVO
+                        {{ $changeRequest->judul ?: 'Integrasi API Pembayaran OVO' }}
                     </h3>
                     <span class="badge px-3 py-1.5 fw-bold text-white d-inline-flex align-items-center gap-1.5"
                           style="background: #00A3FF; border-radius: 999px; font-size: 0.72rem; letter-spacing: 0.02em;">
                         <span style="width: 5px; height: 5px; border-radius: 50%; background: #FFFFFF;"></span>
-                        Analisa
+                        {{ $changeRequest->statusLabel() }}
                     </span>
                 </div>
             </div>
@@ -823,7 +830,7 @@
                                 onclick="document.getElementById('dokumenFileInput').click();">
                             <i class="bi bi-upload"></i> Pilih File
                         </button>
-                        <input type="file" id="dokumenFileInput" style="display: none;" onchange="onFileSelected(this)">
+                        <input type="file" id="dokumenFileInput" name="quotation_file" style="display: none;" onchange="onFileSelected(this)">
                         <span id="dokumenFileName" class="text-muted small ms-1" style="font-size: 0.82rem;">Tidak ada file yang dipilih</span>
                     </div>
                 </div>
@@ -860,6 +867,8 @@
                 <i class="bi bi-check2" style="font-size: 1.15rem;"></i> Simpan &amp; Submit
             </button>
         </div>
+
+        </form>
 
     </div>
 
@@ -1354,12 +1363,24 @@
     }
 
     function simpanDanSubmitQuotation() {
-        const toastEl = document.getElementById('quotationSuccessToast');
-        if (toastEl) {
-            const toast = new bootstrap.Toast(toastEl, { delay: 3500 });
-            toast.show();
+        const totalHargaInput = document.getElementById('totalHargaField');
+        const formHarga = document.getElementById('formHargaPenawaran');
+        const formBiaya = document.getElementById('formBiayaPengerjaan');
+        const form = document.getElementById('presalesQuotationForm');
+
+        if (totalHargaInput && formHarga) {
+            const rawVal = totalHargaInput.value.replace(/[^0-9]/g, '');
+            formHarga.value = rawVal || '39500000';
+            if (formBiaya) {
+                const num = parseInt(formHarga.value, 10);
+                formBiaya.value = Math.round(num / 1.11);
+            }
+        }
+
+        if (form) {
+            form.submit();
         } else {
-            alert('Quotation berhasil disimpan & disubmit!');
+            alert('Form quotation tidak ditemukan.');
         }
     }
 

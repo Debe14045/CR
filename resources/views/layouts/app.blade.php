@@ -1588,6 +1588,20 @@
                         <i class="bi bi-file-earmark-bar-graph nav-icon" style="font-size: 0.95rem; color: #FFFFFF; opacity: 1;"></i>
                         <span data-i18n="nav_draft_cr" style="color: #FFFFFF; font-weight: {{ $isDraftActive ? '700' : '500' }};">Draft CR</span>
                     </a>
+
+                    @if(auth()->check() && (auth()->user()->isPm() || auth()->user()->isAdmin()))
+                    {{-- Dev Board PM --}}
+                    @php $isDevboardActive = request()->routeIs('change-requests.devboard'); @endphp
+                    <a href="{{ route('change-requests.devboard') }}"
+                       class="sidebar-link {{ $isDevboardActive ? 'active' : '' }}"
+                       style="border-radius: 9999px; padding: 0.55rem 1rem; font-size: 0.88rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; background: transparent !important;">
+                        @if($isDevboardActive)
+                            <span style="width: 8px; height: 8px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 10px #00B4FF;"></span>
+                        @endif
+                        <i class="bi bi-kanban nav-icon" style="font-size: 0.95rem; color: #FFFFFF; opacity: 1;"></i>
+                        <span style="color: #FFFFFF; font-weight: {{ $isDevboardActive ? '700' : '500' }};">Dev Board</span>
+                    </a>
+                    @endif
                 </div>
 
                 {{-- 3. Notifikasi --}}
@@ -1722,35 +1736,38 @@
                     </ul>
                 </div>
 
+                @php
+                    $unreadNotifs = auth()->check() ? \App\Models\Notification::forUser(auth()->user())->latest()->take(4)->get() : collect();
+                    $unreadNotifsCount = auth()->check() ? \App\Models\Notification::forUser(auth()->user())->where('is_read', false)->count() : 0;
+                @endphp
                 {{-- Notification Bell with Red Notification Dot --}}
                 <div class="dropdown">
                     <button class="btn p-0 position-relative d-flex align-items-center justify-content-center border-0 bg-transparent shadow-none" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false"
                             style="width: 36px; height: 36px; color: #1E293B; font-size: 1.25rem;">
                         <i class="bi bi-bell"></i>
+                        @if($unreadNotifsCount > 0)
                         <span style="position: absolute; top: 5px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: #EF4444; border: 1.5px solid #FFFFFF;"></span>
+                        @endif
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-3 mt-2" style="width: 320px; border-radius: 14px;" aria-labelledby="notifDropdown">
                         <li class="d-flex justify-content-between align-items-center mb-2">
                             <span class="fw-bold small text-dark" data-i18n="notif_incoming">Notifikasi Masuk</span>
-                            <span class="badge bg-danger-subtle text-danger rounded-pill" style="font-size: 0.68rem;">{{ \App\Models\ChangeRequest::count() }} Baru</span>
+                            <span class="badge bg-danger-subtle text-danger rounded-pill" style="font-size: 0.68rem;">{{ $unreadNotifsCount }} Baru</span>
                         </li>
+                        @forelse($unreadNotifs as $notif)
                         <li class="mb-2">
-                            <div class="p-2 rounded-2" style="background: #FEF2F2; border-left: 3px solid #EF4444;">
-                                <div class="fw-bold" style="font-size: 0.76rem; color: #991B1B;">Batas Tenggat: Hari ini</div>
-                                <div class="text-muted" style="font-size: 0.72rem;">CR Pengajuan Layanan Baru BAP/SPK</div>
-                            </div>
+                            <a href="{{ $notif->action_url ?: route('notifications.go', $notif->id) }}" class="text-decoration-none">
+                                <div class="p-2 rounded-2" style="background: {{ $notif->type === 'danger' ? '#FEF2F2' : ($notif->type === 'warning' ? '#FFFBEB' : '#EFF6FF') }}; border-left: 3px solid {{ $notif->type === 'danger' ? '#EF4444' : ($notif->type === 'warning' ? '#F59E0B' : '#3B82F6') }};">
+                                    <div class="fw-bold" style="font-size: 0.76rem; color: #0F172A;">{{ $notif->title }}</div>
+                                    <div class="text-muted text-truncate" style="font-size: 0.72rem;">{{ $notif->message }}</div>
+                                </div>
+                            </a>
                         </li>
-                        <li class="mb-2">
-                            <div class="p-2 rounded-2" style="background: #FFFBEB; border-left: 3px solid #F59E0B;">
-                                <div class="fw-bold" style="font-size: 0.76rem; color: #92400E;">Menunggu Konfirmasi</div>
-                                <div class="text-muted" style="font-size: 0.72rem;">3 CR Baru Menunggu Konfirmasi</div>
-                            </div>
-                        </li>
-                        <li>
-                            <div class="p-2 rounded-2" style="background: #EFF6FF; border-left: 3px solid #3B82F6;">
-                                <div class="fw-bold" style="font-size: 0.76rem; color: #1E40AF;">BAP Ditandatangani</div>
-                                <div class="text-muted" style="font-size: 0.72rem;">Dokumen BAP Anggota Selesai</div>
-                            </div>
+                        @empty
+                        <li class="text-center py-2 text-muted small">Tidak ada notifikasi baru</li>
+                        @endforelse
+                        <li class="border-top pt-2 mt-2 text-center">
+                            <a href="{{ route('notifications.index') }}" class="small text-decoration-none fw-bold text-primary">Lihat Semua Notifikasi &rarr;</a>
                         </li>
                     </ul>
                 </div>
@@ -1761,16 +1778,23 @@
                 {{-- User Profile (Totok Antok with warm beige TA Avatar & Dropdown matching Figma Image 2) --}}
                 <div class="dropdown">
                     <div class="d-flex align-items-center gap-3 ps-1 cursor-pointer" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
+                        @php
+                            $currentUserName = auth()->check() ? auth()->user()->name : 'Totok Antok';
+                            $curWords = preg_split('/\s+/', trim($currentUserName));
+                            $curInitials = count($curWords) >= 2
+                                ? strtoupper(substr($curWords[0], 0, 1) . substr($curWords[1], 0, 1))
+                                : strtoupper(substr($currentUserName, 0, 2));
+                        @endphp
                         <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm"
                              style="width: 42px; height: 42px; background: #D5CCBE; color: #292524; font-size: 0.95rem; font-weight: 700; flex-shrink: 0;">
-                            TA
+                            {{ $curInitials }}
                         </div>
                         <div style="line-height: 1.25;" class="d-none d-sm-block text-start">
                             <div class="fw-bold text-dark text-truncate" style="font-size: 0.92rem; font-weight: 700; letter-spacing: -0.01em; color: #0F172A;">
-                                {{ auth()->check() ? auth()->user()->name : 'Totok Antok' }}
+                                {{ $currentUserName }}
                             </div>
                             <div class="text-muted text-truncate" style="font-size: 0.72rem; color: #64748B; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">
-                                {{ auth()->check() ? (auth()->user()->isPresales() ? 'PRESALES' : (auth()->user()->isPmh() ? 'PM' : (auth()->user()->isPm() ? 'PM' : (auth()->user()->isClient() ? 'KLIEN' : strtoupper(auth()->user()->role))))) : 'PRESALES' }}
+                                {{ auth()->check() ? (auth()->user()->isPresales() ? 'PRESALES' : (auth()->user()->isPmh() ? 'PM HEAD' : (auth()->user()->isPm() ? 'PM' : (auth()->user()->isClient() ? 'KLIEN' : strtoupper(auth()->user()->role))))) : 'PRESALES' }}
                             </div>
                         </div>
                     </div>

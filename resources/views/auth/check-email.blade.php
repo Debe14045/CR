@@ -19,12 +19,14 @@
         }
 
         :root {
-            --bg-outer: #FFFFFF;
-            --title-navy: #1D2E7C;
+            --bg-canvas: #063970;
+            --primary-blue: #38BDF8;
+            --primary-hover: #0284C7;
+            --text-navy: #1E2958;
             --text-muted: #64748B;
             --card-border: #BAE6FD;
-            --link-purple: #8B5CF6;
-            --font-main: 'Plus Jakarta Sans', 'Inter', -apple-system, sans-serif;
+            --link-purple: #6366F1;
+            --font-main: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
         html, body {
@@ -33,251 +35,283 @@
 
         body {
             font-family: var(--font-main);
-            background-color: #FFFFFF;
+            background-color: var(--bg-canvas);
             min-height: 100vh;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 2rem 1.5rem;
+            padding: 2rem 1.25rem;
             -webkit-font-smoothing: antialiased;
             color: #2D3748;
+            position: relative;
+            overflow-x: hidden;
         }
 
-        /* ── Main Full-Screen Center Container (No Outer Canvas Background) ── */
-        .auth-card-container {
+        /* Ambient White Halo Glow behind Card */
+        .ambient-glow {
+            position: fixed;
+            width: 760px;
+            height: 760px;
+            border-radius: 50%;
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.12) 35%, rgba(255, 255, 255, 0) 70%);
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* ── Main White Container Card ── */
+        .auth-container {
+            position: relative;
+            z-index: 1;
             width: 100%;
-            max-width: 980px;
+            max-width: 960px;
             min-height: 560px;
             background: #FFFFFF;
-            border-radius: 0;
-            box-shadow: none;
+            border-radius: 36px;
+            box-shadow: 0 0 50px 10px rgba(255, 255, 255, 0.45), 0 24px 60px rgba(0, 40, 90, 0.28);
             display: flex;
-            align-items: center;
-            justify-content: center;
-            padding: 0;
-            gap: 46px;
-            position: relative;
+            align-items: stretch;
+            overflow: hidden;
+            padding: 22px;
+            gap: 22px;
         }
 
-        /* ── Left Hero Panel (Skyscrapers) ── */
+        /* ── Left Hero Panel (Skyscrapers + Authentic ITPI Logo) ── */
         .hero-panel {
             flex: 1.05;
-            width: 100%;
-            max-width: 508px;
-            height: 562px;
-            border-radius: 28px;
+            border-radius: 26px;
             position: relative;
             overflow: hidden;
             display: flex;
             flex-direction: column;
             justify-content: space-between;
             align-items: center;
-            padding: 2.8rem 2.2rem 2.8rem;
+            padding: 2.6rem 2rem 2.6rem;
             background: #153E75 url('/images/skyscrapers.jpg') no-repeat center center;
             background-size: cover;
+            min-height: 520px;
         }
 
         .hero-panel::before {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(180deg, rgba(20, 50, 95, 0.3) 0%, rgba(10, 30, 70, 0.45) 45%, rgba(5, 20, 55, 0.78) 100%);
+            background: linear-gradient(180deg, rgba(20, 50, 95, 0.25) 0%, rgba(10, 30, 70, 0.4) 45%, rgba(5, 20, 55, 0.76) 100%);
             pointer-events: none;
             z-index: 1;
         }
 
-        .hero-top-logo {
+        .hero-logo-box {
             position: relative;
             z-index: 2;
             display: flex;
             justify-content: center;
+            align-items: center;
             width: 100%;
+            padding-top: 0.5rem;
         }
 
         .hero-logo-img {
-            height: 52px;
+            height: 68px;
             width: auto;
+            max-width: 155px;
             display: block;
+            object-fit: contain;
             filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
         }
 
-        .hero-bottom-text {
+        .hero-caption {
             position: relative;
             z-index: 2;
             text-align: center;
             color: #FFFFFF;
+            margin-bottom: 0.5rem;
         }
 
-        .hero-headline {
+        .hero-title {
             font-size: 2.2rem;
             font-weight: 800;
             color: #FFFFFF;
             letter-spacing: -0.02em;
-            margin-bottom: 0.6rem;
+            margin-bottom: 0.5rem;
             text-shadow: 0 2px 8px rgba(0, 0, 0, 0.4);
         }
 
-        .hero-subtext {
-            font-size: 0.95rem;
-            color: rgba(255, 255, 255, 0.95);
-            line-height: 1.5;
+        .hero-subtitle {
+            font-size: 0.92rem;
+            color: #FFFFFF;
+            line-height: 1.45;
             font-weight: 500;
-            max-width: 290px;
+            max-width: 270px;
             margin: 0 auto;
             text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
+            opacity: 0.96;
         }
 
-        /* ── Right Content Panel (Bordered Info Card) ── */
+        /* ── Right Form Panel (Bordered Card) ── */
         .form-panel {
             flex: 1;
-            width: 100%;
-            max-width: 416px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-        }
-
-        .form-inner-box {
-            width: 100%;
-            border: 1.5px solid var(--card-border);
-            border-radius: 24px;
-            padding: 2.6rem 2.3rem;
-            background: #FFFFFF;
-            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
             display: flex;
             flex-direction: column;
-            align-items: center;
             justify-content: center;
+            align-items: center;
+            padding: 0.5rem;
+        }
+
+        .form-wrapper-box {
+            width: 100%;
+            max-width: 380px;
+            border: 1.5px solid var(--card-border);
+            border-radius: 22px;
+            padding: 2.4rem 2rem;
+            background: #FFFFFF;
+            box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
             text-align: center;
         }
 
-        .email-icon-box {
-            margin-bottom: 1.4rem;
-            display: flex;
+        .icon-circle {
+            width: 72px;
+            height: 72px;
+            border-radius: 50%;
+            background: #F0F9FF;
+            border: 2px solid #BAE6FD;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
+            color: var(--primary-blue);
+            font-size: 2rem;
+            margin-bottom: 1.25rem;
         }
 
-        .email-icon-img {
-            width: 120px;
-            height: auto;
-            display: block;
-        }
-
-        .page-title {
-            font-size: 1.65rem;
+        .auth-heading {
+            font-size: 1.55rem;
             font-weight: 800;
-            color: var(--title-navy);
-            margin-bottom: 0.8rem;
-            letter-spacing: -0.01em;
+            color: var(--text-navy);
+            letter-spacing: -0.015em;
+            margin-bottom: 0.75rem;
         }
 
-        .desc-text {
-            font-size: 0.86rem;
+        .auth-message {
+            font-size: 0.88rem;
             color: var(--text-muted);
             line-height: 1.6;
-            max-width: 320px;
-            margin-bottom: 2rem;
+            margin-bottom: 1.75rem;
         }
 
-        .desc-text strong {
-            color: #1E293B;
-            font-weight: 600;
+        .btn-sign-in {
+            width: 100%;
+            height: 42px;
+            background: var(--primary-blue);
+            border: none;
+            border-radius: 8px;
+            color: #FFFFFF;
+            font-size: 0.9rem;
+            font-weight: 700;
+            letter-spacing: 0.5px;
+            cursor: pointer;
+            transition: all 0.18s ease;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            text-decoration: none;
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
+            margin-bottom: 1.25rem;
         }
 
-        .bottom-links {
-            text-align: center;
-            font-size: 0.84rem;
+        .btn-sign-in:hover {
+            background: var(--primary-hover);
+            transform: translateY(-1px);
+            box-shadow: 0 6px 18px rgba(56, 189, 248, 0.45);
+        }
+
+        .auth-footer {
+            font-size: 0.78rem;
             color: #64748B;
         }
 
-        .link-signup {
+        .auth-footer a {
             color: var(--link-purple);
-            font-weight: 600;
+            font-weight: 700;
             text-decoration: none;
-            transition: color 0.15s ease;
+            margin-left: 3px;
         }
 
-        .link-signup:hover {
-            color: #6D28D9;
+        .auth-footer a:hover {
             text-decoration: underline;
         }
 
-        @media (max-width: 900px) {
+        @media (max-width: 850px) {
             body {
                 padding: 1.5rem 1rem;
             }
-            .auth-card-container {
+            .auth-container {
                 flex-direction: column;
                 max-width: 440px;
-                padding: 0;
-                gap: 20px;
+                padding: 14px;
+                gap: 16px;
             }
-
             .hero-panel {
-                max-width: 100%;
-                height: auto;
-                min-height: 250px;
-                padding: 2rem 1.5rem;
-                border-radius: 20px;
+                min-height: 240px;
+                padding: 1.75rem 1.5rem;
             }
-
-            .hero-headline {
+            .hero-title {
                 font-size: 1.75rem;
             }
-
-            .hero-subtext {
-                font-size: 0.88rem;
+            .hero-subtitle {
+                font-size: 0.85rem;
             }
-
             .form-panel {
-                max-width: 100%;
+                padding: 0.5rem;
+                width: 100%;
             }
-
-            .form-inner-box {
-                padding: 2rem 1.5rem;
-                border-radius: 20px;
+            .form-wrapper-box {
+                padding: 1.75rem 1.25rem;
+                max-width: 100%;
             }
         }
     </style>
 </head>
 <body>
 
-    <div class="auth-card-container">
-        
-        <!-- Left: Skyscraper Hero Panel -->
+    <div class="ambient-glow"></div>
+
+    <div class="auth-container">
+        <!-- SISI KIRI: Visual Skyscraper & Authentic ITPI Technology Logo -->
         <div class="hero-panel">
-            <div class="hero-top-logo">
+            <div class="hero-logo-box">
                 <img src="/images/itpi_logo_tight.png" alt="ITPI TECHNOLOGY" class="hero-logo-img">
             </div>
 
-            <div class="hero-bottom-text">
-                <h1 class="hero-headline">Welcome back!</h1>
-                <p class="hero-subtext">Please enter your details to monitor your CR.</p>
+            <div class="hero-caption">
+                <h1 class="hero-title">Welcome back!</h1>
+                <p class="hero-subtitle">Please enter your details to monitor your CR.</p>
             </div>
         </div>
 
-        <!-- Right: Check Your Email in Bordered Card -->
+        <!-- SISI KANAN: Check Email Message Box -->
         <div class="form-panel">
-            <div class="form-inner-box">
-                
-                <div class="email-icon-box">
-                    <img src="/images/icon_check_email.svg" alt="Check Email" class="email-icon-img">
+            <div class="form-wrapper-box">
+                <div class="icon-circle">
+                    <i class="bi bi-envelope-check"></i>
                 </div>
 
-                <h2 class="page-title">Check your email</h2>
+                <h2 class="auth-heading">Check your email</h2>
 
-                <p class="desc-text">
-                    We've sent password recovery instructions to <strong>{{ $email ?? session('reset_email', 'user@example.com') }}</strong>. Please check your inbox and spam folder.
+                <p class="auth-message">
+                    Kami telah mengirimkan instruksi dan tautan pemulihan kata sandi ke email Anda. Silakan periksa kotak masuk atau folder spam Anda.
                 </p>
 
-                <div class="bottom-links">
-                    Remember your password? <a href="{{ route('login') }}" class="link-signup">Sign Up</a>
-                </div>
+                <a href="{{ route('login') }}" class="btn-sign-in">
+                    Kembali ke Sign In
+                </a>
 
+                <div class="auth-footer">
+                    Tidak menerima email? <a href="{{ route('password.request') }}">Kirim Ulang</a>
+                </div>
             </div>
         </div>
-
     </div>
 
 </body>

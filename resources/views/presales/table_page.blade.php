@@ -233,7 +233,7 @@
                             <td class="px-3">
                                 <div>
                                     <div class="text-dark" style="font-size: 0.88rem; line-height: 1.35; font-weight: 500;">{{ $cr->judul }}</div>
-                                    <div class="text-muted" style="font-size: 0.74rem; font-weight: 400; margin-top: 2px;">{{ $cr->proyek_terkait ?: ($cr->kode_cr ?: 'System Enhancement') }}</div>
+                                    <div class="text-muted" style="font-size: 0.74rem; font-weight: 400; margin-top: 2px;">{{ $cr->kode_cr }} &bull; {{ $cr->proyek_terkait ?: 'System Enhancement' }}</div>
                                 </div>
                             </td>
                             <td class="px-3 text-center text-secondary" style="font-size: 0.84rem; font-weight: 500; color: #475569;">

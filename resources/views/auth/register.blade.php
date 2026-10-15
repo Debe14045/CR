@@ -19,13 +19,15 @@
         }
 
         :root {
-            --bg-canvas: #0084D1;
-            --primary-blue: #00A3FF;
-            --primary-hover: #008FE0;
+            --bg-canvas: #063970;
+            --primary-blue: #38BDF8;
+            --primary-hover: #0284C7;
             --text-navy: #1E2958;
             --text-muted: #64748B;
-            --input-bg: #F0F7FD;
-            --input-border: #D5E7F7;
+            --input-bg: #F0F9FF;
+            --input-border: #BAE6FD;
+            --card-border: #BAE6FD;
+            --link-purple: #6366F1;
             --font-main: 'Plus Jakarta Sans', 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
         }
 
@@ -44,15 +46,16 @@
             -webkit-font-smoothing: antialiased;
             color: #2D3748;
             position: relative;
+            overflow-x: hidden;
         }
 
-        /* Ambient White Halo Glow */
+        /* Ambient White Halo Glow behind Card */
         .ambient-glow {
             position: fixed;
             width: 760px;
             height: 760px;
             border-radius: 50%;
-            background: radial-gradient(circle, rgba(255, 255, 255, 0.3) 0%, rgba(255, 255, 255, 0) 65%);
+            background: radial-gradient(circle, rgba(255, 255, 255, 0.35) 0%, rgba(255, 255, 255, 0.12) 35%, rgba(255, 255, 255, 0) 70%);
             top: 50%;
             left: 50%;
             transform: translate(-50%, -50%);
@@ -60,7 +63,7 @@
             z-index: 0;
         }
 
-        /* ── Main White Container Card (MacBook Pro 14" - 28) ── */
+        /* ── Main White Container Card (Figma MacBook Pro 14" - 28) ── */
         .auth-container {
             position: relative;
             z-index: 1;
@@ -69,8 +72,9 @@
             min-height: 560px;
             background: #FFFFFF;
             border-radius: 36px;
-            box-shadow: 0 0 50px 10px rgba(255, 255, 255, 0.45), 0 24px 60px rgba(0, 70, 150, 0.25);
+            box-shadow: 0 0 50px 10px rgba(255, 255, 255, 0.45), 0 24px 60px rgba(0, 40, 90, 0.28);
             display: flex;
+            align-items: stretch;
             overflow: hidden;
             padding: 22px;
             gap: 22px;
@@ -83,13 +87,13 @@
             flex-direction: column;
             justify-content: center;
             align-items: center;
-            padding: 1.25rem 1rem;
+            padding: 0.5rem;
         }
 
         .form-wrapper-box {
             width: 100%;
             max-width: 380px;
-            border: 1.5px solid #D8E7F5;
+            border: 1.5px solid var(--card-border);
             border-radius: 22px;
             padding: 2.25rem 2rem;
             background: #FFFFFF;
@@ -108,6 +112,7 @@
         /* ── Form Inputs ── */
         .input-group-custom {
             margin-bottom: 0.95rem;
+            text-align: left;
         }
 
         .custom-label {
@@ -132,15 +137,20 @@
             transition: all 0.2s ease;
         }
 
-        .custom-input:focus {
-            background: #FFFFFF;
-            border-color: var(--primary-blue);
-            box-shadow: 0 0 0 3px rgba(0, 163, 255, 0.15);
-        }
-
         .custom-input::placeholder {
             color: #A0AEC0;
             font-size: 0.82rem;
+        }
+
+        .custom-input:focus {
+            background: #FFFFFF;
+            border-color: var(--primary-blue);
+            box-shadow: 0 0 0 3px rgba(56, 189, 248, 0.2);
+        }
+
+        .custom-input.is-invalid {
+            border-color: #EF4444;
+            background: #FEF2F2;
         }
 
         /* Forgot password link */
@@ -152,7 +162,7 @@
         }
 
         .forgot-link {
-            font-size: 0.72rem;
+            font-size: 0.75rem;
             color: #64748B;
             text-decoration: none;
             font-weight: 500;
@@ -160,7 +170,7 @@
         }
 
         .forgot-link:hover {
-            color: var(--primary-blue);
+            color: var(--primary-hover);
             text-decoration: underline;
         }
 
@@ -168,7 +178,7 @@
         .btn-sign-in {
             width: 100%;
             height: 42px;
-            background: #00A3FF;
+            background: var(--primary-blue);
             border: none;
             border-radius: 8px;
             color: #FFFFFF;
@@ -180,13 +190,13 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            box-shadow: 0 4px 14px rgba(0, 163, 255, 0.35);
+            box-shadow: 0 4px 14px rgba(56, 189, 248, 0.35);
         }
 
         .btn-sign-in:hover {
             background: var(--primary-hover);
             transform: translateY(-1px);
-            box-shadow: 0 6px 18px rgba(0, 163, 255, 0.45);
+            box-shadow: 0 6px 18px rgba(56, 189, 248, 0.45);
         }
 
         /* ── Divider: Our Continue With ── */
@@ -255,7 +265,7 @@
         }
 
         .auth-footer a {
-            color: #4F46E5;
+            color: var(--link-purple);
             font-weight: 700;
             text-decoration: none;
             margin-left: 3px;
@@ -274,17 +284,18 @@
             display: flex;
             flex-direction: column;
             justify-content: space-between;
-            padding: 2.5rem 2rem 2.8rem;
+            align-items: center;
+            padding: 2.6rem 2rem 2.6rem;
             background: #153E75 url('/images/skyscrapers.jpg') no-repeat center center;
             background-size: cover;
+            min-height: 520px;
         }
 
-        /* Subtle dark blue gradient overlay focused at bottom */
         .hero-panel::before {
             content: '';
             position: absolute;
             inset: 0;
-            background: linear-gradient(180deg, rgba(0, 0, 0, 0) 0%, rgba(0, 0, 0, 0) 45%, rgba(6, 20, 50, 0.68) 100%);
+            background: linear-gradient(180deg, rgba(20, 50, 95, 0.25) 0%, rgba(10, 30, 70, 0.4) 45%, rgba(5, 20, 55, 0.76) 100%);
             pointer-events: none;
             z-index: 1;
         }
@@ -295,22 +306,24 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding-top: 0.75rem;
+            width: 100%;
+            padding-top: 0.5rem;
         }
 
         .hero-logo-img {
-            height: 72px;
+            height: 68px;
             width: auto;
             max-width: 155px;
             display: block;
             object-fit: contain;
-            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.12));
+            filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.15));
         }
 
         .hero-caption {
             position: relative;
             z-index: 2;
             text-align: center;
+            color: #FFFFFF;
             margin-bottom: 0.5rem;
         }
 
@@ -328,7 +341,7 @@
             color: #FFFFFF;
             line-height: 1.45;
             font-weight: 500;
-            max-width: 250px;
+            max-width: 270px;
             margin: 0 auto;
             text-shadow: 0 1px 4px rgba(0, 0, 0, 0.4);
             opacity: 0.96;
@@ -350,7 +363,16 @@
             color: #B91C1C;
         }
 
+        .alert-success {
+            background: #F0FDF4;
+            border: 1px solid #BBF7D0;
+            color: #15803D;
+        }
+
         @media (max-width: 850px) {
+            body {
+                padding: 1.5rem 1rem;
+            }
             .auth-container {
                 flex-direction: column-reverse;
                 max-width: 440px;
@@ -369,10 +391,11 @@
             }
             .form-panel {
                 padding: 0.5rem;
+                width: 100%;
             }
             .form-wrapper-box {
                 padding: 1.75rem 1.25rem;
-                border: none;
+                max-width: 100%;
             }
         }
     </style>
@@ -400,6 +423,12 @@
                         <div>{{ session('error') }}</div>
                     </div>
                 @endif
+                @if (session('success'))
+                    <div class="alert-box alert-success">
+                        <i class="bi bi-check-circle-fill"></i>
+                        <div>{{ session('success') }}</div>
+                    </div>
+                @endif
 
                 <form method="POST" action="{{ route('register') }}">
                     @csrf
@@ -408,9 +437,9 @@
                     <div class="input-group-custom">
                         <label class="custom-label" for="name">Nama</label>
                         <input type="text" id="name" name="name"
-                               class="custom-input"
+                               class="custom-input @error('name') is-invalid @enderror"
                                value="{{ old('name') }}"
-                               placeholder=""
+                               placeholder="Nama Lengkap"
                                required autofocus autocomplete="name">
                     </div>
 
@@ -418,9 +447,9 @@
                     <div class="input-group-custom">
                         <label class="custom-label" for="email">Email</label>
                         <input type="email" id="email" name="email"
-                               class="custom-input"
+                               class="custom-input @error('email') is-invalid @enderror"
                                value="{{ old('email') }}"
-                               placeholder=""
+                               placeholder="nama@perusahaan.com"
                                required autocomplete="email">
                     </div>
 
@@ -428,9 +457,9 @@
                     <div class="input-group-custom" style="margin-bottom: 0.25rem;">
                         <label class="custom-label" for="password">Password</label>
                         <input type="password" id="password" name="password"
-                               class="custom-input"
+                               class="custom-input @error('password') is-invalid @enderror"
                                required autocomplete="new-password"
-                               placeholder="">
+                               placeholder="••••••••">
                     </div>
 
                     <div class="forgot-link-wrap">

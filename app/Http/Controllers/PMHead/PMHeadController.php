@@ -7,6 +7,7 @@ use App\Http\Requests\PMHead\ValidateDecisionRequest;
 use App\Models\ChangeRequest;
 use App\Models\Client;
 use App\Models\CrInvoice;
+use App\Models\Notification;
 use App\Models\User;
 use Barryvdh\DomPDF\Facade\Pdf;
 use Carbon\Carbon;
@@ -283,6 +284,28 @@ class PMHeadController extends Controller
                 'reject_reason' => null,
             ]);
 
+            // Notify Client and PM
+            Notification::sendNotification([
+                'user_id'           => $changeRequest->user_id,
+                'target_role'       => 'client',
+                'change_request_id' => $changeRequest->id,
+                'title'             => 'CR Divalidasi oleh PM Head',
+                'message'           => "Change Request {$changeRequest->kode_cr} ({$changeRequest->judul}) telah disetujui dan divalidasi oleh PM Head.",
+                'type'              => 'success',
+                'category'          => 'cr_approval',
+                'action_url'        => route('change-requests.show', $changeRequest->id),
+            ]);
+
+            Notification::sendNotification([
+                'target_role'       => 'pm',
+                'change_request_id' => $changeRequest->id,
+                'title'             => 'CR Divalidasi oleh PM Head',
+                'message'           => "Change Request {$changeRequest->kode_cr} ({$changeRequest->judul}) telah disetujui oleh PM Head.",
+                'type'              => 'success',
+                'category'          => 'cr_approval',
+                'action_url'        => route('change-requests.show', $changeRequest->id),
+            ]);
+
             return redirect()->route('pmh.persetujuan')
                 ->with('success', 'Change Request "'.$changeRequest->judul.'" berhasil disetujui dan divalidasi oleh PM Head.');
         }
@@ -294,6 +317,17 @@ class PMHeadController extends Controller
                 'catatan_revisi' => $notes,
                 'direvisi_pada' => now(),
                 'pmh_approved_at' => null,
+            ]);
+
+            // Notify PM
+            Notification::sendNotification([
+                'target_role'       => 'pm',
+                'change_request_id' => $changeRequest->id,
+                'title'             => 'CR Dikembalikan oleh PM Head',
+                'message'           => "PM Head menolak {$changeRequest->kode_cr} dan meminta revisi. Alasan: {$notes}",
+                'type'              => 'warning',
+                'category'          => 'cr_rejection',
+                'action_url'        => route('change-requests.show', $changeRequest->id),
             ]);
 
             return redirect()->route('pmh.persetujuan')
