@@ -61,88 +61,15 @@ class ChangeRequestController extends Controller
 
         // Apply view-specific filters
         if ($viewMode === 'development') {
-            $query->whereIn('kode_cr', ['CR-2024-006', 'CR-2024-008', 'CR-2024-011', 'CR-2024-014']);
+            $query->whereIn('status', ['development', 'dikerjakan']);
         } elseif ($viewMode === 'uat') {
-            $query->where(function ($q) {
-                $q->whereIn('kode_cr', ['CR-2024-021', 'CR-2024-022'])
-                  ->orWhereIn('status', ['uat', 'sit']);
-            });
+            $query->whereIn('status', ['uat', 'sit']);
         } elseif ($viewMode === 'golive') {
-            $query->where(function ($q) {
-                $q->whereIn('kode_cr', ['CR-2024-025', 'CR-2024-026'])
-                  ->orWhereIn('status', ['golive', 'selesai', 'invoicing']);
-            });
+            $query->whereIn('status', ['golive', 'selesai', 'invoicing']);
         } elseif ($viewMode === 'draft') {
-            // Seed Figma Draft showcase records if not present
-            $figmaDrafts = [
-                ['kode' => 'CR-DRAFT-001', 'judul' => 'Fitur SSO Login Karyawan', 'owner' => 'Fikri Adnan', 'cat' => 'Authentication', 'date' => '2024-02-01'],
-                ['kode' => 'CR-DRAFT-002', 'judul' => 'Modul Absensi Mobile App', 'owner' => 'Maya Sari', 'cat' => 'Mobile', 'date' => '2024-02-10'],
-                ['kode' => 'CR-DRAFT-003', 'judul' => 'Integrasi API Payment Gateway', 'owner' => 'Rizky Pratama', 'cat' => 'Integration', 'date' => '2024-02-15'],
-                ['kode' => 'CR-DRAFT-004', 'judul' => 'Dashboard Laporan Keuangan Real-time', 'owner' => 'Dewi Kusuma', 'cat' => 'Reporting', 'date' => '2024-02-20'],
-                ['kode' => 'CR-DRAFT-005', 'judul' => 'Notifikasi Push Multi-Platform', 'owner' => 'Bagas Wirawan', 'cat' => 'Notification', 'date' => '2024-02-25'],
-                ['kode' => 'CR-DRAFT-006', 'judul' => 'Modul HR Self-Service Portal', 'owner' => 'Siti Rahayu', 'cat' => 'HR', 'date' => '2024-03-01'],
-            ];
-
-            $defaultClient = Client::first();
-            if (! $defaultClient) {
-                $defaultClient = Client::create([
-                    'name'     => 'PT Maju Bersama',
-                    'company'  => 'PT Maju Bersama',
-                    'email'    => 'client@majubersama.test',
-                    'active'   => true,
-                ]);
-            }
-            $targetUserId = $user?->id ?? User::first()?->id;
-
-            foreach ($figmaDrafts as $fd) {
-                if (!ChangeRequest::where('kode_cr', $fd['kode'])->exists()) {
-                    \Illuminate\Support\Facades\DB::table('change_requests')->insert([
-                        'kode_cr'           => $fd['kode'],
-                        'judul'             => $fd['judul'],
-                        'deskripsi'         => $fd['judul'] . ' — draft change request (data demo).',
-                        'owner_cr'          => $fd['owner'],
-                        'proyek_terkait'    => $fd['cat'],
-                        'user_id'           => $targetUserId,
-                        'client_id'         => $defaultClient?->id,
-                        'klien'             => 'PT Maju Bersama',
-                        'status'            => 'draft',
-                        'prioritas'         => 'normal',
-                        'tanggal_pengajuan' => $fd['date'],
-                        'created_at'        => $fd['date'] . ' 10:00:00',
-                        'updated_at'        => $fd['date'] . ' 10:00:00',
-                    ]);
-                }
-            }
-
             $query->where('status', 'draft');
         } elseif ($viewMode === 'total') {
-            $figmaTotalCrs = [
-                ['kode' => 'CR-2024-006', 'klien' => 'PT Delta Solusi', 'judul' => 'Fitur SSO Login Karyawan', 'cat' => 'Authentication', 'date' => '2024-02-01', 'status' => 'diajukan', 'prioritas' => 'urgent'],
-                ['kode' => 'CR-2024-008', 'klien' => 'PT Maju Bersama', 'judul' => 'Modul Absensi Mobile App', 'cat' => 'Mobile', 'date' => '2024-02-01', 'status' => 'diajukan', 'prioritas' => 'normal'],
-                ['kode' => 'CR-2024-011', 'klien' => 'PT Teknologi Nusantara', 'judul' => 'Integrasi API Payment Gateway', 'cat' => 'Integration', 'date' => '2024-02-01', 'status' => 'analisa', 'prioritas' => 'urgent'],
-                ['kode' => 'CR-2024-014', 'klien' => 'PT Global Inovasi', 'judul' => 'Dashboard Laporan Keuangan Real-time', 'cat' => 'Reporting', 'date' => '2024-02-01', 'status' => 'analisa', 'prioritas' => 'normal'],
-                ['kode' => 'CR-2024-017', 'klien' => 'PT Solusi Digital', 'judul' => 'Notifikasi Push Multi-Platform', 'cat' => 'Notification', 'date' => '2024-02-01', 'status' => 'development', 'prioritas' => 'normal'],
-                ['kode' => 'CR-2024-019', 'klien' => 'PT Solusi Digital', 'judul' => 'Modul HR Self-Service Portal', 'cat' => 'HR', 'date' => '2024-02-01', 'status' => 'diajukan', 'prioritas' => 'normal'],
-            ];
-            $defaultClient = Client::first();
-            $targetUserId = $user?->id ?? User::first()?->id;
-            foreach ($figmaTotalCrs as $ft) {
-                ChangeRequest::updateOrCreate(
-                    ['kode_cr' => $ft['kode']],
-                    [
-                        'judul' => $ft['judul'],
-                        'deskripsi' => $ft['judul'] . ' — change request.',
-                        'proyek_terkait' => $ft['cat'],
-                        'category' => $ft['cat'],
-                        'klien' => $ft['klien'],
-                        'status' => $ft['status'],
-                        'prioritas' => $ft['prioritas'],
-                        'tanggal_pengajuan' => $ft['date'],
-                        'user_id' => $targetUserId,
-                        'client_id' => $defaultClient?->id,
-                    ]
-                );
-            }
+            // All CRs - no status restriction
         } elseif ($viewMode === 'status') {
             // Ordered by pipeline stage
         }
@@ -185,53 +112,15 @@ class ChangeRequestController extends Controller
             });
         }
 
+        $perPage = (int) $request->input('per_page', in_array($viewMode, ['total', 'draft']) ? 10 : 15);
+        if (!in_array($perPage, [5, 10, 20, 50, 100])) {
+            $perPage = in_array($viewMode, ['total', 'draft']) ? 10 : 15;
+        }
+
         if ($viewMode === 'draft') {
-            $changeRequests = $query->orderBy('tanggal_pengajuan', 'asc')->orderBy('kode_cr', 'asc')->paginate(15)->withQueryString();
-        } elseif ($viewMode === 'development') {
-            $changeRequests = $query->orderByRaw("CASE 
-                WHEN kode_cr = 'CR-2024-006' THEN 1
-                WHEN kode_cr = 'CR-2024-008' THEN 2
-                WHEN kode_cr = 'CR-2024-011' THEN 3
-                WHEN kode_cr = 'CR-2024-014' THEN 4
-                ELSE 5 END ASC, id asc")->paginate(15)->withQueryString();
-        } elseif ($viewMode === 'uat') {
-            $changeRequests = $query->orderByRaw("CASE 
-                WHEN kode_cr = 'CR-2024-021' THEN 1
-                WHEN kode_cr = 'CR-2024-022' THEN 2
-                ELSE 3 END ASC, id asc")->paginate(15)->withQueryString();
-        } elseif ($viewMode === 'golive') {
-            $changeRequests = $query->orderByRaw("CASE 
-                WHEN kode_cr = 'CR-2024-025' THEN 1
-                WHEN kode_cr = 'CR-2024-026' THEN 2
-                ELSE 3 END ASC, id asc")->paginate(15)->withQueryString();
-        } elseif ($viewMode === 'total') {
-            $perPage = (int) $request->input('per_page', 10);
-            if (!in_array($perPage, [5, 10, 20, 50, 100])) {
-                $perPage = 10;
-            }
-            $changeRequests = $query->orderByRaw("CASE 
-                WHEN kode_cr = 'CR-2024-006' THEN 1
-                WHEN kode_cr = 'CR-2024-008' THEN 2
-                WHEN kode_cr = 'CR-2024-011' THEN 3
-                WHEN kode_cr = 'CR-2024-014' THEN 4
-                WHEN kode_cr = 'CR-2024-017' THEN 5
-                WHEN kode_cr = 'CR-2024-019' THEN 6
-                ELSE 7 END ASC, id asc")->paginate($perPage)->withQueryString();
-        } elseif ($viewMode === 'draft') {
-            $perPage = (int) $request->input('per_page', 10);
-            if (!in_array($perPage, [5, 10, 20, 50, 100])) {
-                $perPage = 10;
-            }
-            $changeRequests = $query->orderByRaw("CASE 
-                WHEN kode_cr = 'CR-DRAFT-001' THEN 1
-                WHEN kode_cr = 'CR-DRAFT-002' THEN 2
-                WHEN kode_cr = 'CR-DRAFT-003' THEN 3
-                WHEN kode_cr = 'CR-DRAFT-004' THEN 4
-                WHEN kode_cr = 'CR-DRAFT-005' THEN 5
-                WHEN kode_cr = 'CR-DRAFT-006' THEN 6
-                ELSE 7 END ASC, id asc")->paginate($perPage)->withQueryString();
+            $changeRequests = $query->orderBy('tanggal_pengajuan', 'asc')->orderBy('kode_cr', 'asc')->paginate($perPage)->withQueryString();
         } else {
-            $changeRequests = $query->latest()->paginate(15)->withQueryString();
+            $changeRequests = $query->latest()->paginate($perPage)->withQueryString();
         }
 
         // Metrics for Figma Dashboard (4 Cards: Semua CR, Butuh Persetujuan, Development, GO LIVE)

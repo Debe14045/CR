@@ -45,6 +45,18 @@ class ClientRoleFullTest extends TestCase
      */
     public function test_client_can_view_all_cr_and_filter_tabs(): void
     {
+        \App\Models\ChangeRequest::create([
+            'kode_cr' => 'CR-2026-001',
+            'judul' => 'Integrasi Payment Gateway',
+            'deskripsi' => 'Deskripsi CR',
+            'proyek_terkait' => 'E-Commerce',
+            'klien' => 'PT Maju Bersama',
+            'user_id' => $this->client->id,
+            'status' => 'diajukan',
+            'prioritas' => 'normal',
+            'tanggal_pengajuan' => now(),
+        ]);
+
         // Default index
         $res = $this->actingAs($this->client)->get(route('change-requests.index'));
         $res->assertOk();
@@ -72,6 +84,18 @@ class ClientRoleFullTest extends TestCase
      */
     public function test_client_can_view_draft_cr_page_with_actions(): void
     {
+        \App\Models\ChangeRequest::create([
+            'kode_cr' => 'CR-DRAFT-001',
+            'judul' => 'Fitur SSO Login Karyawan',
+            'deskripsi' => 'Draft description',
+            'proyek_terkait' => 'Authentication',
+            'klien' => 'PT Maju Bersama',
+            'user_id' => $this->client->id,
+            'status' => 'draft',
+            'prioritas' => 'normal',
+            'tanggal_pengajuan' => now(),
+        ]);
+
         $res = $this->actingAs($this->client)->get(route('change-requests.index', ['view' => 'draft']));
         $res->assertOk();
         $res->assertSee('DRAFT CR');

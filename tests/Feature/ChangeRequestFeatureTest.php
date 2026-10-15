@@ -539,6 +539,18 @@ class ChangeRequestFeatureTest extends TestCase
     {
         $client = User::factory()->create(['role' => 'client', 'name' => 'Totok Antok']);
 
+        ChangeRequest::create([
+            'kode_cr' => 'CR-DRAFT-001',
+            'judul' => 'Fitur SSO Login Karyawan',
+            'deskripsi' => 'Fitur SSO Login Karyawan — draft.',
+            'proyek_terkait' => 'Authentication',
+            'status' => 'draft',
+            'prioritas' => 'normal',
+            'user_id' => $client->id,
+            'klien' => 'PT Maju Bersama',
+            'tanggal_pengajuan' => '2024-02-01',
+        ]);
+
         // 1. Visit Draft page
         $res = $this->actingAs($client)->get(route('change-requests.index', ['view' => 'draft']));
         $res->assertStatus(200);

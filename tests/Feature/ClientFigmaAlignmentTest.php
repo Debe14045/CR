@@ -32,6 +32,19 @@ class ClientFigmaAlignmentTest extends TestCase
      */
     public function test_draft_cr_view_matches_figma_layout_and_styles(): void
     {
+        \App\Models\ChangeRequest::create([
+            'kode_cr' => 'CR-DRAFT-001',
+            'judul' => 'Fitur SSO Login Karyawan',
+            'deskripsi' => 'Fitur SSO Login Karyawan — draft.',
+            'owner_cr' => 'Totok Antok',
+            'proyek_terkait' => 'Authentication',
+            'status' => 'draft',
+            'prioritas' => 'normal',
+            'user_id' => $this->client->id,
+            'klien' => 'PT Maju Bersama',
+            'tanggal_pengajuan' => '2024-02-01',
+        ]);
+
         $response = $this->actingAs($this->client)->get('/change-requests?view=draft');
         $response->assertOk();
 
@@ -114,6 +127,18 @@ class ClientFigmaAlignmentTest extends TestCase
      */
     public function test_client_semua_cr_view_matches_figma_layout_and_styles(): void
     {
+        $figmaTotalCrs = [
+            ['kode_cr' => 'CR-2024-006', 'klien' => 'PT Delta Solusi', 'judul' => 'Fitur SSO Login Karyawan', 'category' => 'Authentication', 'proyek_terkait' => 'Authentication', 'tanggal_pengajuan' => '2024-02-01', 'status' => 'diajukan', 'prioritas' => 'urgent', 'user_id' => $this->client->id, 'deskripsi' => 'Fitur SSO Login Karyawan'],
+            ['kode_cr' => 'CR-2024-008', 'klien' => 'PT Maju Bersama', 'judul' => 'Modul Absensi Mobile App', 'category' => 'Mobile', 'proyek_terkait' => 'Mobile', 'tanggal_pengajuan' => '2024-02-01', 'status' => 'diajukan', 'prioritas' => 'normal', 'user_id' => $this->client->id, 'deskripsi' => 'Modul Absensi Mobile App'],
+            ['kode_cr' => 'CR-2024-011', 'klien' => 'PT Teknologi Nusantara', 'judul' => 'Integrasi API Payment Gateway', 'category' => 'Integration', 'proyek_terkait' => 'Integration', 'tanggal_pengajuan' => '2024-02-01', 'status' => 'analisa', 'prioritas' => 'urgent', 'user_id' => $this->client->id, 'deskripsi' => 'Integrasi API Payment Gateway'],
+            ['kode_cr' => 'CR-2024-014', 'klien' => 'PT Global Inovasi', 'judul' => 'Dashboard Laporan Keuangan Real-time', 'category' => 'Reporting', 'proyek_terkait' => 'Reporting', 'tanggal_pengajuan' => '2024-02-01', 'status' => 'analisa', 'prioritas' => 'normal', 'user_id' => $this->client->id, 'deskripsi' => 'Dashboard Laporan Keuangan Real-time'],
+            ['kode_cr' => 'CR-2024-017', 'klien' => 'PT Solusi Digital', 'judul' => 'Notifikasi Push Multi-Platform', 'category' => 'Notification', 'proyek_terkait' => 'Notification', 'tanggal_pengajuan' => '2024-02-01', 'status' => 'development', 'prioritas' => 'normal', 'user_id' => $this->client->id, 'deskripsi' => 'Notifikasi Push Multi-Platform'],
+            ['kode_cr' => 'CR-2024-019', 'klien' => 'PT Solusi Digital', 'judul' => 'Modul HR Self-Service Portal', 'category' => 'HR', 'proyek_terkait' => 'HR', 'tanggal_pengajuan' => '2024-02-01', 'status' => 'diajukan', 'prioritas' => 'normal', 'user_id' => $this->client->id, 'deskripsi' => 'Modul HR Self-Service Portal'],
+        ];
+        foreach ($figmaTotalCrs as $ft) {
+            \App\Models\ChangeRequest::create($ft);
+        }
+
         $response = $this->actingAs($this->client)->get('/change-requests?view=total');
         $response->assertOk();
 
