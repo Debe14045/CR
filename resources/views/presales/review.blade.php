@@ -617,19 +617,13 @@
                 <div class="col-md-6 col-12">
                     <label class="field-label-sm">Nama Perusahaan<span class="text-danger">*</span></label>
                     <select class="form-select form-select-custom" style="background-color: #CBD5E1; font-weight: 600;">
-                        <option selected>PT Maju Bersama</option>
-                        <option>PT Teknologi Nusantara</option>
-                        <option>PT Delta Solusi</option>
-                        <option>PT Global Inovasi</option>
+                        <option selected>{{ $companyName }}</option>
                     </select>
                 </div>
                 <div class="col-md-6 col-12">
                     <label class="field-label-sm">Nama PIC<span class="text-danger">*</span></label>
                     <select class="form-select form-select-custom" style="background-color: #FFFFFF;">
-                        <option selected>Totok Antok</option>
-                        <option>Andik Virmansyah</option>
-                        <option>Rizky Pratama</option>
-                        <option>Budi Santoso</option>
+                        <option selected>{{ $picName }}</option>
                     </select>
                 </div>
             </div>
@@ -645,7 +639,7 @@
                 </div>
                 <div class="col-md-6 col-12">
                     <label class="field-label-sm">Alamat Email Tujuan</label>
-                    <input type="email" class="form-control form-control-white" value="totokantok@gmail.com">
+                    <input type="email" class="form-control form-control-white" value="{{ $changeRequest->client?->email ?? ($changeRequest->user?->email ?? '') }}">
                 </div>
             </div>
         </div>

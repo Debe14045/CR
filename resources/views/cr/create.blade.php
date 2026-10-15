@@ -33,8 +33,15 @@
         @endif
 
         {{-- Hidden inputs for backend compatibility --}}
-        <input type="hidden" name="nama_perusahaan" id="nama_perusahaan_input" value="{{ old('nama_perusahaan', !empty($changeRequest) ? ($changeRequest->klien ?: 'PT Maju Bersama') : 'PT Maju Bersama') }}">
-        <input type="hidden" name="nama_project" id="nama_project_input" value="{{ old('nama_project', !empty($changeRequest) ? ($changeRequest->proyek_terkait ?: 'Eprocurement PT eagle Hight plantanions TBK') : 'Eprocurement PT eagle Hight plantanions TBK') }}">
+        @php
+            $defaultComp = old('nama_perusahaan', !empty($changeRequest) ? ($changeRequest->klien ?: '') : (Auth::user()?->client?->company ?? ''));
+            $defaultProj = old('nama_project', !empty($changeRequest) ? ($changeRequest->proyek_terkait ?: '') : '');
+            $defaultInitial = !empty($defaultComp) ? strtoupper(substr(trim(preg_replace('/^(pt\.?|cv\.?)\s+/i', '', $defaultComp)), 0, 2)) : '';
+            if (!$defaultInitial && !empty($defaultComp)) $defaultInitial = strtoupper(substr($defaultComp, 0, 2));
+            if (!$defaultInitial) $defaultInitial = '-';
+        @endphp
+        <input type="hidden" name="nama_perusahaan" id="nama_perusahaan_input" value="{{ $defaultComp }}">
+        <input type="hidden" name="nama_project" id="nama_project_input" value="{{ $defaultProj }}">
         <input type="hidden" name="prioritas" id="prioritas_input" value="{{ old('prioritas', !empty($changeRequest) ? ($changeRequest->prioritas ?: 'normal') : 'normal') }}">
 
         {{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -70,7 +77,7 @@
                                     id="companyDropdownBtn"
                                     onclick="toggleCustomDropdown('companyDropdownMenu', event)"
                                     style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; font-weight: 500; color: #1E293B; transition: all 0.15s ease;">
-                                <span id="selectedCompanyName">{{ old('nama_perusahaan', 'PT Maju Bersama') }}</span>
+                                <span id="selectedCompanyName">{{ $defaultComp ?: 'Pilih Nama Perusahaan' }}</span>
                                 <svg id="companyDropdownChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ms-2 flex-shrink-0" style="transition: transform 0.2s ease;">
                                     <polyline points="6 9 12 15 18 9"></polyline>
                                 </svg>
@@ -79,15 +86,20 @@
                             <div class="position-absolute w-100 py-1" id="companyDropdownMenu"
                                  style="display: none; top: calc(100% + 4px); left: 0; z-index: 9999; background: #FFFFFF; border: 1.5px solid #0098EA; border-radius: 8px; box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.18), 0 4px 8px -2px rgba(15, 23, 42, 0.08); max-height: 240px; overflow-y: auto;">
                                 @php
-                                    $companies = [
-                                        ['name' => 'PT Maju Bersama', 'initial' => 'MB'],
-                                        ['name' => 'PT Megah Jaya', 'initial' => 'MJ'],
-                                        ['name' => 'PT Harian Bersama', 'initial' => 'HB'],
-                                        ['name' => 'PT Sumber Makmur', 'initial' => 'SM'],
-                                        ['name' => 'PT Nahkoda Biru', 'initial' => 'NB'],
-                                    ];
+                                    $companies = [];
+                                    if (isset($clients) && count($clients) > 0) {
+                                        foreach ($clients as $cl) {
+                                            $clName = is_object($cl) ? $cl->company : $cl;
+                                            $clClean = trim(preg_replace('/^(pt\.?|cv\.?)\s+/i', '', $clName));
+                                            $clInit = strtoupper(substr($clClean, 0, 2)) ?: 'CL';
+                                            $companies[] = ['name' => $clName, 'initial' => $clInit];
+                                        }
+                                    } elseif (Auth::user()?->client?->company) {
+                                        $clName = Auth::user()->client->company;
+                                        $companies[] = ['name' => $clName, 'initial' => strtoupper(substr($clName, 0, 2))];
+                                    }
                                 @endphp
-                                @foreach ($companies as $comp)
+                                @forelse ($companies as $comp)
                                     <div class="dropdown-item py-2 px-3 cursor-pointer d-flex align-items-center justify-content-between"
                                          onclick="selectCompany('{{ $comp['name'] }}', '{{ $comp['initial'] }}')"
                                          style="font-size: 0.84rem; color: #1E293B; cursor: pointer; transition: background 0.15s ease;"
@@ -96,7 +108,14 @@
                                         <span style="font-weight: 600;">{{ $comp['name'] }}</span>
                                         <span style="background: #E0F2FE; color: #0284C7; font-size: 0.70rem; font-weight: 700; padding: 2px 8px; border-radius: 4px;">{{ $comp['initial'] }}</span>
                                     </div>
-                                @endforeach
+                                @empty
+                                    <div class="px-3 py-2 text-muted small">
+                                        Perusahaan Pengguna:
+                                        <div class="fw-bold text-dark mt-1" onclick="selectCompany('{{ Auth::user()?->name ?? 'Klien' }}', '{{ strtoupper(substr(Auth::user()?->name ?? 'KL', 0, 2)) }}')" style="cursor: pointer;">
+                                            {{ Auth::user()?->name ?? 'Klien Utama' }} (Pilih)
+                                        </div>
+                                    </div>
+                                @endforelse
                             </div>
                         </div>
                     </div>
@@ -110,7 +129,7 @@
                                     Inisial Klien
                                 </label>
                                 <input type="text" name="inisial_klien" id="inisial_klien"
-                                       value="{{ old('inisial_klien', 'MB') }}" readonly
+                                       value="{{ old('inisial_klien', $defaultInitial) }}" readonly
                                        style="background-color: #E9EDF1; color: #475569; font-weight: 600; border: none; border-radius: 8px; height: 42px; padding: 0 8px; font-size: 0.84rem; width: 100%; text-align: center;">
                             </div>
 
@@ -120,7 +139,7 @@
                                     Nama PIC
                                 </label>
                                 <input type="text" name="nama_pic" id="nama_pic"
-                                       value="{{ old('nama_pic', Auth::user()->name ?? 'Totok Antok') }}" readonly
+                                       value="{{ old('nama_pic', Auth::user()?->name ?? '') }}" readonly
                                        style="background-color: #E9EDF1; color: #475569; font-weight: 500; border: none; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             </div>
                         </div>
@@ -132,7 +151,7 @@
                             CR Owner <span style="color: #EF4444;">*</span>
                         </label>
                         <input type="text" name="cr_owner" id="cr_owner"
-                               value="{{ old('cr_owner', !empty($changeRequest) ? ($changeRequest->owner_cr ?: 'Andik Vermansyah') : 'Andik Vermansyah') }}" required
+                               value="{{ old('cr_owner', !empty($changeRequest) ? ($changeRequest->owner_cr ?: (Auth::user()?->name ?? '')) : (Auth::user()?->name ?? '')) }}" required
                                style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; color: #1E293B; width: 100%;">
                     </div>
 
@@ -175,7 +194,7 @@
                                     id="projectDropdownBtn"
                                     onclick="toggleCustomDropdown('projectDropdownMenu', event)"
                                     style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; font-weight: 500; color: #1E293B; transition: all 0.15s ease;">
-                                <span id="selectedProjectName" class="text-truncate">{{ old('nama_project', 'Eprocurement PT eagle Hight plantanions TBK') }}</span>
+                                <span id="selectedProjectName" class="text-truncate">{{ $defaultProj ?: 'Pilih atau Masukkan Project' }}</span>
                                 <svg id="projectDropdownChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ms-2 flex-shrink-0" style="transition: transform 0.2s ease;">
                                     <polyline points="6 9 12 15 18 9"></polyline>
                                 </svg>
@@ -185,12 +204,15 @@
                                  style="display: none; top: calc(100% + 4px); left: 0; z-index: 9999; background: #FFFFFF; border: 1.5px solid #0098EA; border-radius: 8px; box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.18), 0 4px 8px -2px rgba(15, 23, 42, 0.08); max-height: 240px; overflow-y: auto;">
                                 @php
                                     $projects = [
-                                        'Eprocurement PT eagle Hight plantanions TBK',
+                                        'Core System Enhancement',
                                         'Sistem E-commerce',
                                         'E-Procurement',
                                         'Sistem Enterprise',
                                         'E-Cooper',
                                         'Data Integration',
+                                        'Payment Gateway Integration',
+                                        'Enterprise Portal',
+                                        'Mobile Application',
                                     ];
                                 @endphp
                                 @foreach ($projects as $proj)
@@ -213,7 +235,7 @@
                         </label>
                         <div class="position-relative cursor-pointer" onclick="openDatePicker('date_input_1', event)">
                             <input type="text" name="date" id="date_input_1"
-                                    value="{{ old('date', '04 Sep 2026') }}" readonly
+                                    value="{{ old('date', !empty($changeRequest?->tanggal_pengajuan) ? $changeRequest->tanggal_pengajuan->format('d M Y') : now()->format('d M Y')) }}" readonly
                                     onclick="openDatePicker('date_input_1', event)"
                                     style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 38px 0 14px; font-size: 0.84rem; color: #1E293B; width: 100%; cursor: pointer;">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -233,7 +255,7 @@
                         </label>
                         <div class="position-relative cursor-pointer" onclick="openDatePicker('date_input_2', event)">
                             <input type="text" name="request_date" id="date_input_2"
-                                    value="{{ old('request_date', old('target_golive', '04 Sep 2026')) }}" readonly
+                                    value="{{ old('request_date', old('target_golive', !empty($changeRequest?->target_selesai) ? $changeRequest->target_selesai->format('d M Y') : now()->addMonth()->format('d M Y'))) }}" readonly
                                     onclick="openDatePicker('date_input_2', event)"
                                     style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 38px 0 14px; font-size: 0.84rem; color: #1E293B; width: 100%; cursor: pointer;">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"

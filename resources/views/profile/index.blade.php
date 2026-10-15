@@ -45,12 +45,12 @@
     {{-- User Header Banner --}}
     <div class="mb-4">
         <h3 class="fw-bold mb-2" style="color: #000000; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.015em;">
-            {{ auth()->user()->name ?? 'Maya Sari' }}
+            {{ auth()->user()->name ?? '-' }}
         </h3>
         <div>
             <span class="d-inline-block text-white fw-bold"
                   style="background: #0B3B7B; border-radius: 9999px; font-size: 0.74rem; padding: 5px 16px; letter-spacing: 0.01em;">
-                {{ auth()->user()->isPmh() ? 'Project Manager Head' : (auth()->user()->isPm() ? 'Project Manager' : (auth()->user()->isClient() ? 'Client' : ucfirst(auth()->user()->role))) }}
+                {{ auth()->user()->isPmh() ? 'Project Manager Head' : (auth()->user()->isPm() ? 'Project Manager' : (auth()->user()->isClient() ? 'Client' : (auth()->user()->isPresales() ? 'Presales' : ucfirst(auth()->user()->role)))) }}
             </span>
         </div>
     </div>
@@ -70,7 +70,7 @@
                     <div>
                         <div style="font-size: 0.70rem; font-weight: 600; color: #94A3B8; margin-bottom: 2px;">Nama lengkap</div>
                         <div style="font-size: 0.90rem; font-weight: 800; color: #000000; line-height: 1.3;">
-                            {{ auth()->user()->name ?? 'Maya Sari' }}
+                            {{ auth()->user()->name ?? '-' }}
                         </div>
                     </div>
 
@@ -84,14 +84,14 @@
                     <div>
                         <div style="font-size: 0.70rem; font-weight: 600; color: #94A3B8; margin-bottom: 2px;">Email</div>
                         <div style="font-size: 0.88rem; font-weight: 800; color: #000000; line-height: 1.3;">
-                            {{ auth()->user()->email ?? 'maya.sari@itpi.co.id' }}
+                            {{ auth()->user()->email ?? '-' }}
                         </div>
                     </div>
 
                     <div>
                         <div style="font-size: 0.70rem; font-weight: 600; color: #94A3B8; margin-bottom: 2px;">Divisi</div>
                         <div style="font-size: 0.88rem; font-weight: 800; color: #000000; line-height: 1.3;">
-                            Full Stack Developer
+                            {{ auth()->user()->division ?? (auth()->user()->isPmh() ? 'Project Management Office' : (auth()->user()->isPresales() ? 'Presales & Solution' : 'Information Technology')) }}
                         </div>
                     </div>
                 </div>
@@ -188,7 +188,7 @@
         </div>
 
         <div class="d-flex flex-column gap-3">
-            @foreach ($projects as $p)
+            @forelse ($projects as $p)
                 <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 py-1">
                     <div style="min-width: 220px; flex: 1.2;">
                         <span style="font-weight: 800; font-size: 0.82rem; color: #000000;">{{ $p['instansi'] }}</span>
@@ -200,7 +200,9 @@
                         <span style="font-weight: 700; font-size: 0.80rem; color: #000000;">{{ $p['role_text'] }}</span>
                     </div>
                 </div>
-            @endforeach
+            @empty
+                <div class="text-muted small py-2">Belum ada project yang ditangani.</div>
+            @endforelse
         </div>
     </div>
 

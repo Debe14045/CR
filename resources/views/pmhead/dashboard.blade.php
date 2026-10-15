@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Dashboard • PM Head Executive Board')
 
@@ -6,20 +6,20 @@
 <div class="page-shell pb-5">
 
     @php
-          = \App\Models\ChangeRequest::whereIn('status', ['analisa', 'dianalisis', 'awaiting_pm', 'diajukan', 'awaiting_pmh'])->count();
-          = \App\Models\ChangeRequest::whereIn('status', ['development', 'dikerjakan'])->count();
-              = \App\Models\ChangeRequest::whereIn('status', ['sit'])->count();
-              = \App\Models\ChangeRequest::whereIn('status', ['uat'])->count();
-         = \App\Models\ChangeRequest::whereIn('status', ['training'])->count();
-           = \App\Models\ChangeRequest::whereIn('status', ['golive', 'selesai', 'invoicing'])->count();
-         =  +  +  +  +  + ;
-        if ( == 0)  = 1;
+        $cAnalisa = \App\Models\ChangeRequest::whereIn('status', ['analisa', 'dianalisis', 'awaiting_pm', 'diajukan', 'awaiting_pmh'])->count();
+        $cDev = \App\Models\ChangeRequest::whereIn('status', ['development', 'dikerjakan'])->count();
+        $cSit = \App\Models\ChangeRequest::whereIn('status', ['sit'])->count();
+        $cUat = \App\Models\ChangeRequest::whereIn('status', ['uat'])->count();
+        $cTrain = \App\Models\ChangeRequest::whereIn('status', ['training'])->count();
+        $cGoLive = \App\Models\ChangeRequest::whereIn('status', ['golive', 'selesai', 'invoicing'])->count();
+        $totalDonut = $cAnalisa + $cDev + $cSit + $cUat + $cTrain + $cGoLive;
+        $totalDonutCalc = $totalDonut == 0 ? 1 : $totalDonut;
 
-         = ( / ) * 100;
-         =  + (( / ) * 100);
-         =  + (( / ) * 100);
-         =  + (( / ) * 100);
-         =  + (( / ) * 100);
+        $p1 = ($cAnalisa / $totalDonutCalc) * 100;
+        $p2 = $p1 + (($cDev / $totalDonutCalc) * 100);
+        $p3 = $p2 + (($cSit / $totalDonutCalc) * 100);
+        $p4 = $p3 + (($cUat / $totalDonutCalc) * 100);
+        $p5 = $p4 + (($cTrain / $totalDonutCalc) * 100);
     @endphp
 
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
@@ -46,7 +46,7 @@
                         </div>
                     </div>
                     <div class="fw-bold mb-3" style="font-size: 3.5rem; line-height: 1; letter-spacing: -0.02em;">
-                        {{ ['total'] ?? 0 }}
+                        {{ $roleMetrics['total'] ?? 0 }}
                     </div>
                     <div class="d-flex align-items-center gap-2 text-white text-opacity-80" style="font-size: 0.76rem; font-weight: 500;">
                         <i class="bi bi-bar-chart-line-fill" style="font-size: 0.85rem;"></i>
@@ -70,7 +70,7 @@
                         </div>
                     </div>
                     <div class="fw-bold mb-3" style="font-size: 3.5rem; line-height: 1; letter-spacing: -0.02em;">
-                        {{ ['in_dev'] ?? 0 }}
+                        {{ $roleMetrics['in_dev'] ?? 0 }}
                     </div>
                     <div class="d-flex align-items-center gap-2 text-white text-opacity-80" style="font-size: 0.76rem; font-weight: 500;">
                         <i class="bi bi-bar-chart-line-fill" style="font-size: 0.85rem;"></i>
@@ -94,7 +94,7 @@
                         </div>
                     </div>
                     <div class="fw-bold mb-3" style="font-size: 3.5rem; line-height: 1; letter-spacing: -0.02em;">
-                        {{ ['pending_golive'] ?? 0 }}
+                        {{ $roleMetrics['pending_golive'] ?? 0 }}
                     </div>
                     <div class="d-flex align-items-center gap-2 text-white text-opacity-80" style="font-size: 0.76rem; font-weight: 500;">
                         <i class="bi bi-bar-chart-line-fill" style="font-size: 0.85rem;"></i>
@@ -118,7 +118,7 @@
                         </div>
                     </div>
                     <div class="fw-bold mb-3" style="font-size: 3.5rem; line-height: 1; letter-spacing: -0.02em;">
-                        {{  }}
+                        {{ $cGoLive }}
                     </div>
                     <div class="d-flex align-items-center gap-2 text-white text-opacity-80" style="font-size: 0.76rem; font-weight: 500;">
                         <i class="bi bi-bar-chart-line-fill" style="font-size: 0.85rem;"></i>
@@ -130,7 +130,7 @@
     </div>
 
     <div class="row g-4 mb-4">
-        {{-- Card Right (now visually right): NOTIFIKASI --}}
+        {{-- Card Right: NOTIFIKASI --}}
         <div class="col-lg-5 col-12 order-lg-2">
             <div class="card p-4 border-0 h-100 shadow-sm" style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E2E8F0 !important;">
                 <div class="d-flex justify-content-between align-items-center mb-1">
@@ -146,61 +146,79 @@
                 <div style="height: 1px; background: #E2E8F0; margin: 0.85rem 0 1.25rem;"></div>
 
                 <div class="d-flex flex-column gap-3">
-                    <a href="{{ route('pmh.persetujuan') }}" class="text-decoration-none">
-                        <div class="p-3" style="background: #FFF1F2; border: 1px solid #FECDD3; border-radius: 14px; transition: transform 0.15s ease;"
-                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #E11D48; font-size: 1.05rem; flex-shrink: 0;"></i>
-                                <div style="line-height: 1.35;">
-                                    <div class="fw-bold" style="color: #9F1239; font-size: 0.82rem;">
-                                        {{ ['pending_pmh'] ?? 0 }} Perubahan Ruang Lingkup CR menunggu persetujuan > 14 hari
-                                    </div>
-                                    <div style="color: #E11D48; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
-                                        Status : Menunggu Persetujuan PM Head
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
+                    @php
+                        $notifPmhCount = $roleMetrics['pending_pmh'] ?? 0;
+                        $notifGoliveCount = $roleMetrics['pending_golive'] ?? 0;
+                        $hasPmhNotifs = ($notifPmhCount > 0 || $notifGoliveCount > 0);
+                    @endphp
 
-                    <a href="{{ route('pmh.change-requests', ['status' => 'analisa']) }}" class="text-decoration-none">
-                        <div class="p-3" style="background: #FEFCE8; border: 1px solid #FEF08A; border-radius: 14px; transition: transform 0.15s ease;"
-                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #D97706; font-size: 1.05rem; flex-shrink: 0;"></i>
-                                <div style="line-height: 1.35;">
-                                    <div class="fw-bold" style="color: #854D0E; font-size: 0.82rem;">
-                                        {{ ['pending_pmh'] ?? 0 }} CR Baru Menunggu Verifikasi Kebutuhan
-                                    </div>
-                                    <div style="color: #B45309; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
-                                        Tahapan : 1. Analisis Kebutuhan
+                    @if ($hasPmhNotifs)
+                        @if ($notifPmhCount > 0)
+                            <a href="{{ route('pmh.persetujuan') }}" class="text-decoration-none">
+                                <div class="p-3" style="background: #FFF1F2; border: 1px solid #FECDD3; border-radius: 14px; transition: transform 0.15s ease;"
+                                     onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #E11D48; font-size: 1.05rem; flex-shrink: 0;"></i>
+                                        <div style="line-height: 1.35;">
+                                            <div class="fw-bold" style="color: #9F1239; font-size: 0.82rem;">
+                                                {{ $notifPmhCount }} Perubahan Ruang Lingkup CR menunggu persetujuan
+                                            </div>
+                                            <div style="color: #E11D48; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
+                                                Status : Menunggu Persetujuan PM Head
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </a>
+                            </a>
 
-                    <a href="{{ route('pmh.development') }}" class="text-decoration-none">
-                        <div class="p-3" style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 14px; transition: transform 0.15s ease;"
-                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-info-circle-fill mt-1" style="color: #2563EB; font-size: 1.05rem; flex-shrink: 0;"></i>
-                                <div style="line-height: 1.35;">
-                                    <div class="fw-bold" style="color: #1E40AF; font-size: 0.82rem;">
-                                        {{ ['pending_golive'] ?? 0 }} Masukan Pengguna UAT butuh tindak lanjut
-                                    </div>
-                                    <div style="color: #2563EB; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
-                                        Tahapan : 4. UAT & Pengujian
+                            <a href="{{ route('pmh.change-requests', ['status' => 'analisa']) }}" class="text-decoration-none">
+                                <div class="p-3" style="background: #FEFCE8; border: 1px solid #FEF08A; border-radius: 14px; transition: transform 0.15s ease;"
+                                     onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #D97706; font-size: 1.05rem; flex-shrink: 0;"></i>
+                                        <div style="line-height: 1.35;">
+                                            <div class="fw-bold" style="color: #854D0E; font-size: 0.82rem;">
+                                                {{ $notifPmhCount }} CR Baru Menunggu Verifikasi Kebutuhan
+                                            </div>
+                                            <div style="color: #B45309; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
+                                                Tahapan : 1. Analisis Kebutuhan
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            </a>
+                        @endif
+
+                        @if ($notifGoliveCount > 0)
+                            <a href="{{ route('pmh.development') }}" class="text-decoration-none">
+                                <div class="p-3" style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 14px; transition: transform 0.15s ease;"
+                                     onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="bi bi-info-circle-fill mt-1" style="color: #2563EB; font-size: 1.05rem; flex-shrink: 0;"></i>
+                                        <div style="line-height: 1.35;">
+                                            <div class="fw-bold" style="color: #1E40AF; font-size: 0.82rem;">
+                                                {{ $notifGoliveCount }} Masukan Pengguna UAT butuh tindak lanjut
+                                            </div>
+                                            <div style="color: #2563EB; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
+                                                Tahapan : 4. UAT &amp; Pengujian
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        @endif
+                    @else
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-bell-slash fs-3 d-block mb-2 text-secondary opacity-50"></i>
+                            <div class="fw-bold text-dark" style="font-size: 0.88rem;">Tidak ada notifikasi saat ini</div>
+                            <div class="small text-muted mt-1" style="font-size: 0.76rem;">Semua antrean persetujuan dan aktivitas telah diproses.</div>
                         </div>
-                    </a>
+                    @endif
                 </div>
             </div>
         </div>
 
-        {{-- Card Left (now visually left): Chart / Grafik --}}
+        {{-- Card Left: Chart / Grafik --}}
         <div class="col-lg-7 col-12 order-lg-1">
             <div class="card p-4 border-0 h-100 shadow-sm" style="border-radius: 20px; background: #FFFFFF; border: 1px solid #E2E8F0 !important;">
                 <div>
@@ -213,16 +231,16 @@
                     {{-- Donut Chart Left --}}
                     <div class="col-sm-5 col-12 text-center">
                         <div style="position: relative; width: 155px; height: 155px; margin: 0 auto;">
-                            <div style="width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(
-                                #00A3FF 0% {{  }}%,
-                                #4338CA {{  }}% {{  }}%,
-                                #F59E0B {{  }}% {{  }}%,
-                                #EC4899 {{  }}% {{  }}%,
-                                #047857 {{  }}% {{  }}%,
-                                #10B981 {{  }}% 100%
-                            ); display: flex; align-items: center; justify-content: center;">
+                            <div style="width: 100%; height: 100%; border-radius: 50%; background: {{ $totalDonut == 0 ? '#E2E8F0' : "conic-gradient(
+                                #00A3FF 0% {$p1}%,
+                                #4338CA {$p1}% {$p2}%,
+                                #F59E0B {$p2}% {$p3}%,
+                                #EC4899 {$p3}% {$p4}%,
+                                #047857 {$p4}% {$p5}%,
+                                #10B981 {$p5}% 100%
+                            )" }}; display: flex; align-items: center; justify-content: center;">
                                 <div style="width: 96px; height: 96px; background: #FFFFFF; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                    <span class="fw-bold" style="font-size: 2.2rem; line-height: 1; color: #0F172A; font-weight: 800;">{{  }}</span>
+                                    <span class="fw-bold" style="font-size: 2.2rem; line-height: 1; color: #0F172A; font-weight: 800;">{{ $totalDonut }}</span>
                                 </div>
                             </div>
                         </div>
@@ -237,9 +255,9 @@
                                     <span>Analisa</span>
                                 </span>
                                 <div style="flex: 1; height: 4px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                    <div style="width: {{ ( / ) * 100 }}%; height: 100%; background: #00A3FF; border-radius: 999px;"></div>
+                                    <div style="width: {{ ($cAnalisa / $totalDonutCalc) * 100 }}%; height: 100%; background: #00A3FF; border-radius: 999px;"></div>
                                 </div>
-                                <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{  }}</span>
+                                <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cAnalisa }}</span>
                             </div>
 
                             <div class="d-flex align-items-center" style="font-size: 0.78rem;">
@@ -248,9 +266,9 @@
                                     <span>Develop</span>
                                 </span>
                                 <div style="flex: 1; height: 4px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                    <div style="width: {{ ( / ) * 100 }}%; height: 100%; background: #4338CA; border-radius: 999px;"></div>
+                                    <div style="width: {{ ($cDev / $totalDonutCalc) * 100 }}%; height: 100%; background: #4338CA; border-radius: 999px;"></div>
                                 </div>
-                                <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{  }}</span>
+                                <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cDev }}</span>
                             </div>
 
                             <div class="d-flex align-items-center" style="font-size: 0.78rem;">
@@ -259,9 +277,9 @@
                                     <span>SIT</span>
                                 </span>
                                 <div style="flex: 1; height: 4px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                    <div style="width: {{ ( / ) * 100 }}%; height: 100%; background: #F59E0B; border-radius: 999px;"></div>
+                                    <div style="width: {{ ($cSit / $totalDonutCalc) * 100 }}%; height: 100%; background: #F59E0B; border-radius: 999px;"></div>
                                 </div>
-                                <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{  }}</span>
+                                <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cSit }}</span>
                             </div>
 
                             <div class="d-flex align-items-center" style="font-size: 0.78rem;">
@@ -270,9 +288,9 @@
                                     <span>UAT</span>
                                 </span>
                                 <div style="flex: 1; height: 4px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                    <div style="width: {{ ( / ) * 100 }}%; height: 100%; background: #EC4899; border-radius: 999px;"></div>
+                                    <div style="width: {{ ($cUat / $totalDonutCalc) * 100 }}%; height: 100%; background: #EC4899; border-radius: 999px;"></div>
                                 </div>
-                                <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{  }}</span>
+                                <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cUat }}</span>
                             </div>
 
                             <div class="d-flex align-items-center" style="font-size: 0.78rem;">
@@ -281,9 +299,9 @@
                                     <span>Pelatihan</span>
                                 </span>
                                 <div style="flex: 1; height: 4px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                    <div style="width: {{ ( / ) * 100 }}%; height: 100%; background: #047857; border-radius: 999px;"></div>
+                                    <div style="width: {{ ($cTrain / $totalDonutCalc) * 100 }}%; height: 100%; background: #047857; border-radius: 999px;"></div>
                                 </div>
-                                <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{  }}</span>
+                                <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cTrain }}</span>
                             </div>
 
                             <div class="d-flex align-items-center" style="font-size: 0.78rem;">
@@ -292,9 +310,9 @@
                                     <span>Go Live</span>
                                 </span>
                                 <div style="flex: 1; height: 4px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                    <div style="width: {{ ( / ) * 100 }}%; height: 100%; background: #10B981; border-radius: 999px;"></div>
+                                    <div style="width: {{ ($cGoLive / $totalDonutCalc) * 100 }}%; height: 100%; background: #10B981; border-radius: 999px;"></div>
                                 </div>
-                                <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{  }}</span>
+                                <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cGoLive }}</span>
                             </div>
                         </div>
                     </div>
@@ -303,7 +321,7 @@
         </div>
     </div>
 
-<div class="card p-4 border-0 shadow-sm" style="border: 1px solid #E2E8F0 !important; border-radius: 18px; background: #FFFFFF;">
+    <div class="card p-4 border-0 shadow-sm" style="border: 1px solid #E2E8F0 !important; border-radius: 18px; background: #FFFFFF;">
         <div class="d-flex justify-content-between align-items-center mb-3">
             <div>
                 <h5 class="fw-bold text-dark mb-1" style="font-size: 1.05rem;">Antrean CR Perlu Keputusan PM Head</h5>
@@ -333,7 +351,7 @@
                                 <div class="text-muted small font-monospace">{{ $cr->kode_cr }}</div>
                             </td>
                             <td class="py-3 px-3 fw-semibold text-dark small">
-                                {{ $cr->client?->company ?? ($cr->klien ?: 'PT Maju Bersama') }}
+                                {{ $cr->client?->company ?? ($cr->klien ?: '-') }}
                             </td>
                             <td class="py-3 px-3 small text-secondary">
                                 {{ $cr->nama_pm }}
@@ -363,4 +381,3 @@
 
 </div>
 @endsection
-

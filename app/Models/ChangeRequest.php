@@ -236,7 +236,7 @@ class ChangeRequest extends Model
 
     public function getNamaPmAttribute(): string
     {
-        return $this->owner_cr ?: ($this->main_desk ?: 'Danendra dada');
+        return $this->owner_cr ?: ($this->main_desk ?: ($this->user?->name ?: '-'));
     }
 
     public static function generateKode(): string

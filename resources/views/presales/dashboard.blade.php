@@ -243,59 +243,77 @@
                 <div style="height: 1px; background: #E2E8F0; margin: 0.85rem 0 1.25rem;"></div>
 
                 <div class="d-flex flex-column gap-3">
-                    {{-- Alert 1: Red box (Penolakan / Menunggu Persetujuan > 14 hari) --}}
-                    <a href="{{ route('presales.persetujuan') }}" class="text-decoration-none">
-                        <div class="p-3" style="background: #FFF1F2; border: 1px solid #FECDD3; border-radius: 14px; transition: transform 0.15s ease;"
-                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-x-circle-fill mt-1" style="color: #E11D48; font-size: 1.05rem; flex-shrink: 0;"></i>
-                                <div style="line-height: 1.35;">
-                                    <div class="fw-bold" style="color: #9F1239; font-size: 0.82rem;">
-                                        Pengajuan Registrasi Akun ditolak oleh PM.
-                                    </div>
-                                    <div style="color: #E11D48; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
-                                        Alasan: Arsitektur autentikasi belum menyertakan spesifikasi protokol OAuth 2.0.
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
+                    @php
+                        $hasNotifs = (($notifPendingCount ?? 0) > 0 || ($notifNeedVerifCount ?? 0) > 0 || ($notifDevCount ?? 0) > 0);
+                    @endphp
 
-                    {{-- Alert 2: Yellow box (Revisi / Menunggu Estimasi) --}}
-                    <a href="{{ route('presales.change-requests', ['status' => 'analisa']) }}" class="text-decoration-none">
-                        <div class="p-3" style="background: #FEFCE8; border: 1px solid #FEF08A; border-radius: 14px; transition: transform 0.15s ease;"
-                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #D97706; font-size: 1.05rem; flex-shrink: 0;"></i>
-                                <div style="line-height: 1.35;">
-                                    <div class="fw-bold" style="color: #854D0E; font-size: 0.82rem;">
-                                        Pengajuan CR Anda sedang direvisi oleh PM Head.
-                                    </div>
-                                    <div style="color: #B45309; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
-                                        Periksa rincian man-hari dan rincian arsitektur sebelum penawaran diajukan.
+                    @if ($hasNotifs)
+                        @if (($notifPendingCount ?? 0) > 0)
+                            {{-- Alert 1: Red box --}}
+                            <a href="{{ route('presales.persetujuan') }}" class="text-decoration-none">
+                                <div class="p-3" style="background: #FFF1F2; border: 1px solid #FECDD3; border-radius: 14px; transition: transform 0.15s ease;"
+                                     onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="bi bi-exclamation-circle-fill mt-1" style="color: #E11D48; font-size: 1.05rem; flex-shrink: 0;"></i>
+                                        <div style="line-height: 1.35;">
+                                            <div class="fw-bold" style="color: #9F1239; font-size: 0.82rem;">
+                                                {{ $notifPendingCount }} CR Perlu Review / Penawaran Presales
+                                            </div>
+                                            <div style="color: #E11D48; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
+                                                Status : Menunggu Tindak Lanjut Komersial
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </a>
+                            </a>
+                        @endif
 
-                    {{-- Alert 3: Blue box (Development & Pengerjaan) --}}
-                    <a href="{{ route('presales.development') }}" class="text-decoration-none">
-                        <div class="p-3" style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 14px; transition: transform 0.15s ease;"
-                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-info-circle-fill mt-1" style="color: #2563EB; font-size: 1.05rem; flex-shrink: 0;"></i>
-                                <div style="line-height: 1.35;">
-                                    <div class="fw-bold" style="color: #1E40AF; font-size: 0.82rem;">
-                                        Pengajuan CR dengan ID #CR-001 telah memasuki tahapan Development.
-                                    </div>
-                                    <div style="color: #2563EB; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
-                                        Tahapan : 2. Pengembangan Fitur &amp; Integrasi
+                        @if (($notifNeedVerifCount ?? 0) > 0)
+                            {{-- Alert 2: Yellow box --}}
+                            <a href="{{ route('presales.change-requests', ['status' => 'analisa']) }}" class="text-decoration-none">
+                                <div class="p-3" style="background: #FEFCE8; border: 1px solid #FEF08A; border-radius: 14px; transition: transform 0.15s ease;"
+                                     onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #D97706; font-size: 1.05rem; flex-shrink: 0;"></i>
+                                        <div style="line-height: 1.35;">
+                                            <div class="fw-bold" style="color: #854D0E; font-size: 0.82rem;">
+                                                {{ $notifNeedVerifCount }} CR Masuk Tahapan Analisis &amp; Verifikasi
+                                            </div>
+                                            <div style="color: #B45309; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
+                                                Tahapan : 1. Analisis Kebutuhan
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            </a>
+                        @endif
+
+                        @if (($notifDevCount ?? 0) > 0)
+                            {{-- Alert 3: Blue box --}}
+                            <a href="{{ route('presales.development') }}" class="text-decoration-none">
+                                <div class="p-3" style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 14px; transition: transform 0.15s ease;"
+                                     onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="bi bi-info-circle-fill mt-1" style="color: #2563EB; font-size: 1.05rem; flex-shrink: 0;"></i>
+                                        <div style="line-height: 1.35;">
+                                            <div class="fw-bold" style="color: #1E40AF; font-size: 0.82rem;">
+                                                {{ $notifDevCount }} CR Telah Memasuki Tahapan Development
+                                            </div>
+                                            <div style="color: #2563EB; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
+                                                Tahapan : 2. Pengembangan Fitur &amp; Integrasi
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        @endif
+                    @else
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-bell-slash fs-3 d-block mb-2 text-secondary opacity-50"></i>
+                            <div class="fw-bold text-dark" style="font-size: 0.88rem;">Tidak ada notifikasi saat ini</div>
+                            <div class="small text-muted mt-1" style="font-size: 0.76rem;">Semua penawaran dan status Change Request telah terupdate.</div>
                         </div>
-                    </a>
+                    @endif
                 </div>
             </div>
         </div>

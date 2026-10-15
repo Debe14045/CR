@@ -245,7 +245,7 @@
                             $colorIndex = $index % count($avatarColors);
                             $avColor = $avatarColors[$colorIndex];
 
-                            $companyName = $cr->klien ?: ($cr->client?->company ?: 'PT Delta Solusi');
+                            $companyName = $cr->klien ?: ($cr->client?->company ?: '-');
 
                             // Extract initials
                             $cleanCompany = trim(preg_replace('/^(pt\.?|cv\.?)\s+/i', '', $companyName));
@@ -253,7 +253,7 @@
                             $initials = '';
                             if (!empty($words[0])) $initials .= strtoupper(substr($words[0], 0, 1));
                             if (!empty($words[1])) $initials .= strtoupper(substr($words[1], 0, 1));
-                            if (!$initials) $initials = strtoupper(substr($cleanCompany, 0, 2)) ?: 'DS';
+                            if (!$initials) $initials = $cleanCompany ? strtoupper(substr($cleanCompany, 0, 2)) : 'CR';
 
                             // Status badge mapping matching Figma exactly
                             $st = strtolower($cr->status ?? '');
@@ -297,7 +297,7 @@
 
                             {{-- NAMA PM --}}
                             <td class="py-3 px-3 fw-bold text-dark" style="font-size: 0.88rem; font-weight: 700;">
-                                {{ $cr->nama_pm ?: ($cr->user?->name ?: 'Danendra dada') }}
+                                {{ $cr->nama_pm ?: ($cr->user?->name ?: '-') }}
                             </td>
 
                             {{-- PEMOHON --}}

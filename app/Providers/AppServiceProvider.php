@@ -25,7 +25,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Paginator::useBootstrapFive();
 
-        View::composer(['components.top-navbar', 'components.sidebar', 'layouts.app', 'notifications.*', 'cr.index'], function ($view) {
+        View::composer(['components.top-navbar', 'components.sidebar', 'layouts.app', 'notifications.*', 'cr.*', 'pmhead.*', 'presales.*'], function ($view) {
             if (Auth::check()) {
                 $user = Auth::user();
                 $unreadCount = Notification::forUser($user)->unread()->count();

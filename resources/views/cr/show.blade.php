@@ -31,51 +31,41 @@
         $progressPct = 100;
     }
 
-    $isFigmaDefault = (in_array($changeRequest->kode_cr, ['CR-2026-06-0042', 'CR-2026-09-0042']) || empty($changeRequest->judul));
-    if ($isFigmaDefault) {
-        $mainStageNum = $isClientUser ? 1 : 2;
-        $progressPct = 17;
-    }
-
     // Step 5 & 10: Tab Status CR baru terbuka jika CR sudah disetujui PM Head dan quotation selesai (status development dsb)
     $isStatusCrUnlocked = in_array($statusKey, ['development', 'dikerjakan', 'sit', 'uat', 'training', 'awaiting_golive_validation', 'golive', 'invoicing', 'selesai'])
         || ($changeRequest->harga_penawaran !== null && $changeRequest->isPmhApproved());
 
-    $crJudul = $changeRequest->judul ?: 'Integrasi API Pembayaran OVO';
-    $crKode = $changeRequest->kode_cr ?: 'CR-2026-09-0042';
-    $firstChar = strtoupper(substr($crJudul, 0, 1)) ?: 'I';
+    $crJudul = $changeRequest->judul ?: ('Change Request #' . $changeRequest->id);
+    $crKode = $changeRequest->kode_cr ?: ('CR-' . str_pad($changeRequest->id, 4, '0', STR_PAD_LEFT));
+    $firstChar = strtoupper(substr($crJudul, 0, 1)) ?: 'C';
 
-    $modalCrCodeJudul = ($changeRequest->kode_cr ?: 'CR-2024-089') . ': ' . $crJudul;
-    $modalPemohon = $changeRequest->owner_cr ?: ($changeRequest->user?->name ?: ($changeRequest->client?->name ?: 'Tim Product Support'));
+    $modalCrCodeJudul = $crKode . ': ' . $crJudul;
+    $modalPemohon = $changeRequest->owner_cr ?: ($changeRequest->user?->name ?: ($changeRequest->client?->name ?: '-'));
 
-    $companyName = $changeRequest->client?->company ?: ($changeRequest->klien ?: 'PT Maju Bersama');
-    $clientInitial = $changeRequest->client?->nickname ?: 'AF';
-    $picName = $changeRequest->owner_cr ?: ($changeRequest->user?->name ?: 'Totok Antok');
-    $projectName = $changeRequest->proyek_terkait ?: 'Sistem E-commerce';
-    $crOwner = $changeRequest->pic_sales ?: ($changeRequest->main_desk ?: 'Andik Virmansyah');
+    $companyName = $changeRequest->client?->company ?: ($changeRequest->klien ?: '-');
+    $clientInitial = $changeRequest->client?->nickname ?: ($changeRequest->klien ? strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $changeRequest->klien), 0, 2)) : '-');
+    $picName = $changeRequest->owner_cr ?: ($changeRequest->user?->name ?: '-');
+    $projectName = $changeRequest->proyek_terkait ?: '-';
+    $crOwner = $changeRequest->pic_sales ?: ($changeRequest->main_desk ?: ($changeRequest->nama_pm ?: '-'));
     $priorityLabel = ucfirst($changeRequest->prioritas ?: 'Normal');
 
-    $tanggalPengajuan = $changeRequest->tanggal_pengajuan ? $changeRequest->tanggal_pengajuan->translatedFormat('d M Y') : '15 Jan 2024';
-    $headerTanggalPengajuan = $changeRequest->tanggal_pengajuan ? $changeRequest->tanggal_pengajuan->translatedFormat('d M Y') : '04 Sep 2026';
-    $requestGoLive = $changeRequest->target_selesai ? $changeRequest->target_selesai->translatedFormat('d M Y') : '15 Jan 2024';
+    $tanggalPengajuan = $changeRequest->tanggal_pengajuan ? $changeRequest->tanggal_pengajuan->translatedFormat('d M Y') : ($changeRequest->created_at ? $changeRequest->created_at->translatedFormat('d M Y') : '-');
+    $headerTanggalPengajuan = $tanggalPengajuan;
+    $requestGoLive = $changeRequest->target_selesai ? $changeRequest->target_selesai->translatedFormat('d M Y') : '-';
 
-    $docCrUrl = $changeRequest->google_drive_url ?: 'https://drive.google.com/drive/folders/abc123';
-    $solutionPaperUrl = $changeRequest->solution_paper_url ?: 'https://drive.google.com/file/sp001';
+    $docCrUrl = $changeRequest->google_drive_url ?: null;
+    $solutionPaperUrl = $changeRequest->solution_paper_url ?: null;
 
-    // Mandays matching PM screenshot: 3 hari, 10 hari, 2 hari -> 15 hari kerja
-    $mandaysAnalisis = $isClientUser ? (int)($changeRequest->mindesk_analisis ?: 0) : ((int)($changeRequest->mindesk_analisis ?: 3));
-    $mandaysDevelopment = $isClientUser ? (int)($changeRequest->mindesk_development ?: 0) : ((int)($changeRequest->mindesk_development ?: 10));
-    $mandaysTesting = $isClientUser ? (int)($changeRequest->mindesk_testing ?: 0) : ((int)($changeRequest->mindesk_testing ?: 2));
+    $mandaysAnalisis = (int)($changeRequest->mindesk_analisis ?? 0);
+    $mandaysDevelopment = (int)($changeRequest->mindesk_development ?? 0);
+    $mandaysTesting = (int)($changeRequest->mindesk_testing ?? 0);
     $totalMandays = $mandaysAnalisis + $mandaysDevelopment + $mandaysTesting;
-    if (!$isClientUser && $totalMandays == 0) $totalMandays = 15;
 
     $pctAnalisis = $totalMandays > 0 ? round(($mandaysAnalisis / $totalMandays) * 100) : 0;
     $pctDev = $totalMandays > 0 ? round(($mandaysDevelopment / $totalMandays) * 100) : 0;
     $pctTest = $totalMandays > 0 ? round(($mandaysTesting / $totalMandays) * 100) : 0;
 
-    $catatanPengajuan = $isFigmaDefault
-        ? 'Mohon diprioritaskan untuk integrasi sandbox staging sebelum tanggal 15 September agar tim QA dapat melakukan testing payment gateway secara menyeluruh. Testing account sudah kami koordinasikan dengan pihak vendor OVO.'
-        : ($changeRequest->catatan_pengajuan ?: 'Mohon diprioritaskan untuk integrasi sandbox staging sebelum tanggal 15 September agar tim QA dapat melakukan testing payment gateway secara menyeluruh. Testing account sudah kami koordinasikan dengan pihak vendor OVO.');
+    $catatanPengajuan = $changeRequest->catatan_pengajuan ?: ($changeRequest->pesan_client ?: '-');
     
     // Status Display Badge
     $statusDisplay = 'Menunggu Review';
@@ -87,9 +77,6 @@
         $statusDisplay = 'Selesai Go-Live';
     } elseif ($statusKey === 'ditolak') {
         $statusDisplay = 'Ditolak';
-    }
-    if ($isFigmaDefault) {
-        $statusDisplay = 'Menunggu Review';
     }
 
     // Stepper mapping for Status CR (Figma PM Update: 6 Steps: Analisa -> Develop -> SIT -> UAT -> Training -> Go Live)
@@ -133,13 +120,6 @@
         $pmStatusPct = '0%';
         $pmStatusLabel = 'Ditolak';
         $pmStatusLineWidth = '0%';
-    }
-
-    if ($isFigmaDefault) {
-        $pmStatusStep = 1;
-        $pmStatusPct = '17%';
-        $pmStatusLabel = 'Analisa';
-        $pmStatusLineWidth = '8%';
     }
 
     $stages = [
@@ -272,7 +252,7 @@
                         {{ $crJudul }}
                     </h2>
                     <span style="background: #0098EA; color: #FFFFFF; font-size: 0.72rem; font-weight: 700; padding: 3px 12px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;" data-i18n="badge_analisa">
-                        • {{ $isFigmaDefault ? 'Analisa' : ($statusKey === 'ditolak' ? 'Ditolak' : 'Analisa') }}
+                        • {{ $changeRequest->statusLabel() }}
                     </span>
                 </div>
             </div>
@@ -428,19 +408,37 @@
                     {{-- Item 1: DOKUMEN CR --}}
                     <div style="margin-bottom: 18px;">
                         <div style="color: #94A3B8; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;" data-i18n="label_doc_cr">DOKUMEN CR</div>
+                        @if($docCrUrl)
                         <a href="{{ $docCrUrl }}" target="_blank" style="background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 9999px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 8px; color: #0284C7; font-size: 0.72rem; font-weight: 600; text-decoration: none; max-width: 100%;">
                             <i class="bi bi-file-earmark" style="font-size: 0.85rem; color: #0284C7;"></i>
                             <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ $docCrUrl }}</span>
                         </a>
+                        @elseif($changeRequest->lampiran_pengajuan)
+                        <a href="{{ route('change-requests.initial-file', $changeRequest) }}" target="_blank" style="background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 9999px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 8px; color: #0284C7; font-size: 0.72rem; font-weight: 600; text-decoration: none; max-width: 100%;">
+                            <i class="bi bi-paperclip" style="font-size: 0.85rem; color: #0284C7;"></i>
+                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ basename($changeRequest->lampiran_pengajuan) }}</span>
+                        </a>
+                        @else
+                        <span class="text-muted" style="font-size: 0.78rem;">-</span>
+                        @endif
                     </div>
 
                     {{-- Item 2: SOLUTION PAPER --}}
                     <div>
                         <div style="color: #94A3B8; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-bottom: 8px;" data-i18n="label_solution_paper">SOLUTION PAPER</div>
+                        @if($solutionPaperUrl)
                         <a href="{{ $solutionPaperUrl }}" target="_blank" style="background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 9999px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 8px; color: #0284C7; font-size: 0.72rem; font-weight: 600; text-decoration: none; max-width: 100%;">
                             <i class="bi bi-file-earmark" style="font-size: 0.85rem; color: #0284C7;"></i>
                             <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ $solutionPaperUrl }}</span>
                         </a>
+                        @elseif($changeRequest->solutionPaper?->solution_paper_file)
+                        <a href="{{ \Illuminate\Support\Facades\Storage::url($changeRequest->solutionPaper->solution_paper_file) }}" target="_blank" style="background: #F0F9FF; border: 1px solid #BAE6FD; border-radius: 9999px; padding: 6px 14px; display: inline-flex; align-items: center; gap: 8px; color: #0284C7; font-size: 0.72rem; font-weight: 600; text-decoration: none; max-width: 100%;">
+                            <i class="bi bi-file-earmark" style="font-size: 0.85rem; color: #0284C7;"></i>
+                            <span style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ basename($changeRequest->solutionPaper->solution_paper_file) }}</span>
+                        </a>
+                        @else
+                        <span class="text-muted" style="font-size: 0.78rem;">-</span>
+                        @endif
                     </div>
                 </div>
             </div>
@@ -455,7 +453,7 @@
                         </span>
                     </div>
                     <span style="font-size: 0.70rem; color: #94A3B8; font-weight: 500;" data-i18n="rendered_wysiwyg">
-                        Rendered WYSIWYG Content
+                        Data Aktual CR
                     </span>
                 </div>
 
@@ -464,29 +462,40 @@
                     <div style="font-size: 0.82rem; font-weight: 800; color: #0F172A; margin-bottom: 6px; letter-spacing: -0.01em;" data-i18n="h3_background_purpose">
                         1. LATAR BELAKANG &amp; TUJUAN
                     </div>
+                    @if($changeRequest->alasan || $changeRequest->deskripsi)
                     <p style="font-size: 0.80rem; color: #334155; line-height: 1.6; margin-bottom: 14px;" data-i18n="cr_description_text">
-                        Implementasi penambahan kanal pembayaran digital menggunakan e-wallet OVO (Push to Pay &amp; QRIS) pada modul checkout Sistem E-commerce. Hal ini bertujuan untuk menaikkan rasio konversi checkout pelanggan serta mengurangi tingkat abandoned cart pada saat proses transaksi pembelian online.
+                        {!! nl2br(e($changeRequest->alasan ?: $changeRequest->deskripsi)) !!}
                     </p>
+                    @else
+                    <p class="text-muted small mb-3" style="font-size: 0.80rem;">Belum ada latar belakang &amp; tujuan yang diisi.</p>
+                    @endif
 
                     {{-- 2. RUANG LINGKUP PERUBAHAN (SCOPE OF WORK) --}}
                     <div style="font-size: 0.82rem; font-weight: 800; color: #0F172A; margin-bottom: 6px; letter-spacing: -0.01em;" data-i18n="h3_scope_of_work">
                         2. RUANG LINGKUP PERUBAHAN (SCOPE OF WORK)
                     </div>
-                    <div style="padding-left: 1.25rem; margin-bottom: 14px; font-size: 0.80rem; color: #334155; line-height: 1.65;">
-                        <div style="margin-bottom: 3px;" data-i18n="cr_scope_item_1">Penambahan opsi pembayaran OVO wallet pada step 3 (Metode Pembayaran) di aplikasi Web dan Mobile.</div>
-                        <div style="margin-bottom: 3px;" data-i18n="cr_scope_item_2">Integrasi Webhook Callback Service untuk konfirmasi status settlement secara real-time.</div>
-                        <div style="margin-bottom: 3px;" data-i18n="cr_scope_item_3">Penyelarasan modul rekonsiliasi harian dan penyesuaian laporan keuangan di portal admin.</div>
-                        <div style="margin-bottom: 3px;" data-i18n="cr_scope_item_4">Penambahan unit test coverage dan staging automated testing minimum 85%.</div>
+                    @if($changeRequest->kebutuhan_spesifik || ($changeRequest->deskripsi && $changeRequest->deskripsi !== $changeRequest->alasan))
+                    <div style="margin-bottom: 14px; font-size: 0.80rem; color: #334155; line-height: 1.65;">
+                        {!! nl2br(e($changeRequest->kebutuhan_spesifik ?: $changeRequest->deskripsi)) !!}
                     </div>
+                    @else
+                    <p class="text-muted small mb-3" style="font-size: 0.80rem;">Belum ada rincian ruang lingkup perubahan.</p>
+                    @endif
 
                     {{-- 3. DAMPAK TEKNIS & DEPENDENCIES --}}
                     <div style="font-size: 0.82rem; font-weight: 800; color: #0F172A; margin-bottom: 6px; letter-spacing: -0.01em;" data-i18n="h3_technical_impact">
                         3. DAMPAK TEKNIS &amp; DEPENDENCIES
                     </div>
+                    @if($changeRequest->dampak || $changeRequest->solution_paper_note)
                     <div style="background: #FFFDF0; border: 1px solid #FDE68A; border-left: 3.5px solid #EAB308; border-radius: 6px; padding: 10px 14px; color: #854D0E; font-size: 0.76rem; line-height: 1.55;">
                         <strong data-i18n="callout_dependency_title">Catatan Dependensi:</strong>
-                        <span style="font-weight: 700;" data-i18n="callout_dependency_body">Membutuhkan integrasi API Gateway credentials (Client ID &amp; Secret Key) production dari pihak Payment Aggregator sebelum tanggal 18 Sep 2026.</span>
+                        <span style="font-weight: 700;" data-i18n="callout_dependency_body">{{ $changeRequest->dampak ?: $changeRequest->solution_paper_note }}</span>
                     </div>
+                    @else
+                    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 8px 14px; color: #64748B; font-size: 0.76rem;">
+                        Tidak ada dampak teknis khusus atau dependensi.
+                    </div>
+                    @endif
                 </div>
             </div>
 
@@ -627,7 +636,7 @@
                             <label style="font-size: 0.74rem; font-weight: 700; color: #0F172A; margin-bottom: 6px; display: block;" data-i18n="lbl_total_mandays">
                                 Total Mandays
                             </label>
-                            <input type="text" id="v_total" readonly value="{{ (($changeRequest->mindesk_analisis ?? 0) + ($changeRequest->mindesk_development ?? 0) + ($changeRequest->mindesk_testing ?? 0)) ?: 10 }}"
+                            <input type="text" id="v_total" readonly value="{{ (($changeRequest->mindesk_analisis ?? 0) + ($changeRequest->mindesk_development ?? 0) + ($changeRequest->mindesk_testing ?? 0)) }}"
                                    style="width: 100%; height: 40px; background: #EEF2F6; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 0 14px; font-size: 0.82rem; font-weight: 600; color: #334155; cursor: not-allowed; outline: none;">
                         </div>
                     </div>
@@ -952,7 +961,7 @@
                                 <select name="status" id="select_status_cr" onchange="updateStepperPreview(this.value)" {{ !$isStatusCrUnlocked ? 'disabled' : '' }}
                                         style="width: 100%; height: 42px; background: {{ !$isStatusCrUnlocked ? '#F1F5F9' : '#FFFFFF' }}; border: 1.5px solid {{ !$isStatusCrUnlocked ? '#CBD5E1' : '#0098EA' }}; border-radius: 8px; padding: 0 36px 0 14px; font-size: 0.84rem; font-weight: 600; color: {{ !$isStatusCrUnlocked ? '#94A3B8' : '#0F172A' }}; outline: none; appearance: none; -webkit-appearance: none; cursor: {{ !$isStatusCrUnlocked ? 'not-allowed' : 'pointer' }}; transition: border-color 0.15s ease;">
                                     <option value="diajukan" {{ in_array($statusKey, ['diajukan', 'awaiting_pm']) ? 'selected' : '' }}>Diajukan</option>
-                                    <option value="analisa" {{ in_array($statusKey, ['analisa', 'dianalisis']) ? 'selected' : ($isFigmaDefault ? 'selected' : '') }}>Analysis</option>
+                                    <option value="analisa" {{ in_array($statusKey, ['analisa', 'dianalisis']) ? 'selected' : '' }}>Analysis</option>
                                     <option value="development" {{ in_array($statusKey, ['development', 'dikerjakan']) ? 'selected' : '' }}>Develop</option>
                                     <option value="sit" {{ $statusKey === 'sit' ? 'selected' : '' }}>SIT</option>
                                     <option value="uat" {{ $statusKey === 'uat' ? 'selected' : '' }}>UAT</option>

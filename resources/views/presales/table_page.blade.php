@@ -169,40 +169,17 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @if (!empty($isEmptyState))
-                        {{-- Baris kosong untuk halaman placeholder Butuh Persetujuan & Development CR --}}
-                        @for ($i = 1; $i <= 5; $i++)
-                            <tr style="height: 52px; background: {{ $i % 2 === 0 ? '#F8FAFC' : '#FFFFFF' }};">
-                                <td class="px-3 text-center text-muted" style="font-size: 0.85rem;">{{ $i }}</td>
-                                <td class="px-3 text-muted" style="font-size: 0.85rem;">-</td>
-                                <td class="px-3 text-muted" style="font-size: 0.85rem;">-</td>
-                                <td class="px-3 text-muted" style="font-size: 0.85rem;">-</td>
-                                <td class="px-3 text-center text-muted" style="font-size: 0.85rem;">-</td>
-                                <td class="px-3 text-center text-muted" style="font-size: 0.85rem;">-</td>
-                                <td class="px-3 text-center text-muted" style="font-size: 0.85rem;">-</td>
-                                <td class="px-3 text-center text-muted" style="font-size: 0.85rem;">-</td>
-                            </tr>
-                        @endfor
-                        <tr>
-                            <td colspan="8" class="text-center py-4" style="border: none !important; background: transparent;">
-                                <div class="text-muted small py-2">
-                                    <i class="bi bi-info-circle me-1 text-primary"></i>
-                                    {{ $emptyMessage ?? 'Baris kosong. Halaman ini disiapkan untuk tahapan alur kerja berikutnya. Silakan gunakan filter di halaman Semua CR.' }}
-                                </div>
-                            </td>
-                        </tr>
-                    @else
-                        @forelse ($changeRequests as $index => $cr)
+                    @forelse ($changeRequests as $index => $cr)
                             @php
                                 $statusKey = strtolower($cr->status);
                                 $isUrgent = in_array(strtolower($cr->prioritas ?? ''), ['kritis', 'tinggi', 'urgent']);
-                                $clientCompany = $cr->client?->company ?? ($cr->klien ?: 'PT Maju Bersama');
+                                $clientCompany = $cr->client?->company ?? ($cr->klien ?: '-');
                                 $companyClean = trim(preg_replace('/^(PT|CV|PT\.)\s+/i', '', $clientCompany));
                                 $words = preg_split('/\s+/', $companyClean);
                                 if (count($words) >= 2) {
                                     $initials = strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1));
                                 } else {
-                                    $initials = strtoupper(substr($companyClean, 0, 2));
+                                    $initials = $companyClean ? strtoupper(substr($companyClean, 0, 2)) : 'CR';
                                 }
                                 $colorSeed = abs(crc32($clientCompany)) % 4;
                                 $avatarBg = match($colorSeed) {
@@ -217,7 +194,7 @@
                                 {{ $changeRequests->firstItem() ? ($changeRequests->firstItem() + $index) : ($index + 1) }}
                             </td>
                             <td class="px-3 fw-bold text-dark" style="font-size: 0.88rem; font-weight: 700;">
-                                {{ $cr->nama_pm ?: ($cr->user?->name ?: 'Danendra dada') }}
+                                {{ $cr->nama_pm ?: ($cr->user?->name ?: '-') }}
                             </td>
                             <td class="px-3">
                                 <div class="d-flex align-items-center gap-2">
@@ -233,7 +210,7 @@
                             <td class="px-3">
                                 <div>
                                     <div class="text-dark" style="font-size: 0.88rem; line-height: 1.35; font-weight: 500;">{{ $cr->judul }}</div>
-                                    <div class="text-muted" style="font-size: 0.74rem; font-weight: 400; margin-top: 2px;">{{ $cr->kode_cr }} &bull; {{ $cr->proyek_terkait ?: 'System Enhancement' }}</div>
+                                    <div class="text-muted" style="font-size: 0.74rem; font-weight: 400; margin-top: 2px;">{{ $cr->kode_cr }} &bull; {{ $cr->proyek_terkait ?: '-' }}</div>
                                 </div>
                             </td>
                             <td class="px-3 text-center text-secondary" style="font-size: 0.84rem; font-weight: 500; color: #475569;">
@@ -303,7 +280,6 @@
                             </td>
                         </tr>
                     @endforelse
-                    @endif
                 </tbody>
             </table>
         </div>

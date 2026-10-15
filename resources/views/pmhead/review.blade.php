@@ -4,9 +4,9 @@
 
 @section('content')
 @php
-    $crTitle = $changeRequest->judul ?: 'Integrasi API Pembayaran OVO';
-    $firstChar = strtoupper(substr($crTitle, 0, 1)) ?: 'I';
-    $crCode = $changeRequest->kode_cr ?: 'CR-2026-09-0042';
+    $crTitle = $changeRequest->judul ?: ('Change Request #' . $changeRequest->id);
+    $firstChar = strtoupper(substr($crTitle, 0, 1)) ?: 'C';
+    $crCode = $changeRequest->kode_cr ?: ('CR-' . str_pad($changeRequest->id, 4, '0', STR_PAD_LEFT));
 
     $statusKey = strtolower($changeRequest->status ?? '');
     $statusText = match($statusKey) {
@@ -14,34 +14,34 @@
         'development', 'dikerjakan' => 'Sedang Dikerjakan',
         'golive', 'selesai' => 'Selesai Go-Live',
         'ditolak', 'revision_needed' => 'Revisi Dibutuhkan',
-        default => 'Menunggu Review (In Progress)',
+        default => $changeRequest->statusLabel(),
     };
 
-    $tglPengajuan = $changeRequest->tanggal_pengajuan ? $changeRequest->tanggal_pengajuan->format('d M Y') : '15 Jan 2024';
-    $tglHeader = $changeRequest->created_at ? $changeRequest->created_at->format('d M Y') : '04 Sep 2026';
-    $targetSelesai = $changeRequest->target_selesai ? $changeRequest->target_selesai->format('d M Y') : '15 Jan 2024';
+    $tglPengajuan = $changeRequest->tanggal_pengajuan ? $changeRequest->tanggal_pengajuan->format('d M Y') : ($changeRequest->created_at ? $changeRequest->created_at->format('d M Y') : '-');
+    $tglHeader = $tglPengajuan;
+    $targetSelesai = $changeRequest->target_selesai ? $changeRequest->target_selesai->format('d M Y') : '-';
 
-    $companyName = $changeRequest->client?->company ?: ($changeRequest->klien ?: 'PT Maju Bersama');
-    $clientInitial = $changeRequest->client?->nickname ?: 'AF';
-    $picName = $changeRequest->user?->name ?: ($changeRequest->owner_cr ?: 'Totok Antok');
-    $projectName = $changeRequest->proyek_terkait ?: 'Sistem E-commerce';
-    $crOwner = $changeRequest->pic_sales ?: ($changeRequest->main_desk ?: 'Andik Virmansyah');
-    $priority = ucfirst($changeRequest->prioritas ?: 'Normal');
+    $companyName = $changeRequest->client?->company ?: ($changeRequest->klien ?: '-');
+    $clientInitial = $changeRequest->client?->nickname ?: ($changeRequest->klien ? strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $changeRequest->klien), 0, 2)) : '-');
+    $picName = $changeRequest->user?->name ?: ($changeRequest->owner_cr ?: '-');
+    $projectName = $changeRequest->proyek_terkait ?: '-';
+    $crOwner = $changeRequest->pic_sales ?: ($changeRequest->main_desk ?: ($changeRequest->nama_pm ?: '-'));
+    $priority = $changeRequest->prioritas ? ucfirst($changeRequest->prioritas) : 'Normal';
 
-    $docUrl = $changeRequest->google_drive_url ?: 'https://drive.google.com/drive/folders/abc123';
-    $solutionPaperUrl = $changeRequest->solution_paper_url ?: 'https://drive.google.com/file/sp001';
+    $docUrl = $changeRequest->google_drive_url ?: null;
+    $solutionPaperUrl = $changeRequest->solution_paper_url ?: null;
 
     $rawAnalisis = (float)($changeRequest->mindesk_analisis ?? 0);
     $rawDev = (float)($changeRequest->mindesk_development ?? 0);
     $rawTest = (float)($changeRequest->mindesk_testing ?? 0);
 
-    $mandaysAnalisis = $rawAnalisis > 0 ? (int)$rawAnalisis : 3;
-    $mandaysDev = $rawDev > 0 ? (int)$rawDev : 10;
-    $mandaysTest = $rawTest > 0 ? (int)$rawTest : 2;
+    $mandaysAnalisis = (int)$rawAnalisis;
+    $mandaysDev = (int)$rawDev;
+    $mandaysTest = (int)$rawTest;
     $totalMandays = $mandaysAnalisis + $mandaysDev + $mandaysTest;
 
-    $catatanCR = $changeRequest->catatan_pengajuan ?: ($changeRequest->pesan_client ?: 'Mohon diprioritaskan untuk integrasi sandbox staging sebelum tanggal 15 September agar tim QA dapat melakukan testing payment gateway secara menyeluruh. Testing account sudah kami koordinasikan dengan pihak vendor OVO.');
-    $pmVerifier = $changeRequest->nama_pm ?: ($changeRequest->user?->name ?: 'Rizky Pratama');
+    $catatanCR = $changeRequest->catatan_pengajuan ?: ($changeRequest->pesan_client ?: '-');
+    $pmVerifier = $changeRequest->nama_pm ?: ($changeRequest->user?->name ?: '-');
 @endphp
 
 <style>
@@ -297,17 +297,35 @@
                     <div class="d-flex flex-column gap-3">
                         <div>
                             <div class="text-uppercase mb-1" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">DOKUMEN CR</div>
-                            <a href="{{ $docUrl }}" target="_blank" class="doc-pill-box">
-                                <i class="bi bi-file-earmark-text"></i>
-                                <span class="text-truncate">{{ $docUrl }}</span>
-                            </a>
+                            @if($docUrl)
+                                <a href="{{ $docUrl }}" target="_blank" class="doc-pill-box">
+                                    <i class="bi bi-file-earmark-text"></i>
+                                    <span class="text-truncate">{{ $docUrl }}</span>
+                                </a>
+                            @elseif($changeRequest->lampiran_pengajuan)
+                                <a href="{{ route('change-requests.initial-file', $changeRequest) }}" target="_blank" class="doc-pill-box">
+                                    <i class="bi bi-paperclip"></i>
+                                    <span class="text-truncate">{{ basename($changeRequest->lampiran_pengajuan) }}</span>
+                                </a>
+                            @else
+                                <div class="text-muted small" style="font-size: 0.82rem;">Belum ada dokumen CR terlampir.</div>
+                            @endif
                         </div>
                         <div>
                             <div class="text-uppercase mb-1" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">SOLUTION PAPER</div>
-                            <a href="{{ $solutionPaperUrl }}" target="_blank" class="doc-pill-box">
-                                <i class="bi bi-file-earmark-code"></i>
-                                <span class="text-truncate">{{ $solutionPaperUrl }}</span>
-                            </a>
+                            @if($solutionPaperUrl)
+                                <a href="{{ $solutionPaperUrl }}" target="_blank" class="doc-pill-box">
+                                    <i class="bi bi-file-earmark-code"></i>
+                                    <span class="text-truncate">{{ $solutionPaperUrl }}</span>
+                                </a>
+                            @elseif($changeRequest->solutionPaper?->solution_paper_file)
+                                <a href="{{ \Illuminate\Support\Facades\Storage::url($changeRequest->solutionPaper->solution_paper_file) }}" target="_blank" class="doc-pill-box">
+                                    <i class="bi bi-file-earmark-code"></i>
+                                    <span class="text-truncate">{{ basename($changeRequest->solutionPaper->solution_paper_file) }}</span>
+                                </a>
+                            @else
+                                <div class="text-muted small" style="font-size: 0.82rem;">Belum ada Solution Paper terlampir.</div>
+                            @endif
                         </div>
                     </div>
                 </div>
@@ -321,35 +339,38 @@
                     <i class="bi bi-file-earmark-text" style="color: #0098EA; font-size: 1.1rem;"></i>
                     <h5 class="fw-bold mb-0 text-dark" style="font-size: 0.92rem; font-weight: 800;">Detail Deskripsi CR</h5>
                 </div>
-                <span class="text-muted small" style="font-size: 0.72rem; color: #94A3B8;">Rendered WYSIWYG Content</span>
+                <span class="text-muted small" style="font-size: 0.72rem; color: #94A3B8;">Data Aktual CR</span>
             </div>
 
             <div class="text-dark" style="font-size: 0.83rem; line-height: 1.65;">
                 <div class="fw-bold mb-1" style="color: #0F172A; font-weight: 800;">1. LATAR BELAKANG &amp; TUJUAN</div>
-                <p class="text-secondary mb-3" style="color: #475569 !important;">
-                    {!! nl2br(e($changeRequest->alasan ?: ($changeRequest->deskripsi ?: 'Implementasi penambahan kanal pembayaran digital menggunakan e-wallet OVO (Push to Pay & QRIS) pada modul checkout Sistem E-commerce. Hal ini bertujuan untuk menaikkan rasio konversi checkout pelanggan serta mengurangi tingkat abandoned cart pada saat proses transaksi pembelian online.'))) !!}
-                </p>
+                @if($changeRequest->alasan || $changeRequest->deskripsi)
+                    <p class="text-secondary mb-3" style="color: #475569 !important;">
+                        {!! nl2br(e($changeRequest->alasan ?: $changeRequest->deskripsi)) !!}
+                    </p>
+                @else
+                    <p class="text-muted mb-3 small" style="font-size: 0.82rem;">Belum ada latar belakang &amp; tujuan yang diisi.</p>
+                @endif
 
                 <div class="fw-bold mb-1" style="color: #0F172A; font-weight: 800;">2. RUANG LINGKUP PERUBAHAN (SCOPE OF WORK)</div>
-                <div class="text-secondary mb-3" style="color: #475569 !important;">
-                    @if ($changeRequest->deskripsi && $changeRequest->deskripsi !== $changeRequest->alasan)
-                        {!! nl2br(e($changeRequest->deskripsi)) !!}
-                    @else
-                        <div class="ps-2">
-                            <div class="mb-1">Penambahan opsi pembayaran OVO Wallet pada step 3 (Metode Pembayaran) di aplikasi Web dan Mobile.</div>
-                            <div class="mb-1">Integrasi Webhook Callback Service untuk konfirmasi status settlement secara real-time.</div>
-                            <div class="mb-1">Penyelarasan modul rekonsiliasi harian dan penyesuaian laporan keuangan di portal admin.</div>
-                            <div>Penambahan unit test coverage dan staging automated testing minimum 85%.</div>
-                        </div>
-                    @endif
-                </div>
+                @if($changeRequest->kebutuhan_spesifik || ($changeRequest->deskripsi && $changeRequest->deskripsi !== $changeRequest->alasan))
+                    <div class="text-secondary mb-3" style="color: #475569 !important;">
+                        {!! nl2br(e($changeRequest->kebutuhan_spesifik ?: $changeRequest->deskripsi)) !!}
+                    </div>
+                @else
+                    <p class="text-muted mb-3 small" style="font-size: 0.82rem;">Belum ada rincian ruang lingkup perubahan.</p>
+                @endif
 
                 <div class="fw-bold mb-2" style="color: #0F172A; font-weight: 800;">3. DAMPAK TEKNIS &amp; DEPENDENCIES</div>
-                <div class="p-3" style="background: #FFFBEB; border-left: 3.5px solid #F59E0B; border-radius: 6px;">
-                    <div style="font-size: 0.8rem; color: #92400E; font-weight: 600; line-height: 1.5;">
-                        <strong style="color: #78350F; font-weight: 800;">Catatan Dependensi:</strong> {{ $changeRequest->solution_paper_note ?: ($changeRequest->pesan_client ?: 'Membutuhkan integrasi API Gateway credentials (Client ID & Secret Key) production dari pihak Payment Aggregator sebelum tanggal 18 Sep 2026.') }}
+                @if($changeRequest->dampak || $changeRequest->solution_paper_note || $changeRequest->pesan_client)
+                    <div class="p-3" style="background: #FFFBEB; border-left: 3.5px solid #F59E0B; border-radius: 6px;">
+                        <div style="font-size: 0.8rem; color: #92400E; font-weight: 600; line-height: 1.5;">
+                            <strong style="color: #78350F; font-weight: 800;">Catatan Dependensi:</strong> {{ $changeRequest->dampak ?: ($changeRequest->solution_paper_note ?: $changeRequest->pesan_client) }}
+                        </div>
                     </div>
-                </div>
+                @else
+                    <p class="text-muted mb-0 small" style="font-size: 0.82rem;">Tidak ada dampak teknis khusus atau dependensi.</p>
+                @endif
             </div>
         </div>
 

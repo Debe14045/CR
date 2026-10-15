@@ -1452,12 +1452,18 @@
                 {{-- 3. Notifikasi --}}
                 @php
                     $isNotifActive = request()->routeIs('presales.notifications');
+                    $presalesNotifCount = auth()->check() ? \App\Models\Notification::forUser(auth()->user())->unread()->count() : 0;
                 @endphp
                 <a href="{{ route('presales.notifications') }}"
-                   class="sidebar-link d-flex align-items-center {{ $isNotifActive ? 'active' : '' }}"
-                   style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: #FFFFFF; margin-top: 0.35rem; gap: 0.75rem; {{ $isNotifActive ? 'background: #0063D7 !important;' : '' }}">
-                    <i class="bi bi-bell nav-icon" style="font-size: 1.05rem;"></i>
-                    <span class="fw-medium">Notifikasi</span>
+                   class="sidebar-link d-flex align-items-center justify-content-between {{ $isNotifActive ? 'active' : '' }}"
+                   style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: #FFFFFF; margin-top: 0.35rem; {{ $isNotifActive ? 'background: #0063D7 !important;' : '' }}">
+                    <span class="d-flex align-items-center gap-2">
+                        <i class="bi bi-bell nav-icon" style="font-size: 1.05rem;"></i>
+                        <span class="fw-medium">Notifikasi</span>
+                    </span>
+                    @if ($presalesNotifCount > 0)
+                        <span class="badge bg-danger rounded-pill" style="font-size: 0.65rem;">{{ $presalesNotifCount }}</span>
+                    @endif
                 </a>
 
                 {{-- 4. Pengaturan --}}
@@ -1502,7 +1508,7 @@
                 {{-- 4. Notifikasi --}}
                 @php
                     $isNotifActive = request()->routeIs('pmh.notifications');
-                    $sidebarNotifCount = \App\Models\ChangeRequest::count();
+                    $sidebarNotifCount = auth()->check() ? \App\Models\Notification::forUser(auth()->user())->unread()->count() : 0;
                 @endphp
                 <a href="{{ route('pmh.notifications') }}"
                    class="sidebar-link d-flex align-items-center justify-content-between {{ $isNotifActive ? 'active' : '' }}"
@@ -1605,6 +1611,9 @@
                 </div>
 
                 {{-- 3. Notifikasi --}}
+                @php
+                    $stdNotifCount = auth()->check() ? \App\Models\Notification::forUser(auth()->user())->unread()->count() : 0;
+                @endphp
                 <a href="{{ route('notifications.index') }}"
                    class="sidebar-link d-flex align-items-center justify-content-between"
                    style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem;">
@@ -1612,6 +1621,9 @@
                         <i class="bi bi-bell nav-icon" style="font-size: 1.05rem;"></i>
                         <span class="fw-medium" data-i18n="nav_notifications">Notifikasi</span>
                     </span>
+                    @if ($stdNotifCount > 0)
+                        <span class="badge bg-danger rounded-pill" style="font-size: 0.65rem;">{{ $stdNotifCount }}</span>
+                    @endif
                 </a>
 
                 {{-- 4. Pengaturan --}}
@@ -1708,38 +1720,47 @@
                     </ul>
                 </div>
 
-                {{-- Inbox Button with Red Notification Dot --}}
+                @php
+                    $unreadNotifs = auth()->check() ? \App\Models\Notification::forUser(auth()->user())->latest()->take(4)->get() : collect();
+                    $unreadNotifsCount = auth()->check() ? \App\Models\Notification::forUser(auth()->user())->where('is_read', false)->count() : 0;
+                @endphp
+
+                {{-- Inbox Button with Dynamic Notification Dot --}}
                 <div class="dropdown">
                     <button class="btn p-0 position-relative d-flex align-items-center justify-content-center border-0 bg-transparent shadow-none"
                             type="button" id="inboxDropdown" data-bs-toggle="dropdown" aria-expanded="false"
                             style="width: 36px; height: 36px; color: #1E293B; font-size: 1.25rem;">
                         <i class="bi bi-inbox"></i>
-                        <span style="position: absolute; top: 5px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: #EF4444; border: 1.5px solid #FFFFFF;"></span>
+                        @if($unreadNotifsCount > 0)
+                            <span style="position: absolute; top: 5px; right: 4px; width: 8px; height: 8px; border-radius: 50%; background: #EF4444; border: 1.5px solid #FFFFFF;"></span>
+                        @endif
                     </button>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 p-3 mt-2" style="width: 320px; border-radius: 14px;" aria-labelledby="inboxDropdown">
-                        <li class="d-flex justify-content-between align-items-center mb-2">
+                        <li class="d-flex justify-content-between align-items-center mb-2 pb-2 border-bottom">
                             <span class="fw-bold small text-dark" data-i18n="inbox_title">Pesan Masuk (Inbox)</span>
-                            <span class="badge bg-primary-subtle text-primary rounded-pill" style="font-size: 0.68rem;" data-i18n="inbox_new_badge">2 Baru</span>
+                            @if($unreadNotifsCount > 0)
+                                <span class="badge bg-primary-subtle text-primary rounded-pill" style="font-size: 0.68rem;">{{ $unreadNotifsCount }} Baru</span>
+                            @else
+                                <span class="badge bg-secondary-subtle text-secondary rounded-pill" style="font-size: 0.68rem;">Kosong</span>
+                            @endif
                         </li>
-                        <li class="mb-2">
-                            <div class="p-2 rounded-2" style="background: #F0F9FF; border-left: 3px solid #0284C7;">
-                                <div class="fw-bold" style="font-size: 0.76rem; color: #0369A1;">PM Mochammad David</div>
-                                <div class="text-muted" style="font-size: 0.72rem;">Dokumen estimasi biaya CR-2026-004 telah diperbarui.</div>
-                            </div>
-                        </li>
-                        <li>
-                            <div class="p-2 rounded-2" style="background: #F8FAFC; border-left: 3px solid #94A3B8;">
-                                <div class="fw-bold" style="font-size: 0.76rem; color: #334155;">System Support</div>
-                                <div class="text-muted" style="font-size: 0.72rem;">Pengajuan CR Anda sedang dalam proses verifikasi tim sales.</div>
-                            </div>
-                        </li>
+                        @forelse($unreadNotifs as $notif)
+                            <li class="mb-2">
+                                <a href="{{ $notif->action_url ?: route('notifications.go', $notif->id) }}" class="text-decoration-none">
+                                    <div class="p-2 rounded-2" style="background: #F8FAFC; border-left: 3px solid #0063D7;">
+                                        <div class="fw-bold text-dark text-truncate" style="font-size: 0.76rem;">{{ $notif->title }}</div>
+                                        <div class="text-muted text-truncate" style="font-size: 0.72rem;">{{ $notif->message }}</div>
+                                    </div>
+                                </a>
+                            </li>
+                        @empty
+                            <li class="text-center py-3 text-muted small" style="font-size: 0.78rem;">
+                                <i class="bi bi-inbox d-block fs-4 mb-1 text-secondary opacity-50"></i>
+                                Tidak ada pesan masuk saat ini
+                            </li>
+                        @endforelse
                     </ul>
                 </div>
-
-                @php
-                    $unreadNotifs = auth()->check() ? \App\Models\Notification::forUser(auth()->user())->latest()->take(4)->get() : collect();
-                    $unreadNotifsCount = auth()->check() ? \App\Models\Notification::forUser(auth()->user())->where('is_read', false)->count() : 0;
-                @endphp
                 {{-- Notification Bell with Red Notification Dot --}}
                 <div class="dropdown">
                     <button class="btn p-0 position-relative d-flex align-items-center justify-content-center border-0 bg-transparent shadow-none" type="button" id="notifDropdown" data-bs-toggle="dropdown" aria-expanded="false"
@@ -1779,7 +1800,7 @@
                 <div class="dropdown">
                     <div class="d-flex align-items-center gap-3 ps-1 cursor-pointer" id="userMenuDropdown" data-bs-toggle="dropdown" aria-expanded="false" style="cursor: pointer;">
                         @php
-                            $currentUserName = auth()->check() ? auth()->user()->name : 'Totok Antok';
+                            $currentUserName = auth()->check() ? auth()->user()->name : '-';
                             $curWords = preg_split('/\s+/', trim($currentUserName));
                             $curInitials = count($curWords) >= 2
                                 ? strtoupper(substr($curWords[0], 0, 1) . substr($curWords[1], 0, 1))
@@ -1787,21 +1808,21 @@
                         @endphp
                         <div class="rounded-circle d-flex align-items-center justify-content-center fw-bold shadow-sm"
                              style="width: 42px; height: 42px; background: #D5CCBE; color: #292524; font-size: 0.95rem; font-weight: 700; flex-shrink: 0;">
-                            {{ $curInitials }}
+                            {{ $curInitials ?: 'US' }}
                         </div>
                         <div style="line-height: 1.25;" class="d-none d-sm-block text-start">
                             <div class="fw-bold text-dark text-truncate" style="font-size: 0.92rem; font-weight: 700; letter-spacing: -0.01em; color: #0F172A;">
                                 {{ $currentUserName }}
                             </div>
                             <div class="text-muted text-truncate" style="font-size: 0.72rem; color: #64748B; font-weight: 600; letter-spacing: 0.05em; text-transform: uppercase;">
-                                {{ auth()->check() ? (auth()->user()->isPresales() ? 'PRESALES' : (auth()->user()->isPmh() ? 'PM HEAD' : (auth()->user()->isPm() ? 'PM' : (auth()->user()->isClient() ? 'KLIEN' : strtoupper(auth()->user()->role))))) : 'PRESALES' }}
+                                {{ auth()->check() ? (auth()->user()->isPresales() ? 'PRESALES' : (auth()->user()->isPmh() ? 'PM HEAD' : (auth()->user()->isPm() ? 'PM' : (auth()->user()->isClient() ? 'KLIEN' : strtoupper(auth()->user()->role))))) : '-' }}
                             </div>
                         </div>
                     </div>
                     <ul class="dropdown-menu dropdown-menu-end shadow-sm border-0 mt-2 p-2" style="border-radius: 12px; min-width: 200px;" aria-labelledby="userMenuDropdown">
                         <li class="px-3 py-2 border-bottom mb-1">
-                            <div class="fw-bold small text-dark">{{ auth()->check() ? auth()->user()->name : 'Totok Antok' }}</div>
-                            <div class="text-muted" style="font-size: 0.72rem;">{{ auth()->check() ? (auth()->user()->email ?? 'totok.antok@gmail.com') : 'totok.antok@gmail.com' }}</div>
+                            <div class="fw-bold small text-dark">{{ auth()->check() ? auth()->user()->name : '-' }}</div>
+                            <div class="text-muted" style="font-size: 0.72rem;">{{ auth()->check() ? (auth()->user()->email ?? '-') : '-' }}</div>
                         </li>
                         <li>
                             <a href="{{ route('profile') }}" class="dropdown-item py-2 px-3 small d-flex align-items-center gap-2 fw-medium text-dark">

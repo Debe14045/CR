@@ -455,59 +455,77 @@
                 <div style="height: 1px; background: #E2E8F0; margin: 0.85rem 0 1.25rem;"></div>
 
                 <div class="d-flex flex-column gap-3">
-                    {{-- Alert 1: Red box (Menunggu Persetujuan / Review) --}}
-                    <a href="{{ $isPmh ? route('pmh.persetujuan') : route('change-requests.index', ['status' => 'diajukan']) }}" class="text-decoration-none">
-                        <div class="p-3" style="background: #FFF1F2; border: 1px solid #FECDD3; border-radius: 14px; transition: transform 0.15s ease;"
-                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #E11D48; font-size: 1.05rem; flex-shrink: 0;"></i>
-                                <div style="line-height: 1.35;">
-                                    <div class="fw-bold" style="color: #9F1239; font-size: 0.82rem;">
-                                        3 Perubahan Ruang Lingkup CR menunggu persetujuan &gt; 14 hari
-                                    </div>
-                                    <div style="color: #E11D48; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
-                                        Status : Menunggu Persetujuan PM{{ $isPmh ? ' Head' : '' }}
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </a>
+                    @php
+                        $hasNotifs = (($notifPendingCount ?? 0) > 0 || ($notifNeedVerifCount ?? 0) > 0 || ($notifDevCount ?? 0) > 0);
+                    @endphp
 
-                    {{-- Alert 2: Yellow box (Tahap Analisis / Verifikasi Kebutuhan) --}}
-                    <a href="{{ $isPmh ? route('pmh.change-requests', ['status' => 'analisa']) : route('change-requests.index', ['status' => 'analisa']) }}" class="text-decoration-none">
-                        <div class="p-3" style="background: #FEFCE8; border: 1px solid #FEF08A; border-radius: 14px; transition: transform 0.15s ease;"
-                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #D97706; font-size: 1.05rem; flex-shrink: 0;"></i>
-                                <div style="line-height: 1.35;">
-                                    <div class="fw-bold" style="color: #854D0E; font-size: 0.82rem;">
-                                        8 CR Baru Menunggu Verifikasi Kebutuhan
-                                    </div>
-                                    <div style="color: #B45309; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
-                                        Tahapan : 1. Analisis Kebutuhan
+                    @if ($hasNotifs)
+                        @if (($notifPendingCount ?? 0) > 0)
+                            {{-- Alert 1: Red box (Menunggu Persetujuan / Review) --}}
+                            <a href="{{ $isPmh ? route('pmh.persetujuan') : route('change-requests.index', ['status' => 'diajukan']) }}" class="text-decoration-none">
+                                <div class="p-3" style="background: #FFF1F2; border: 1px solid #FECDD3; border-radius: 14px; transition: transform 0.15s ease;"
+                                     onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #E11D48; font-size: 1.05rem; flex-shrink: 0;"></i>
+                                        <div style="line-height: 1.35;">
+                                            <div class="fw-bold" style="color: #9F1239; font-size: 0.82rem;">
+                                                {{ $notifPendingCount }} Perubahan Ruang Lingkup CR menunggu persetujuan
+                                            </div>
+                                            <div style="color: #E11D48; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
+                                                Status : Menunggu Persetujuan PM{{ $isPmh ? ' Head' : '' }}
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
-                        </div>
-                    </a>
+                            </a>
+                        @endif
 
-                    {{-- Alert 3: Blue box (Development & UAT Testing) --}}
-                    <a href="{{ $isPmh ? route('pmh.development') : route('change-requests.index', ['view' => 'development']) }}" class="text-decoration-none">
-                        <div class="p-3" style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 14px; transition: transform 0.15s ease;"
-                             onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
-                            <div class="d-flex align-items-start gap-2">
-                                <i class="bi bi-info-circle-fill mt-1" style="color: #2563EB; font-size: 1.05rem; flex-shrink: 0;"></i>
-                                <div style="line-height: 1.35;">
-                                    <div class="fw-bold" style="color: #1E40AF; font-size: 0.82rem;">
-                                        5 Masukan Pengguna UAT butuh tindak lanjut
-                                    </div>
-                                    <div style="color: #2563EB; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
-                                        Tahapan : 4. UAT & Pengujian
+                        @if (($notifNeedVerifCount ?? 0) > 0)
+                            {{-- Alert 2: Yellow box (Tahap Analisis / Verifikasi Kebutuhan) --}}
+                            <a href="{{ $isPmh ? route('pmh.change-requests', ['status' => 'analisa']) : route('change-requests.index', ['status' => 'analisa']) }}" class="text-decoration-none">
+                                <div class="p-3" style="background: #FEFCE8; border: 1px solid #FEF08A; border-radius: 14px; transition: transform 0.15s ease;"
+                                     onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="bi bi-exclamation-triangle-fill mt-1" style="color: #D97706; font-size: 1.05rem; flex-shrink: 0;"></i>
+                                        <div style="line-height: 1.35;">
+                                            <div class="fw-bold" style="color: #854D0E; font-size: 0.82rem;">
+                                                {{ $notifNeedVerifCount }} CR Baru Menunggu Verifikasi Kebutuhan
+                                            </div>
+                                            <div style="color: #B45309; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
+                                                Tahapan : 1. Analisis Kebutuhan
+                                            </div>
+                                        </div>
                                     </div>
                                 </div>
-                            </div>
+                            </a>
+                        @endif
+
+                        @if (($notifDevCount ?? 0) > 0)
+                            {{-- Alert 3: Blue box (Development & UAT Testing) --}}
+                            <a href="{{ $isPmh ? route('pmh.development') : route('change-requests.index', ['view' => 'development']) }}" class="text-decoration-none">
+                                <div class="p-3" style="background: #EFF6FF; border: 1px solid #BFDBFE; border-radius: 14px; transition: transform 0.15s ease;"
+                                     onmouseover="this.style.transform='translateY(-2px)'" onmouseout="this.style.transform='translateY(0)'">
+                                    <div class="d-flex align-items-start gap-2">
+                                        <i class="bi bi-info-circle-fill mt-1" style="color: #2563EB; font-size: 1.05rem; flex-shrink: 0;"></i>
+                                        <div style="line-height: 1.35;">
+                                            <div class="fw-bold" style="color: #1E40AF; font-size: 0.82rem;">
+                                                {{ $notifDevCount }} CR sedang dalam tahap Development &amp; Pengujian
+                                            </div>
+                                            <div style="color: #2563EB; font-size: 0.74rem; font-weight: 500; margin-top: 3px;">
+                                                Tahapan : 2. Development &amp; UAT
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </a>
+                        @endif
+                    @else
+                        <div class="text-center py-4 text-muted">
+                            <i class="bi bi-bell-slash fs-3 d-block mb-2 text-secondary opacity-50"></i>
+                            <div class="fw-bold text-dark" style="font-size: 0.88rem;">Tidak ada notifikasi saat ini</div>
+                            <div class="small text-muted mt-1" style="font-size: 0.76rem;">Semua pengajuan Change Request telah diproses dan terupdate.</div>
                         </div>
-                    </a>
+                    @endif
                 </div>
             </div>
         </div>
@@ -558,10 +576,10 @@
                     @forelse ($changeRequests as $index => $cr)
                         @php
                             $avColor = $avatarPalette[$index % count($avatarPalette)];
-                            $pemohonName = $cr->owner_cr ?: ($cr->user?->name ?: 'Totok Antok');
+                            $pemohonName = $cr->owner_cr ?: ($cr->user?->name ?: '-');
                             $pemohonInitials = strtoupper(substr($pemohonName, 0, 1));
-                            $projectName = $cr->project?->name ?: ($cr->proyek_terkait ?: ($cr->category ?: 'Authentication'));
-                            $savedDate = $cr->updated_at ? $cr->updated_at->format('d M Y') : ($cr->tanggal_pengajuan ? \Carbon\Carbon::parse($cr->tanggal_pengajuan)->format('d M Y') : '01 Feb 2024');
+                            $projectName = $cr->project?->name ?: ($cr->proyek_terkait ?: ($cr->category ?: '-'));
+                            $savedDate = $cr->updated_at ? $cr->updated_at->format('d M Y') : ($cr->tanggal_pengajuan ? \Carbon\Carbon::parse($cr->tanggal_pengajuan)->format('d M Y') : ($cr->created_at ? $cr->created_at->format('d M Y') : '-'));
                             $rowNumber = ($changeRequests->currentPage() - 1) * $changeRequests->perPage() + ($index + 1);
                         @endphp
                         <tr style="border-bottom: 1px solid #F1F5F9; transition: background 0.15s ease;" onmouseover="this.style.background='#F8FAFC';" onmouseout="this.style.background='#FFFFFF';">
@@ -884,7 +902,7 @@
                     @forelse ($changeRequests as $index => $cr)
                         @php
                             $avColor = $avatarPalette[$index % count($avatarPalette)];
-                            $companyName = $cr->klien ?: ($cr->client?->company ?: 'PT Maju Bersama');
+                            $companyName = $cr->klien ?: ($cr->client?->company ?: '-');
                             
                             // Generate initials for Pemohon avatar circle
                             $cleanName = trim(preg_replace('/^(pt\.?|cv\.?)\s+/i', '', $companyName));
@@ -892,7 +910,7 @@
                             if (count($words) >= 2) {
                                 $compInitials = strtoupper(substr($words[0], 0, 1) . substr($words[1], 0, 1));
                             } else {
-                                $compInitials = strtoupper(substr($cleanName, 0, min(2, strlen($cleanName))));
+                                $compInitials = $cleanName ? strtoupper(substr($cleanName, 0, min(2, strlen($cleanName)))) : 'CR';
                             }
 
                             // Status mapping

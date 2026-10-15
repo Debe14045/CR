@@ -382,7 +382,7 @@ class ChangeRequestController extends Controller
 
         $clientRecord = null;
         $clients = Client::where('active', true)->orderBy('company')->get();
-        $figmaClients = ['PT Maju Bersama', 'PT Hiasan Jaya', 'PT Venturindo Bersama', 'PT Sumber Makmur', 'PT Solikindo Bisa'];
+        $figmaClients = $clients->pluck('company')->toArray();
         $pegawais = Pegawai::where('is_active', true)->orderBy('name')->get();
         $nextKodeCr = ChangeRequest::generateKode();
 
@@ -507,7 +507,7 @@ class ChangeRequestController extends Controller
             }
         }
         if (empty($validated['klien'])) {
-            $validated['klien'] = $request->input('nama_perusahaan', 'PT Maju Bersama');
+            $validated['klien'] = $request->input('nama_perusahaan') ?: ($user->client?->company ?: ($user->name ?? 'Klien'));
         }
 
         if (empty($validated['owner_cr'])) {
@@ -713,7 +713,7 @@ class ChangeRequestController extends Controller
                     'reject_reason' => null,
                 ]);
 
-                // Notify Client and PM
+                // Notify Client, PM, and Presales
                 Notification::sendNotification([
                     'user_id'           => $changeRequest->user_id,
                     'target_role'       => 'client',
@@ -723,6 +723,26 @@ class ChangeRequestController extends Controller
                     'type'              => 'success',
                     'category'          => 'cr_approval',
                     'action_url'        => route('change-requests.show', $changeRequest->id),
+                ]);
+
+                Notification::sendNotification([
+                    'target_role'       => 'pm',
+                    'change_request_id' => $changeRequest->id,
+                    'title'             => 'CR Divalidasi oleh PM Head',
+                    'message'           => "Change Request {$changeRequest->kode_cr} ({$changeRequest->judul}) telah disetujui oleh PM Head.",
+                    'type'              => 'success',
+                    'category'          => 'cr_approval',
+                    'action_url'        => route('change-requests.show', $changeRequest->id),
+                ]);
+
+                Notification::sendNotification([
+                    'target_role'       => 'presales',
+                    'change_request_id' => $changeRequest->id,
+                    'title'             => 'CR Baru Siap Diberikan Penawaran (Quotation)',
+                    'message'           => "Change Request {$changeRequest->kode_cr} ({$changeRequest->judul}) telah disetujui PM Head dan siap diproses quotation oleh Presales.",
+                    'type'              => 'info',
+                    'category'          => 'cr_approval',
+                    'action_url'        => route('presales.review', $changeRequest->id),
                 ]);
 
                 return redirect()->route('change-requests.index')

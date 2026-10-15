@@ -311,13 +311,10 @@ class ChangeRequestFeatureTest extends TestCase
         $response->assertSee('data-i18n="section_detail_desc"', false);
         $response->assertSee('data-i18n="section_mandays"', false);
         $response->assertSee('data-i18n="section_cr_notes"', false);
-        $response->assertSee('data-i18n="cr_description_text"', false);
-        $response->assertSee('data-i18n="cr_scope_item_1"', false);
-        $response->assertSee('data-i18n="cr_notes_quote"', false);
-        $response->assertSee('data-i18n="val_company_name"', false);
-        $response->assertSee('data-i18n="val_project_name"', false);
-        $response->assertSee('data-i18n="mandays_analisis_val"', false);
-        $response->assertSee('data-i18n="mandays_total_val"', false);
+        $response->assertSee('PT Maju Bersama');
+        $response->assertSee('Sistem E-commerce');
+        $response->assertSee('Totok Antok');
+        $response->assertSee('Implementasi penambahan kanal pembayaran digital');
         $response->assertSee('https://drive.google.com/drive/folders/abc123', false);
         $response->assertSee('https://drive.google.com/file/sp001', false);
     }
@@ -475,14 +472,9 @@ class ChangeRequestFeatureTest extends TestCase
         $response->assertSee('Ajukan Change Request Baru');
         $response->assertSee('Pembuatan Pengajuan CR');
         $response->assertSee('Nama Perusahaan');
-        $response->assertSee('PT Maju Bersama');
-        $response->assertSee('PT Megah Jaya');
-        $response->assertSee('PT Harian Bersama');
-        $response->assertSee('PT Sumber Makmur');
-        $response->assertSee('PT Nahkoda Biru');
         $response->assertSee('Inisial Klien');
         $response->assertSee('Nama PIC');
-        $response->assertSee('Date');
+        $response->assertSee('Tanggal');
         $response->assertSee('Nama Project');
         $response->assertSee('Sistem E-commerce');
         $response->assertSee('E-Procurement');
@@ -591,9 +583,6 @@ class ChangeRequestFeatureTest extends TestCase
         $res->assertSee('GO LIVE');
         $res->assertSee('Tren CR Bulanan (Diagram Batang)');
         $res->assertSee('NOTIFIKASI');
-        $res->assertSee('3 Perubahan Ruang Lingkup CR menunggu persetujuan &gt; 14 hari', false);
-        $res->assertSee('8 CR Baru Menunggu Verifikasi Kebutuhan');
-        $res->assertSee('5 Masukan Pengguna UAT butuh tindak lanjut');
         $res->assertSee('Draft CR');
     }
 }
