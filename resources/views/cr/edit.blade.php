@@ -58,12 +58,15 @@
                 <div class="mb-3">
                     <label class="form-label small fw-bold">Alasan Penolakan / Catatan Approval PM Head:</label>
                     <textarea name="reject_reason" id="pmh_reject_reason" rows="2" class="form-control" placeholder="Wajib jika Reject, opsional jika Approve...">{{ old('reject_reason', $changeRequest->reject_reason) }}</textarea>
+                    <div id="pmh_reject_error" class="text-danger small mt-1 d-none" style="font-weight: 600;">
+                        <i class="bi bi-exclamation-circle-fill me-1"></i> Alasan penolakan wajib diisi (minimal 5 karakter) untuk dikembalikan ke PM!
+                    </div>
                 </div>
                 <div class="d-flex gap-2">
-                    <button type="submit" name="pmh_action" value="approve" class="btn btn-success btn-sm px-3" onclick="return confirm('Approve & validasi CR ini?')">
+                    <button type="submit" name="pmh_action" value="approve" class="btn btn-success btn-sm px-3 shadow-sm" onclick="return confirm('Apakah Anda yakin ingin menyetujui dan memvalidasi CR ini untuk diteruskan ke Presales?');">
                         <i class="bi bi-check-lg me-1"></i> Approve &amp; Validasi
                     </button>
-                    <button type="submit" name="pmh_action" value="reject" class="btn btn-danger btn-sm px-3" onclick="if(!document.getElementById('pmh_reject_reason').value.trim()){ alert('Alasan penolakan wajib diisi jika menolak!'); return false; }">
+                    <button type="button" class="btn btn-danger btn-sm px-3 shadow-sm" onclick="handlePmhRejectEdit(this)">
                         <i class="bi bi-x-lg me-1"></i> Reject (Revisi ke PM)
                     </button>
                     @if ($changeRequest->status === 'awaiting_golive_validation')
@@ -73,6 +76,30 @@
                     @endif
                 </div>
             </form>
+            <script>
+                function handlePmhRejectEdit(btn) {
+                    const txt = document.getElementById('pmh_reject_reason');
+                    const err = document.getElementById('pmh_reject_error');
+                    if (!txt || !txt.value.trim() || txt.value.trim().length < 5) {
+                        if (err) err.classList.remove('d-none');
+                        if (txt) {
+                            txt.style.borderColor = '#DC2626';
+                            txt.style.boxShadow = '0 0 0 3px rgba(220, 38, 38, 0.2)';
+                            txt.focus();
+                        }
+                        return false;
+                    }
+                    if (confirm('Kembalikan CR ini ke PM dengan status Revision Needed?')) {
+                        const form = btn.closest('form');
+                        const hiddenInput = document.createElement('input');
+                        hiddenInput.type = 'hidden';
+                        hiddenInput.name = 'pmh_action';
+                        hiddenInput.value = 'reject';
+                        form.appendChild(hiddenInput);
+                        form.submit();
+                    }
+                }
+            </script>
         </div>
     @endif
 

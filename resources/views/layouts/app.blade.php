@@ -1848,23 +1848,114 @@
         </header>
         @endauth
 
-        {{-- ── Flash Messages ── --}}
-        @if (session('success') || session('error'))
-            <div style="padding: 1rem 1.75rem 0;" class="d-print-none">
-                @if (session('success'))
-                    <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 mb-0" role="alert">
-                        <i class="bi bi-check-circle-fill fs-5"></i>
-                        <div>{{ session('success') }}</div>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        {{-- ── Flash Messages (Animated Premium Notification Banner) ── --}}
+        @php
+            $flashType = null;
+            $flashMsg = null;
+            $flashTitle = null;
+
+            if (session('success')) {
+                $flashType = 'success';
+                $flashMsg = session('success');
+                $flashTitle = (session('cr_action_type') === 'approve' || str_contains(strtolower($flashMsg), 'disetujui') || str_contains(strtolower($flashMsg), 'divalidasi'))
+                    ? 'Persetujuan Berhasil Divalidasi!'
+                    : 'Aksi Berhasil Disimpan!';
+            } elseif (session('warning')) {
+                $flashType = 'warning';
+                $flashMsg = session('warning');
+                $flashTitle = (session('cr_action_type') === 'reject' || str_contains(strtolower($flashMsg), 'ditolak') || str_contains(strtolower($flashMsg), 'revisi'))
+                    ? 'Change Request Dikembalikan untuk Revisi'
+                    : 'Perhatian!';
+            } elseif (session('error')) {
+                $flashType = 'danger';
+                $flashMsg = session('error');
+                $flashTitle = 'Terjadi Kesalahan!';
+            } elseif (session('info') || session('status')) {
+                $flashType = 'info';
+                $flashMsg = session('info') ?: session('status');
+                $flashTitle = 'Informasi Sistem';
+            }
+        @endphp
+
+        @if ($flashType && $flashMsg)
+            <div id="appFlashNotification" class="px-3 px-md-4 pt-3 d-print-none" style="animation: slideDownAlert 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;">
+                <div class="position-relative overflow-hidden p-3 p-md-3.5 rounded-4 shadow-sm border d-flex align-items-center justify-content-between gap-3"
+                     style="
+                        @if($flashType === 'success')
+                            background: linear-gradient(135deg, #ECFDF5 0%, #F0FDF4 100%);
+                            border-color: #86EFAC !important;
+                            color: #065F46;
+                        @elseif($flashType === 'warning')
+                            background: linear-gradient(135deg, #FFFBEB 0%, #FEF2F2 100%);
+                            border-color: #FCD34D !important;
+                            color: #92400E;
+                        @elseif($flashType === 'danger')
+                            background: linear-gradient(135deg, #FEF2F2 0%, #FFF1F2 100%);
+                            border-color: #FCA5A5 !important;
+                            color: #991B1B;
+                        @else
+                            background: linear-gradient(135deg, #EFF6FF 0%, #F0F9FF 100%);
+                            border-color: #93C5FD !important;
+                            color: #1E40AF;
+                        @endif
+                     ">
+                    <div class="d-flex align-items-center gap-3">
+                        <div class="rounded-circle d-flex align-items-center justify-content-center shadow-sm flex-shrink-0"
+                             style="width: 44px; height: 44px;
+                                @if($flashType === 'success') background: #10B981; color: white;
+                                @elseif($flashType === 'warning') background: #F59E0B; color: white;
+                                @elseif($flashType === 'danger') background: #EF4444; color: white;
+                                @else background: #3B82F6; color: white;
+                                @endif
+                             ">
+                            @if($flashType === 'success')
+                                <i class="bi bi-check2-circle fs-4"></i>
+                            @elseif($flashType === 'warning')
+                                <i class="bi bi-arrow-counterclockwise fs-4"></i>
+                            @elseif($flashType === 'danger')
+                                <i class="bi bi-exclamation-octagon-fill fs-4"></i>
+                            @else
+                                <i class="bi bi-info-circle-fill fs-4"></i>
+                            @endif
+                        </div>
+                        <div>
+                            <div class="d-flex align-items-center gap-2 flex-wrap">
+                                <h6 class="fw-bold mb-0" style="font-size: 0.92rem; font-weight: 800; letter-spacing: -0.01em;">
+                                    {{ $flashTitle }}
+                                </h6>
+                                @if(session('cr_action_type') === 'approve' || str_contains(strtolower($flashMsg), 'disetujui'))
+                                    <span class="badge bg-success text-white px-2 py-0.5" style="font-size: 0.70rem; font-weight: 700;">
+                                        <i class="bi bi-shield-check me-0.5"></i> Validasi Disetujui
+                                    </span>
+                                @elseif(session('cr_action_type') === 'reject' || str_contains(strtolower($flashMsg), 'ditolak'))
+                                    <span class="badge bg-danger text-white px-2 py-0.5" style="font-size: 0.70rem; font-weight: 700;">
+                                        <i class="bi bi-arrow-return-left me-0.5"></i> Revision Needed
+                                    </span>
+                                @endif
+                            </div>
+                            <p class="mb-0 small" style="font-size: 0.83rem; opacity: 0.95; line-height: 1.45;">
+                                {{ $flashMsg }}
+                            </p>
+                        </div>
                     </div>
-                @endif
-                @if (session('error'))
-                    <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 mb-0" role="alert">
-                        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
-                        <div>{{ session('error') }}</div>
-                        <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+
+                    <div class="d-flex align-items-center gap-2 flex-shrink-0">
+                        <button type="button" class="btn btn-sm btn-link text-muted p-1" onclick="dismissFlashNotification()" title="Tutup Notifikasi" style="font-size: 1.1rem; text-decoration: none;">
+                            <i class="bi bi-x-lg"></i>
+                        </button>
                     </div>
-                @endif
+
+                    {{-- Countdown Timer Line --}}
+                    <div id="flashProgressBar" class="position-absolute bottom-0 start-0"
+                         style="height: 3px !important; width: 100%; top: auto;
+                            @if($flashType === 'success') background: #10B981;
+                            @elseif($flashType === 'warning') background: #F59E0B;
+                            @elseif($flashType === 'danger') background: #EF4444;
+                            @else background: #3B82F6;
+                            @endif
+                            transition: width 6s linear;
+                         "></div>
+                </div>
             </div>
         @endif
 
@@ -2526,6 +2617,107 @@
     if (savedLang) {
         setAppLanguage(savedLang);
     }
+
+    /* ── Flash Notification Dismiss & Auto-timer ── */
+    function dismissFlashNotification() {
+        const notif = document.getElementById('appFlashNotification');
+        if (notif) {
+            notif.style.transition = 'all 0.35s cubic-bezier(0.16, 1, 0.3, 1)';
+            notif.style.opacity = '0';
+            notif.style.transform = 'translateY(-20px) scale(0.97)';
+            setTimeout(() => notif.remove(), 350);
+        }
+    }
+
+    const flashProgress = document.getElementById('flashProgressBar');
+    if (flashProgress) {
+        setTimeout(() => {
+            flashProgress.style.width = '0%';
+        }, 50);
+
+        setTimeout(() => {
+            dismissFlashNotification();
+        }, 6050);
+    }
+
+    /* ── Confetti Celebration Effect for PMH Approval ── */
+    @if(session('cr_action_type') === 'approve' || (session('success') && (str_contains(strtolower(session('success')), 'disetujui') || str_contains(strtolower(session('success')), 'divalidasi'))))
+    (function runCelebrationConfetti() {
+        const canvas = document.createElement('canvas');
+        canvas.id = 'celebrationConfettiCanvas';
+        canvas.style.position = 'fixed';
+        canvas.style.top = '0';
+        canvas.style.left = '0';
+        canvas.style.width = '100vw';
+        canvas.style.height = '100vh';
+        canvas.style.pointerEvents = 'none';
+        canvas.style.zIndex = '999999';
+        document.body.appendChild(canvas);
+
+        const ctx = canvas.getContext('2d');
+        let width = canvas.width = window.innerWidth;
+        let height = canvas.height = window.innerHeight;
+
+        window.addEventListener('resize', () => {
+            width = canvas.width = window.innerWidth;
+            height = canvas.height = window.innerHeight;
+        });
+
+        const colors = ['#10B981', '#059669', '#34D399', '#0098EA', '#F59E0B', '#38BDF8', '#6EE7B7'];
+        const particles = [];
+        const particleCount = 65;
+
+        for (let i = 0; i < particleCount; i++) {
+            particles.push({
+                x: width * (0.2 + Math.random() * 0.6),
+                y: height * 0.15 + (Math.random() * 50),
+                r: 4 + Math.random() * 6,
+                d: Math.random() * particleCount,
+                color: colors[Math.floor(Math.random() * colors.length)],
+                tilt: Math.floor(Math.random() * 10) - 10,
+                tiltAngleIncremental: (Math.random() * 0.07) + 0.05,
+                tiltAngle: 0,
+                vx: (Math.random() * 6) - 3,
+                vy: (Math.random() * -3) - 2.5,
+                opacity: 1
+            });
+        }
+
+        let startTime = Date.now();
+        const duration = 2800;
+
+        function render() {
+            const elapsed = Date.now() - startTime;
+            if (elapsed > duration) {
+                canvas.style.transition = 'opacity 0.4s ease';
+                canvas.style.opacity = '0';
+                setTimeout(() => canvas.remove(), 400);
+                return;
+            }
+
+            ctx.clearRect(0, 0, width, height);
+
+            for (let i = 0; i < particleCount; i++) {
+                const p = particles[i];
+                p.tiltAngle += p.tiltAngleIncremental;
+                p.y += (Math.cos(p.d) + 3 + p.r / 2) / 1.5;
+                p.x += Math.sin(p.d);
+                p.tilt = Math.sin(p.tiltAngle - (i / 3)) * 15;
+
+                ctx.beginPath();
+                ctx.lineWidth = p.r;
+                ctx.strokeStyle = p.color;
+                ctx.moveTo(p.x + p.tilt + (p.r / 2), p.y);
+                ctx.lineTo(p.x + p.tilt, p.y + p.tilt + (p.r / 2));
+                ctx.stroke();
+            }
+
+            requestAnimationFrame(render);
+        }
+
+        requestAnimationFrame(render);
+    })();
+    @endif
 </script>
 
 @stack('scripts')

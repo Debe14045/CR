@@ -328,7 +328,10 @@ class PMHeadController extends Controller
             ]);
 
             return redirect()->route('pmh.persetujuan')
-                ->with('success', 'Change Request "'.$changeRequest->judul.'" berhasil disetujui dan divalidasi oleh PM Head.');
+                ->with('success', 'Change Request "'.$changeRequest->judul.'" berhasil disetujui dan divalidasi oleh PM Head.')
+                ->with('cr_action_type', 'approve')
+                ->with('cr_code', $changeRequest->kode_cr)
+                ->with('cr_title', $changeRequest->judul);
         }
 
         if ($action === 'reject') {
@@ -352,7 +355,10 @@ class PMHeadController extends Controller
             ]);
 
             return redirect()->route('pmh.persetujuan')
-                ->with('warning', 'Change Request "'.$changeRequest->judul.'" berhasil ditolak dan dikembalikan ke PM dengan status Revision Needed.');
+                ->with('warning', 'Change Request "'.$changeRequest->judul.'" berhasil ditolak dan dikembalikan ke PM dengan status Revision Needed.')
+                ->with('cr_action_type', 'reject')
+                ->with('cr_code', $changeRequest->kode_cr)
+                ->with('cr_title', $changeRequest->judul);
         }
 
         return back()->with('error', 'Aksi tidak valid.');

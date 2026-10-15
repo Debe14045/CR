@@ -146,6 +146,9 @@ class PMHeadFeatureTest extends TestCase
         ]);
 
         $response->assertRedirect(route('pmh.persetujuan'));
+        $response->assertSessionHas('success');
+        $response->assertSessionHas('cr_action_type', 'approve');
+        $response->assertSessionHas('cr_code', 'CR-2026-001');
         $cr->refresh();
         $this->assertSame('validated', $cr->status);
         $this->assertSame('Maya Sari', $cr->pmh_approved_by);
@@ -179,6 +182,9 @@ class PMHeadFeatureTest extends TestCase
         ]);
 
         $successResponse->assertRedirect(route('pmh.persetujuan'));
+        $successResponse->assertSessionHas('warning');
+        $successResponse->assertSessionHas('cr_action_type', 'reject');
+        $successResponse->assertSessionHas('cr_code', 'CR-2026-002');
         $cr->refresh();
         $this->assertSame('revision_needed', $cr->status);
         $this->assertSame('Mohon lengkapi solution paper arsitektur sistem.', $cr->reject_reason);

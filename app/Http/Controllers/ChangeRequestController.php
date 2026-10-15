@@ -696,7 +696,10 @@ class ChangeRequestController extends Controller
                 ]);
 
                 return redirect()->route('change-requests.index')
-                    ->with('warning', 'CR berhasil ditolak dan dikembalikan ke PM dengan status Revision Needed.');
+                    ->with('warning', 'CR berhasil ditolak dan dikembalikan ke PM dengan status Revision Needed.')
+                    ->with('cr_action_type', 'reject')
+                    ->with('cr_code', $changeRequest->kode_cr)
+                    ->with('cr_title', $changeRequest->judul);
             }
 
             if ($action === 'approve') {
@@ -746,7 +749,10 @@ class ChangeRequestController extends Controller
                 ]);
 
                 return redirect()->route('change-requests.index')
-                    ->with('success', 'CR berhasil divalidasi oleh PM Head.');
+                    ->with('success', 'CR berhasil divalidasi oleh PM Head.')
+                    ->with('cr_action_type', 'approve')
+                    ->with('cr_code', $changeRequest->kode_cr)
+                    ->with('cr_title', $changeRequest->judul);
             }
 
             // PM Head Go-Live Validation
