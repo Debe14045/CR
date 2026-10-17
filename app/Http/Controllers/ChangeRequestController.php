@@ -658,7 +658,7 @@ class ChangeRequestController extends Controller
         $role = $user->role;
 
         // PM HEAD VALIDATION ACTION (APPROVE / REJECT)
-        if ($role === 'pmh' && $request->has('pmh_action')) {
+        if (in_array($role, ['pmh', 'admin'], true) && $request->has('pmh_action')) {
             $action = $request->input('pmh_action'); // 'approve' or 'reject'
 
             // Aturan Utama: Verifikasi oleh PM harus diselesaikan terlebih dahulu sebelum sistem mengizinkan Validasi oleh PM Head (PMH)
@@ -814,7 +814,7 @@ class ChangeRequestController extends Controller
             }
         }
 
-        if ($role === 'pmh') {
+        if (in_array($role, ['pmh', 'admin'], true)) {
             if (($validated['status'] ?? null) === 'disetujui' || ($validated['status'] ?? null) === 'validated') {
                 $validated['status'] = 'disetujui';
                 $validated['pmh_approved_at'] = now();
@@ -1005,7 +1005,7 @@ class ChangeRequestController extends Controller
 
     public function approveQuotationTp(ChangeRequest $changeRequest)
     {
-        abort_unless(in_array(auth()->user()?->role, ['pm', 'pmh'], true), 403);
+        abort_unless(in_array(auth()->user()?->role, ['pm', 'pmh', 'admin'], true), 403);
 
         if (! $changeRequest->canBeQuoted() || $changeRequest->harga_penawaran === null) {
             return back()->with('error', 'Penawaran harga belum tersedia atau CR belum disetujui oleh PM Head.');

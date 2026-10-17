@@ -105,7 +105,7 @@ Route::middleware('auth')->group(function () {
             Route::post('/change-requests/{changeRequest}/quotation/approve', 'approveQuotationClient')->name('change-requests.quotation.client');
         });
 
-        Route::middleware('role:pm,pmh')->group(function () {
+        Route::middleware('role:pm,pmh,admin')->group(function () {
             Route::post('/change-requests/{changeRequest}/quotation/approve-tp', 'approveQuotationTp')->name('change-requests.quotation.tp');
         });
 

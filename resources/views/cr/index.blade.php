@@ -35,7 +35,7 @@
     ══════════════════════════════════════════════════════════ --}}
     @php
         $userRole = auth()->user()?->role ?? 'client';
-        $isPmDashboard = in_array($userRole, ['pm', 'pmh']) || request('role') === 'pm' || request('view_as') === 'pm';
+        $isPmDashboard = in_array($userRole, ['pm', 'pmh', 'admin']) || request('role') === 'pm' || request('view_as') === 'pm';
     @endphp
 
     {{-- Header: DASHBOARD --}}

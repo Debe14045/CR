@@ -1658,6 +1658,12 @@
                             <i class="bi bi-list-check nav-icon"></i>
                             <span data-i18n="master_status">Master Status</span>
                         </a>
+                        <a href="{{ route('profile') }}"
+                           class="sidebar-link {{ request()->routeIs('profile') ? 'active' : '' }}"
+                           style="border-radius: 8px; padding: 0.45rem 0.75rem; font-size: 0.84rem;">
+                            <i class="bi bi-person-gear nav-icon"></i>
+                            <span>Profil &amp; Akun</span>
+                        </a>
                     </div>
                 @else
                     <a href="{{ route('profile') }}"
