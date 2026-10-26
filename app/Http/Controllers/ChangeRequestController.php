@@ -219,31 +219,46 @@ class ChangeRequestController extends Controller
         $notifDevCount = ChangeRequest::whereIn('status', ['development', 'dikerjakan', 'uat', 'sit', 'training'])->count();
         $notifGoLiveCount = ChangeRequest::whereIn('status', ['golive', 'selesai', 'invoicing', 'awaiting_golive_validation'])->count();
 
-        // Monthly trend dataset for PM Dashboard (Diagram Batang)
-        $defaultMonthlyTrend = [
-            ['month' => 'Jan', 'masuk' => 3, 'keluar' => 0, 'batal' => 0],
-            ['month' => 'Feb', 'masuk' => 4, 'keluar' => 1, 'batal' => 0],
-            ['month' => 'Mar', 'masuk' => 1, 'keluar' => 1, 'batal' => 1],
-            ['month' => 'Apr', 'masuk' => 5, 'keluar' => 2, 'batal' => 0],
-            ['month' => 'Mei', 'masuk' => 3, 'keluar' => 1, 'batal' => 1],
-            ['month' => 'Jun', 'masuk' => 4, 'keluar' => 2, 'batal' => 0],
+        // Monthly trend dataset for PM & PM Head Dashboard (Diagram Batang 6 Bulan s.d. Bulan Saat Ini)
+        $indonesianMonths = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun',
+            7 => 'Jul', 8 => 'Agu', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+        ];
+        $indonesianFullMonths = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+            7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
         ];
 
+        $now = Carbon::now();
+        $currentMonth = $now->month;
+        $currentYear = $now->year;
         $pmMonthlyTrend = [];
-        $months = [
-            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun'
-        ];
-        foreach ($months as $mNum => $mLabel) {
-            $masuk = ChangeRequest::whereMonth('created_at', $mNum)->count();
-            $keluar = ChangeRequest::whereMonth('created_at', $mNum)->whereIn('status', ['golive', 'selesai', 'invoicing'])->count();
-            $batal = ChangeRequest::whereMonth('created_at', $mNum)->whereIn('status', ['ditolak', 'cancelled'])->count();
+
+        for ($i = 5; $i >= 0; $i--) {
+            $dt = $now->copy()->subMonths($i);
+            $mNum = $dt->month;
+            $yNum = $dt->year;
+            $mLabel = $indonesianMonths[$mNum] ?? $dt->format('M');
+            $mFull = $indonesianFullMonths[$mNum] ?? $dt->format('F');
+            $isCurrent = ($mNum === $currentMonth && $yNum === $currentYear);
+
+            $masuk = ChangeRequest::whereYear('created_at', $yNum)->whereMonth('created_at', $mNum)->count();
+            $keluar = ChangeRequest::whereYear('created_at', $yNum)->whereMonth('created_at', $mNum)->whereIn('status', ['golive', 'selesai', 'invoicing'])->count();
+            $batal = ChangeRequest::whereYear('created_at', $yNum)->whereMonth('created_at', $mNum)->whereIn('status', ['ditolak', 'cancelled'])->count();
+
             $pmMonthlyTrend[] = [
-                'month' => $mLabel,
-                'masuk' => $masuk,
-                'keluar' => $keluar,
-                'batal' => $batal,
+                'month'      => $mLabel,
+                'full_month' => $mFull,
+                'year'       => $yNum,
+                'is_current' => $isCurrent,
+                'masuk'      => $masuk,
+                'keluar'     => $keluar,
+                'batal'      => $batal,
             ];
         }
+
+        $trendPeriodLabel = ($pmMonthlyTrend[0]['full_month'] ?? '') . ' - ' . ($pmMonthlyTrend[5]['full_month'] ?? '') . ' ' . $currentYear;
+        $currentMonthLabel = ($indonesianFullMonths[$currentMonth] ?? $now->format('F')) . ' ' . $currentYear;
 
         return view('cr.index', [
             'changeRequests'       => $changeRequests,
@@ -270,6 +285,8 @@ class ChangeRequestController extends Controller
             'notifDevCount'        => $notifDevCount,
             'notifGoLiveCount'     => $notifGoLiveCount,
             'pmMonthlyTrend'       => $pmMonthlyTrend,
+            'trendPeriodLabel'     => $trendPeriodLabel,
+            'currentMonthLabel'    => $currentMonthLabel,
         ]);
     }
 

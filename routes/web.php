@@ -137,6 +137,7 @@ Route::middleware('auth')->group(function () {
 
     // Modul PM Head (Sesuai Desain Figma)
     Route::middleware('role:pmh,admin')->prefix('pm-head')->name('pmh.')->group(function () {
+        Route::get('/dashboard', [\App\Http\Controllers\PMHead\PMHeadController::class, 'dashboard'])->name('dashboard');
         Route::get('/change-requests', [\App\Http\Controllers\PMHead\PMHeadController::class, 'semuaCr'])->name('change-requests');
         Route::get('/persetujuan', [\App\Http\Controllers\PMHead\PMHeadController::class, 'persetujuan'])->name('persetujuan');
         Route::get('/development', [\App\Http\Controllers\PMHead\PMHeadController::class, 'development'])->name('development');

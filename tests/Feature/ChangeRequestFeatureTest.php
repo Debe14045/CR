@@ -582,6 +582,7 @@ class ChangeRequestFeatureTest extends TestCase
         $res->assertSee('Development');
         $res->assertSee('GO LIVE');
         $res->assertSee('Tren CR Bulanan (Diagram Batang)');
+        $res->assertSee('Aktif:');
         $res->assertSee('NOTIFIKASI');
         $res->assertSee('Draft CR');
     }

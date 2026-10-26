@@ -216,12 +216,20 @@
         {{-- Card Left: PM Bar Chart or Client STATUS (Donut + Progress) --}}
         <div class="col-lg-7 col-12">
             @if ($isPmDashboard)
-                {{-- PM DASHBOARD: Tren CR Bulanan (Diagram Batang) --}}
+                {{-- PM & PM HEAD DASHBOARD: Tren CR Bulanan (Diagram Batang) --}}
                 <div class="card p-4 border-0 h-100 shadow-sm" style="border-radius: 20px; background: #EEF1F6; border: 1px solid #E2E8F0 !important;">
                     <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2">
                         <div>
-                            <h5 class="fw-bold mb-1" style="color: #0F172A; font-size: 0.98rem; font-weight: 800;">Tren CR Bulanan (Diagram Batang)</h5>
-                            <p class="text-muted small mb-0" style="font-size: 0.78rem; color: #64748B;">Jumlah CR Masuk, Keluar, dan Dibatalkan (Januari - Juni)</p>
+                            <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
+                                <h5 class="fw-bold mb-0" style="color: #0F172A; font-size: 0.98rem; font-weight: 800;">Tren CR Bulanan (Diagram Batang)</h5>
+                                <span class="badge text-white d-inline-flex align-items-center gap-1.5" style="background: #0063D7; font-size: 0.72rem; padding: 4px 10px; border-radius: 9999px; font-weight: 700; box-shadow: 0 2px 6px rgba(0,99,215,0.25);">
+                                    <span style="width: 6px; height: 6px; border-radius: 50%; background: #4ADE80; display: inline-block;"></span>
+                                    <span>Aktif: {{ $currentMonthLabel ?? 'Bulan Ini' }}</span>
+                                </span>
+                            </div>
+                            <p class="text-muted small mb-0" style="font-size: 0.78rem; color: #64748B;">
+                                Jumlah CR Masuk, Keluar, dan Dibatalkan ({{ $trendPeriodLabel ?? '6 Bulan Terakhir' }})
+                            </p>
                         </div>
                         <div class="d-flex align-items-center gap-3 ms-auto" style="font-size: 0.75rem; font-weight: 600;">
                             <div class="d-flex align-items-center gap-1.5">
@@ -239,54 +247,65 @@
                         </div>
                     </div>
 
+                    @php
+                        $trendData = $pmMonthlyTrend ?? [];
+                        $allVals = [5];
+                        foreach ($trendData as $td) {
+                            $allVals[] = (int)($td['masuk'] ?? 0);
+                            $allVals[] = (int)($td['keluar'] ?? 0);
+                            $allVals[] = (int)($td['batal'] ?? 0);
+                        }
+                        $rawMax = max($allVals);
+                        $maxVal = max(5, (int)(ceil($rawMax / 5) * 5));
+                        $xCenters = [96, 181, 266, 351, 436, 511];
+
+                        $gridSteps = [
+                            ['val' => $maxVal, 'y' => 35],
+                            ['val' => (int)round($maxVal * 0.75), 'y' => 70],
+                            ['val' => (int)round($maxVal * 0.5), 'y' => 105],
+                            ['val' => (int)round($maxVal * 0.25), 'y' => 140],
+                            ['val' => 0, 'y' => 175],
+                        ];
+                    @endphp
+
                     <div class="w-100 position-relative pt-2">
                         <svg viewBox="0 0 540 230" class="w-100" style="overflow: visible; font-family: 'Plus Jakarta Sans', sans-serif;">
-                            <line x1="45" y1="35" x2="525" y2="35" stroke="#DCE2EC" stroke-dasharray="3, 3" stroke-width="1" />
-                            <text x="34" y="39" font-size="11" fill="#94A3B8" font-weight="600" text-anchor="end">5</text>
-
-                            <line x1="45" y1="65" x2="525" y2="65" stroke="#DCE2EC" stroke-dasharray="3, 3" stroke-width="1" />
-                            <text x="34" y="69" font-size="11" fill="#94A3B8" font-weight="600" text-anchor="end">4</text>
-
-                            <line x1="45" y1="95" x2="525" y2="95" stroke="#DCE2EC" stroke-dasharray="3, 3" stroke-width="1" />
-                            <text x="34" y="99" font-size="11" fill="#94A3B8" font-weight="600" text-anchor="end">3</text>
-
-                            <line x1="45" y1="135" x2="525" y2="135" stroke="#DCE2EC" stroke-dasharray="3, 3" stroke-width="1" />
-                            <text x="34" y="139" font-size="11" fill="#94A3B8" font-weight="600" text-anchor="end">1</text>
-
-                            <line x1="45" y1="175" x2="525" y2="175" stroke="#CBD5E1" stroke-width="1.2" />
-                            <text x="34" y="179" font-size="11" fill="#94A3B8" font-weight="600" text-anchor="end">0</text>
-
-                            @php
-                                $trendData = $pmMonthlyTrend ?? [
-                                    ['month' => 'Jan', 'masuk' => 3, 'keluar' => 0, 'batal' => 0],
-                                    ['month' => 'Feb', 'masuk' => 4, 'keluar' => 1, 'batal' => 0],
-                                    ['month' => 'Mar', 'masuk' => 1, 'keluar' => 1, 'batal' => 1],
-                                    ['month' => 'Apr', 'masuk' => 5, 'keluar' => 2, 'batal' => 0],
-                                    ['month' => 'Mei', 'masuk' => 3, 'keluar' => 1, 'batal' => 1],
-                                    ['month' => 'Jun', 'masuk' => 4, 'keluar' => 2, 'batal' => 0],
-                                ];
-                                $xCenters = [96, 181, 266, 351, 436, 511];
-                            @endphp
+                            @foreach($gridSteps as $gs)
+                                @if($gs['val'] == 0)
+                                    <line x1="45" y1="{{ $gs['y'] }}" x2="525" y2="{{ $gs['y'] }}" stroke="#CBD5E1" stroke-width="1.2" />
+                                @else
+                                    <line x1="45" y1="{{ $gs['y'] }}" x2="525" y2="{{ $gs['y'] }}" stroke="#DCE2EC" stroke-dasharray="3, 3" stroke-width="1" />
+                                @endif
+                                <text x="34" y="{{ $gs['y'] + 4 }}" font-size="11" fill="#94A3B8" font-weight="600" text-anchor="end">{{ $gs['val'] }}</text>
+                            @endforeach
 
                             @foreach($trendData as $idx => $m)
                                 @php
                                     $cx = $xCenters[$idx] ?? (96 + $idx * 85);
-                                    $vMasuk = $m['masuk'];
-                                    $vKeluar = $m['keluar'];
-                                    $vBatal = $m['batal'];
+                                    $vMasuk = (int)($m['masuk'] ?? 0);
+                                    $vKeluar = (int)($m['keluar'] ?? 0);
+                                    $vBatal = (int)($m['batal'] ?? 0);
+                                    $isCurrent = !empty($m['is_current']);
 
-                                    $hMasuk = $vMasuk > 0 ? min(140, $vMasuk * 28) : 2;
+                                    $hMasuk = $vMasuk > 0 ? max(4, min(140, ($vMasuk / $maxVal) * 140)) : 2;
                                     $yMasuk = $vMasuk > 0 ? (175 - $hMasuk) : 173;
-                                    $tYMasuk = $vMasuk > 0 ? ($yMasuk - 7) : 169;
+                                    $tYMasuk = $vMasuk > 0 ? ($yMasuk - 6) : 168;
 
-                                    $hKeluar = $vKeluar > 0 ? min(140, $vKeluar * 28) : 2;
+                                    $hKeluar = $vKeluar > 0 ? max(4, min(140, ($vKeluar / $maxVal) * 140)) : 2;
                                     $yKeluar = $vKeluar > 0 ? (175 - $hKeluar) : 173;
-                                    $tYKeluar = $vKeluar > 0 ? ($yKeluar - 7) : 169;
+                                    $tYKeluar = $vKeluar > 0 ? ($yKeluar - 6) : 168;
 
-                                    $hBatal = $vBatal > 0 ? min(140, $vBatal * 28) : 2;
+                                    $hBatal = $vBatal > 0 ? max(4, min(140, ($vBatal / $maxVal) * 140)) : 2;
                                     $yBatal = $vBatal > 0 ? (175 - $hBatal) : 173;
-                                    $tYBatal = $vBatal > 0 ? ($yBatal - 7) : 169;
+                                    $tYBatal = $vBatal > 0 ? ($yBatal - 6) : 168;
                                 @endphp
+
+                                @if ($isCurrent)
+                                    {{-- Highlight Column for Current Active Month --}}
+                                    <rect x="{{ $cx - 30 }}" y="22" width="60" height="190" rx="8" fill="#0063D7" fill-opacity="0.08" stroke="#0063D7" stroke-width="1.2" stroke-dasharray="3, 2" />
+                                    <rect x="{{ $cx - 18 }}" y="7" width="36" height="15" rx="7.5" fill="#0063D7" />
+                                    <text x="{{ $cx }}" y="17.5" font-size="8" font-weight="700" fill="#FFFFFF" text-anchor="middle">Aktif</text>
+                                @endif
 
                                 <g class="chart-month-group" style="cursor: pointer;">
                                     <text x="{{ $cx - 16 }}" y="{{ $tYMasuk }}" font-size="10.5" font-weight="700" fill="#3B7CE7" text-anchor="middle">{{ $vMasuk }}</text>
@@ -304,7 +323,12 @@
                                         <title>{{ $m['month'] }}: {{ $vBatal }} CR Dibatalkan</title>
                                     </rect>
 
-                                    <text x="{{ $cx }}" y="196" font-size="11.5" font-weight="600" fill="#64748B" text-anchor="middle">{{ $m['month'] }}</text>
+                                    @if ($isCurrent)
+                                        <text x="{{ $cx }}" y="196" font-size="12" font-weight="800" fill="#0063D7" text-anchor="middle">{{ $m['month'] }}</text>
+                                        <circle cx="{{ $cx }}" cy="204" r="2.5" fill="#0063D7" />
+                                    @else
+                                        <text x="{{ $cx }}" y="196" font-size="11.5" font-weight="600" fill="#64748B" text-anchor="middle">{{ $m['month'] }}</text>
+                                    @endif
                                 </g>
                             @endforeach
                         </svg>

@@ -34,10 +34,54 @@ class PMHeadController extends Controller
             ->take(6)
             ->get();
 
+        // Monthly trend dataset for PM Head Dashboard (Diagram Batang 6 Bulan s.d. Bulan Saat Ini)
+        $indonesianMonths = [
+            1 => 'Jan', 2 => 'Feb', 3 => 'Mar', 4 => 'Apr', 5 => 'Mei', 6 => 'Jun',
+            7 => 'Jul', 8 => 'Agu', 9 => 'Sep', 10 => 'Okt', 11 => 'Nov', 12 => 'Des'
+        ];
+        $indonesianFullMonths = [
+            1 => 'Januari', 2 => 'Februari', 3 => 'Maret', 4 => 'April', 5 => 'Mei', 6 => 'Juni',
+            7 => 'Juli', 8 => 'Agustus', 9 => 'September', 10 => 'Oktober', 11 => 'November', 12 => 'Desember'
+        ];
+
+        $now = Carbon::now();
+        $currentMonth = $now->month;
+        $currentYear = $now->year;
+        $pmMonthlyTrend = [];
+
+        for ($i = 5; $i >= 0; $i--) {
+            $dt = $now->copy()->subMonths($i);
+            $mNum = $dt->month;
+            $yNum = $dt->year;
+            $mLabel = $indonesianMonths[$mNum] ?? $dt->format('M');
+            $mFull = $indonesianFullMonths[$mNum] ?? $dt->format('F');
+            $isCurrent = ($mNum === $currentMonth && $yNum === $currentYear);
+
+            $masuk = ChangeRequest::whereYear('created_at', $yNum)->whereMonth('created_at', $mNum)->count();
+            $keluar = ChangeRequest::whereYear('created_at', $yNum)->whereMonth('created_at', $mNum)->whereIn('status', ['golive', 'selesai', 'invoicing'])->count();
+            $batal = ChangeRequest::whereYear('created_at', $yNum)->whereMonth('created_at', $mNum)->whereIn('status', ['ditolak', 'cancelled'])->count();
+
+            $pmMonthlyTrend[] = [
+                'month'      => $mLabel,
+                'full_month' => $mFull,
+                'year'       => $yNum,
+                'is_current' => $isCurrent,
+                'masuk'      => $masuk,
+                'keluar'     => $keluar,
+                'batal'      => $batal,
+            ];
+        }
+
+        $trendPeriodLabel = ($pmMonthlyTrend[0]['full_month'] ?? '') . ' - ' . ($pmMonthlyTrend[5]['full_month'] ?? '') . ' ' . $currentYear;
+        $currentMonthLabel = ($indonesianFullMonths[$currentMonth] ?? $now->format('F')) . ' ' . $currentYear;
+
         return view('pmhead.dashboard', [
-            'roleMetrics' => $roleMetrics,
-            'latestReviews' => $latestReviews,
-            'currentRole' => auth()->user()->role ?? 'pmh',
+            'roleMetrics'       => $roleMetrics,
+            'latestReviews'     => $latestReviews,
+            'currentRole'       => auth()->user()->role ?? 'pmh',
+            'pmMonthlyTrend'    => $pmMonthlyTrend,
+            'trendPeriodLabel'  => $trendPeriodLabel,
+            'currentMonthLabel' => $currentMonthLabel,
         ]);
     }
 

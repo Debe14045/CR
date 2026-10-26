@@ -216,5 +216,25 @@ class PMHeadFeatureTest extends TestCase
         $response->assertSee('PREFERENSI');
         $response->assertSee('PROJECT YANG DITANGANI');
     }
+
+    public function test_pmh_dashboard_renders_tren_cr_bulanan_active_current_month(): void
+    {
+        $pmh = $this->createPmhUser();
+
+        // Access via pmh.dashboard
+        $response = $this->actingAs($pmh)->get(route('pmh.dashboard'));
+        $response->assertOk();
+        $response->assertSee('Tren CR Bulanan (Diagram Batang)');
+        $response->assertSee('CR Masuk');
+        $response->assertSee('Keluar');
+        $response->assertSee('Dibatalkan');
+        $response->assertSee('Aktif');
+
+        // Access via change-requests.index
+        $responseCr = $this->actingAs($pmh)->get(route('change-requests.index'));
+        $responseCr->assertOk();
+        $responseCr->assertSee('Tren CR Bulanan (Diagram Batang)');
+        $responseCr->assertSee('Aktif');
+    }
 }
 
