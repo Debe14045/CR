@@ -98,6 +98,81 @@
     $isReadyInvoicing = $changeRequest->isReadyForInvoicing();
 
     $fmtIdr = fn($v) => 'Rp ' . number_format((float)$v, 0, ',', '.');
+
+    // Inisialisasi Termin secara dinamis selaras dengan Total Penawaran Final
+    $terminData = [];
+    if ($invoices->count() > 0) {
+        $colors = [
+            ['bg' => '#DBEAFE', 'text' => '#2563EB'],
+            ['bg' => '#EDE9FE', 'text' => '#7C3AED'],
+            ['bg' => '#D1FAE5', 'text' => '#059669'],
+            ['bg' => '#FEF3C7', 'text' => '#D97706'],
+            ['bg' => '#FCE7F3', 'text' => '#DB2777'],
+        ];
+        foreach ($invoices as $idx => $inv) {
+            $color = $colors[$idx % count($colors)];
+            $terminData[] = [
+                'name' => $inv->term_name ?: ('Termin Of Payment ' . ($idx + 1)),
+                'badge' => $inv->percentage ? ($inv->percentage . '%') : ('Tahap ' . ($idx + 1)),
+                'badgeColor' => $color['bg'],
+                'badgeTextColor' => $color['text'],
+                'sublabel' => 'Termin Ke-' . ($idx + 1),
+                'deliverable' => $inv->job_description ?: ('Penyelesaian deliverable tahap ' . ($idx + 1)),
+                'subtext' => $inv->invoice_number ? ('No. Invoice: ' . $inv->invoice_number) : 'Disertai Berita Acara & Kelengkapan Dokumen',
+                'nominal' => (int) $inv->nominal,
+            ];
+        }
+    } else {
+        // Default: TOP kosong hingga diinput oleh Presales
+        $terminData = [];
+    }
+    $initialTerminSubtotal = count($terminData) > 0 ? array_sum(array_column($terminData, 'nominal')) : 0;
+    if ($totalPenawaranFinal <= 0 && $initialTerminSubtotal > 0) {
+        $totalPenawaranFinal = $initialTerminSubtotal;
+    }
+
+    // Technical Execution (Development) Stepper Variables
+    $pmStatusStep = 1;
+    $pmStatusPct = '17%';
+    $pmStatusLabel = 'Analisa';
+    $pmStatusLineWidth = '0%';
+
+    if ($statusKey === 'diajukan' || in_array($statusKey, ['awaiting_pm', 'dianalisis', 'analisa', 'draft', 'revision_needed'])) {
+        $pmStatusStep = 1;
+        $pmStatusPct = '17%';
+        $pmStatusLabel = 'Analisa';
+        $pmStatusLineWidth = '0%';
+    } elseif (in_array($statusKey, ['awaiting_pmh', 'validated', 'disetujui', 'development', 'dikerjakan'])) {
+        $pmStatusStep = 2;
+        $pmStatusPct = '33%';
+        $pmStatusLabel = 'Develop';
+        $pmStatusLineWidth = '20%';
+    } elseif ($statusKey === 'sit') {
+        $pmStatusStep = 3;
+        $pmStatusPct = '50%';
+        $pmStatusLabel = 'SIT';
+        $pmStatusLineWidth = '40%';
+    } elseif ($statusKey === 'uat') {
+        $pmStatusStep = 4;
+        $pmStatusPct = '67%';
+        $pmStatusLabel = 'UAT';
+        $pmStatusLineWidth = '60%';
+    } elseif ($statusKey === 'training') {
+        $pmStatusStep = 5;
+        $pmStatusPct = '83%';
+        $pmStatusLabel = 'Training';
+        $pmStatusLineWidth = '80%';
+    } elseif (in_array($statusKey, ['awaiting_golive_validation', 'golive', 'selesai', 'invoicing'])) {
+        $pmStatusStep = 6;
+        $pmStatusPct = '100%';
+        $pmStatusLabel = 'Go Live';
+        $pmStatusLineWidth = '100%';
+    } elseif ($statusKey === 'ditolak') {
+        $pmStatusStep = 1;
+        $pmStatusPct = '0%';
+        $pmStatusLabel = 'Ditolak';
+        $pmStatusLineWidth = '0%';
+    }
 @endphp
 
 <style>
@@ -308,6 +383,70 @@
                         @endif
                     </div>
                 @endfor
+            </div>
+        </div>
+
+        {{-- ================= PROGRESS PENGERJAAN TEKNIS (STATUS DEVELOPMENT) ================= --}}
+        <div class="mb-4 p-4" style="background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+            <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="fw-bold text-uppercase" style="font-size: 0.75rem; letter-spacing: 0.05em; color: #334155; font-weight: 800;">
+                        PROGRESS PENGERJAAN TEKNIS (STATUS DEVELOPMENT)
+                    </span>
+                    <span class="badge px-3 py-1 fw-bold" style="background: #E0F2FE; color: #0284C7; border-radius: 9999px; font-size: 0.72rem;">
+                        {{ $pmStatusPct }} — {{ $pmStatusLabel }}
+                    </span>
+                </div>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <span class="text-muted small" style="font-size: 0.78rem;">
+                        Status Saat Ini: <strong style="color: #0F172A;">{{ $changeRequest->statusLabel() }}</strong>
+                    </span>
+                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1.5 px-3 py-1.5 shadow-sm"
+                            style="background: #0284C7; border-radius: 8px; font-size: 0.78rem; border: none;"
+                            data-bs-toggle="modal" data-bs-target="#modalUpdateStatusDev">
+                        <i class="bi bi-pencil-square"></i> Update Status
+                    </button>
+                </div>
+            </div>
+
+            {{-- Stepper 6 Steps (Analisa, Develop, SIT, UAT, Training, Go Live) --}}
+            <div style="position: relative; margin: 28px 10px 14px;">
+                {{-- Constrained Track Container between circle 1 and circle 6 centers --}}
+                <div style="position: absolute; top: 15px; left: 30px; right: 30px; height: 3px; z-index: 1;">
+                    <div style="position: absolute; top: 0; left: 0; right: 0; height: 100%; background: #E2E8F0;"></div>
+                    <div style="position: absolute; top: 0; left: 0; width: {{ $pmStatusLineWidth }}; height: 100%; background: #0098EA; transition: width 0.3s ease;"></div>
+                </div>
+
+                <div style="display: flex; justify-content: space-between; position: relative; z-index: 3;">
+                    @php
+                        $techSteps = [
+                            1 => 'Analisa',
+                            2 => 'Develop',
+                            3 => 'SIT',
+                            4 => 'UAT',
+                            5 => 'Training',
+                            6 => 'Go Live',
+                        ];
+                    @endphp
+                    @foreach($techSteps as $stNum => $stTitle)
+                        @php
+                            $isDone = $pmStatusStep > $stNum;
+                            $isAct = $pmStatusStep === $stNum;
+                        @endphp
+                        <div style="display: flex; flex-direction: column; align-items: center; width: 60px;">
+                            <div style="width: 30px; height: 30px; border-radius: 50%; {{ $isDone ? 'background: #10B981; color: #FFFFFF;' : ($isAct ? 'background: #0098EA; color: #FFFFFF; box-shadow: 0 0 0 4px #E0F2FE;' : 'background: #FFFFFF; border: 2px solid #CBD5E1; color: #94A3B8;') }} font-weight: 700; font-size: 0.80rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                                @if($isDone)
+                                    <i class="bi bi-check-lg" style="font-size: 0.85rem;"></i>
+                                @else
+                                    {{ $stNum }}
+                                @endif
+                            </div>
+                            <span style="margin-top: 8px; font-size: 0.72rem; font-weight: {{ ($isDone || $isAct) ? '700' : '500' }}; color: {{ $isAct ? '#0098EA' : ($isDone ? '#10B981' : '#94A3B8') }}; text-align: center;">
+                                {{ $stTitle }}
+                            </span>
+                        </div>
+                    @endforeach
+                </div>
             </div>
         </div>
 
@@ -538,10 +677,11 @@
 
         <form method="POST" action="{{ route('change-requests.quotation.save', $changeRequest) }}" enctype="multipart/form-data" id="presalesQuotationForm">
             @csrf
-            <input type="hidden" name="harga_penawaran" id="formHargaPenawaran" value="{{ $changeRequest->harga_penawaran ?: 39500000 }}">
-            <input type="hidden" name="biaya_pengerjaan" id="formBiayaPengerjaan" value="{{ $changeRequest->biaya_pengerjaan ?: 35585586 }}">
+            <input type="hidden" name="harga_penawaran" id="formHargaPenawaran" value="{{ $changeRequest->harga_penawaran ?: ($initialTerminSubtotal ?: 0) }}">
+            <input type="hidden" name="biaya_pengerjaan" id="formBiayaPengerjaan" value="{{ $changeRequest->biaya_pengerjaan ?: ($initialTerminSubtotal > 0 ? round($initialTerminSubtotal / 1.11) : 0) }}">
             <input type="hidden" name="estimasi_waktu" id="formEstimasiWaktu" value="{{ $changeRequest->estimasi_waktu ?: '30 Hari' }}">
             <input type="hidden" name="estimasi_resource" id="formEstimasiResource" value="{{ $changeRequest->estimasi_resource ?: 'Frontend & Backend Developer' }}">
+            <input type="hidden" name="termin_data" id="formTerminData" value="{{ json_encode($terminData) }}">
 
         {{-- Card Top Row: Header Badge & Quotation Dropdown --}}
         <div class="d-flex align-items-center justify-content-between gap-3 mb-4 flex-wrap">
@@ -583,21 +723,21 @@
                 <div class="col-md-4 col-12">
                     <label class="field-label-sm">Nomor Quotation</label>
                     <div class="position-relative">
-                        <input type="text" class="form-control form-control-disabled-gray" value="QT-2024-112" readonly style="padding-right: 2.3rem;">
+                        <input type="text" class="form-control form-control-disabled-gray" value="{{ $nomorQuotation }}" readonly style="padding-right: 2.3rem;">
                         <i class="bi bi-lock-fill position-absolute" style="right: 12px; top: 50%; transform: translateY(-50%); color: #64748B; font-size: 0.95rem;"></i>
                     </div>
                 </div>
                 <div class="col-md-4 col-12">
                     <label class="field-label-sm">Tanggal Dibuat</label>
                     <div class="position-relative">
-                        <input type="text" class="form-control form-control-white" value="20 Ags 2026" style="padding-right: 2.3rem;">
+                        <input type="text" class="form-control form-control-disabled-gray" value="{{ $tglDibuat }}" readonly style="padding-right: 2.3rem;">
                         <i class="bi bi-calendar3 position-absolute" style="right: 12px; top: 50%; transform: translateY(-50%); color: #64748B; font-size: 0.95rem;"></i>
                     </div>
                 </div>
                 <div class="col-md-4 col-12">
-                    <label class="field-label-sm">Berlaku Sampai</label>
+                    <label class="field-label-sm">Berlaku Sampai (30 hari)</label>
                     <div class="position-relative">
-                        <input type="text" class="form-control form-control-white" value="20 Sep 2026" style="padding-right: 2.3rem;">
+                        <input type="text" class="form-control form-control-disabled-gray" value="{{ $berlakuSampai }}" readonly style="padding-right: 2.3rem;">
                         <i class="bi bi-calendar3 position-absolute" style="right: 12px; top: 50%; transform: translateY(-50%); color: #64748B; font-size: 0.95rem;"></i>
                     </div>
                 </div>
@@ -644,29 +784,63 @@
             </div>
         </div>
 
-        {{-- 3. MANDAYS --}}
+        {{-- 3. MANDAYS (TERKUNCI / HASIL VERIFIKASI PM) --}}
         <div class="mb-4">
-            <div class="d-flex align-items-center gap-2 mb-3">
-                <span class="section-num-badge">3</span>
-                <span class="section-title-label">MANDAYS</span>
+            <div class="d-flex align-items-center justify-content-between mb-3 flex-wrap gap-2">
+                <div class="d-flex align-items-center gap-2">
+                    <span class="section-num-badge">3</span>
+                    <span class="section-title-label">MANDAYS</span>
+                    <span class="badge border ms-1 d-inline-flex align-items-center gap-1"
+                          style="background: #F1F5F9; color: #475569; font-size: 0.70rem; font-weight: 700; padding: 0.28rem 0.65rem; border-radius: 6px; border-color: #CBD5E1 !important;">
+                        <i class="bi bi-lock-fill text-primary" style="font-size: 0.72rem;"></i>
+                        <span>Diverifikasi oleh PM (Terkunci)</span>
+                    </span>
+                </div>
+                <span class="text-muted small" style="font-size: 0.76rem;">
+                    Estimasi Man-Days ditentukan langsung oleh Project Manager
+                </span>
             </div>
             <div class="row g-3">
                 <div class="col-md-3 col-6">
-                    <label class="field-label-sm">Analisis (hari)<span class="text-danger">*</span></label>
-                    <input type="number" id="inputMdAnalisis" class="form-control form-control-disabled-gray" value="0" oninput="recalcMandays()">
+                    <label class="field-label-sm d-flex align-items-center justify-content-between">
+                        <span>Analisis (hari)</span>
+                        <i class="bi bi-lock text-muted" style="font-size: 0.72rem;" title="Terkunci"></i>
+                    </label>
+                    <input type="number" id="inputMdAnalisis" class="form-control form-control-disabled-gray"
+                           value="{{ (int)($changeRequest->mindesk_analisis ?? 0) }}" disabled readonly
+                           style="cursor: not-allowed; background-color: #F1F5F9 !important; border: 1.5px solid #CBD5E1 !important; color: #334155 !important; font-weight: 600;">
                 </div>
                 <div class="col-md-3 col-6">
-                    <label class="field-label-sm">Development (hari)<span class="text-danger">*</span></label>
-                    <input type="number" id="inputMdDev" class="form-control form-control-disabled-gray" value="0" oninput="recalcMandays()">
+                    <label class="field-label-sm d-flex align-items-center justify-content-between">
+                        <span>Development (hari)</span>
+                        <i class="bi bi-lock text-muted" style="font-size: 0.72rem;" title="Terkunci"></i>
+                    </label>
+                    <input type="number" id="inputMdDev" class="form-control form-control-disabled-gray"
+                           value="{{ (int)($changeRequest->mindesk_development ?? 0) }}" disabled readonly
+                           style="cursor: not-allowed; background-color: #F1F5F9 !important; border: 1.5px solid #CBD5E1 !important; color: #334155 !important; font-weight: 600;">
                 </div>
                 <div class="col-md-3 col-6">
-                    <label class="field-label-sm">Testing (hari)<span class="text-danger">*</span></label>
-                    <input type="number" id="inputMdTest" class="form-control form-control-disabled-gray" value="0" oninput="recalcMandays()">
+                    <label class="field-label-sm d-flex align-items-center justify-content-between">
+                        <span>Testing (hari)</span>
+                        <i class="bi bi-lock text-muted" style="font-size: 0.72rem;" title="Terkunci"></i>
+                    </label>
+                    <input type="number" id="inputMdTest" class="form-control form-control-disabled-gray"
+                           value="{{ (int)($changeRequest->mindesk_testing ?? 0) }}" disabled readonly
+                           style="cursor: not-allowed; background-color: #F1F5F9 !important; border: 1.5px solid #CBD5E1 !important; color: #334155 !important; font-weight: 600;">
                 </div>
                 <div class="col-md-3 col-6">
-                    <label class="field-label-sm">Total Mandays</label>
-                    <input type="number" id="inputMdTotal" class="form-control form-control-disabled-gray fw-bold" value="10" readonly>
+                    <label class="field-label-sm d-flex align-items-center justify-content-between">
+                        <span>Total Mandays</span>
+                        <i class="bi bi-shield-check text-success" style="font-size: 0.78rem;" title="Total Sah PM"></i>
+                    </label>
+                    <input type="number" id="inputMdTotal" class="form-control form-control-disabled-gray fw-bold"
+                           value="{{ $totalMandays }}" disabled readonly
+                           style="cursor: not-allowed; background-color: #E2E8F0 !important; border: 1.5px solid #CBD5E1 !important; color: #0F172A !important; font-weight: 800;">
                 </div>
+            </div>
+            <div class="small text-muted mt-2 d-flex align-items-center gap-1.5" style="font-size: 0.76rem;">
+                <i class="bi bi-info-circle-fill text-primary"></i>
+                <span>Bagian Man-Days terkunci otomatis untuk Presales karena telah ditetapkan dan dihitung oleh Project Manager saat verifikasi teknis.</span>
             </div>
         </div>
 
@@ -677,11 +851,18 @@
                     <span class="section-num-badge">4</span>
                     <span class="section-title-label">TERMIN OF PAYMENT (SKEMA TAHAPAN PEMBAYARAN)</span>
                 </div>
-                <button type="button" class="btn text-white fw-bold d-inline-flex align-items-center gap-1.5 px-3 py-1.5"
-                        style="background: #22C55E; border-radius: 8px; font-size: 0.78rem; border: none; box-shadow: 0 2px 6px rgba(34,197,94,0.25);"
-                        onclick="openAddTerminModal()">
-                    <i class="bi bi-plus-lg"></i> Tambah Termin
-                </button>
+                <div class="d-flex align-items-center gap-2 flex-wrap">
+                    <button type="button" class="btn btn-outline-primary fw-bold d-inline-flex align-items-center gap-1.5 px-3 py-1.5"
+                            style="border-radius: 8px; font-size: 0.78rem;"
+                            onclick="addDefaultFullTermin()">
+                        <i class="bi bi-magic"></i> + Isi Termin 100%
+                    </button>
+                    <button type="button" class="btn text-white fw-bold d-inline-flex align-items-center gap-1.5 px-3 py-1.5"
+                            style="background: #22C55E; border-radius: 8px; font-size: 0.78rem; border: none; box-shadow: 0 2px 6px rgba(34,197,94,0.25);"
+                            onclick="openAddTerminModal()">
+                        <i class="bi bi-plus-lg"></i> Tambah Termin
+                    </button>
+                </div>
             </div>
 
             <div class="table-responsive" style="border: 1px solid #E2E8F0; border-radius: 12px; overflow: hidden; background: #FFFFFF;">
@@ -696,128 +877,66 @@
                         </tr>
                     </thead>
                     <tbody id="terminTableBody">
-                        <tr id="terminRow_0">
-                            <td class="text-center">
-                                <div class="termin-no-badge">1</div>
-                            </td>
-                            <td>
-                                <div class="fw-bold" style="color: #0F172A; font-size: 0.85rem;">Termin Of Payment 1</div>
-                                <div class="d-flex align-items-center gap-1.5 mt-1">
-                                    <span style="background: #DBEAFE; color: #2563EB; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px;">20% DP</span>
-                                    <span style="font-size: 0.72rem; color: #94A3B8;">Tahap Awal</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="fw-semibold text-dark" style="font-size: 0.83rem; line-height: 1.35;">Kickoff meeting, spesifikasi arsitektur &amp; persetujuan analisa API OVO</div>
-                                <div class="text-muted mt-0.5" style="font-size: 0.72rem; color: #94A3B8 !important;">Disertai Berita Acara Analisa (BAA) bertandatangan</div>
-                            </td>
-                            <td class="text-end fw-bold" style="color: #0F172A; font-size: 0.88rem;">
-                                Rp 5.000.000
-                            </td>
-                            <td class="text-center">
-                                <div class="d-inline-flex align-items-center justify-content-center" style="gap: 8px;">
-                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
-                                            style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
-                                            onclick="openEditTerminModal(0)">
-                                        <i class="bi bi-pencil-square"></i> Edit
-                                    </button>
-                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
-                                            style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
-                                            onclick="deleteTermin(0)">
-                                        <i class="bi bi-trash3-fill"></i> Hapus
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr id="terminRow_1">
-                            <td class="text-center">
-                                <div class="termin-no-badge">2</div>
-                            </td>
-                            <td>
-                                <div class="fw-bold" style="color: #0F172A; font-size: 0.85rem;">Termin Of Payment 2</div>
-                                <div class="d-flex align-items-center gap-1.5 mt-1">
-                                    <span style="background: #EDE9FE; color: #7C3AED; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px;">35% Dev</span>
-                                    <span style="font-size: 0.72rem; color: #94A3B8;">Implementasi Core</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="fw-semibold text-dark" style="font-size: 0.83rem; line-height: 1.35;">Penyelesaian integrasi endpoint OAuth 2.0, Create Order &amp; Callback Webhook</div>
-                                <div class="text-muted mt-0.5" style="font-size: 0.72rem; color: #94A3B8 !important;">Deployment di staging environment &amp; verifikasi Sandbox OVO</div>
-                            </td>
-                            <td class="text-end fw-bold" style="color: #0F172A; font-size: 0.88rem;">
-                                Rp 7.000.000
-                            </td>
-                            <td class="text-center">
-                                <div class="d-inline-flex align-items-center justify-content-center" style="gap: 8px;">
-                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
-                                            style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
-                                            onclick="openEditTerminModal(1)">
-                                        <i class="bi bi-pencil-square"></i> Edit
-                                    </button>
-                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
-                                            style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
-                                            onclick="deleteTermin(1)">
-                                        <i class="bi bi-trash3-fill"></i> Hapus
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                        <tr id="terminRow_2">
-                            <td class="text-center">
-                                <div class="termin-no-badge">3</div>
-                            </td>
-                            <td>
-                                <div class="fw-bold" style="color: #0F172A; font-size: 0.85rem;">Termin Of Payment 3</div>
-                                <div class="d-flex align-items-center gap-1.5 mt-1">
-                                    <span style="background: #D1FAE5; color: #059669; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px;">45% Pelunasan</span>
-                                    <span style="font-size: 0.72rem; color: #94A3B8;">Final Release</span>
-                                </div>
-                            </td>
-                            <td>
-                                <div class="fw-semibold text-dark" style="font-size: 0.83rem; line-height: 1.35;">Pelaksanaan UAT berhasil, serah terima source code, dan Go-Live Production</div>
-                                <div class="text-muted mt-0.5" style="font-size: 0.72rem; color: #94A3B8 !important;">Penandatanganan BAST (Berita Acara Serah Terima)</div>
-                            </td>
-                            <td class="text-end fw-bold" style="color: #0F172A; font-size: 0.88rem;">
-                                Rp 8.000.000
-                            </td>
-                            <td class="text-center">
-                                <div class="d-inline-flex align-items-center justify-content-center" style="gap: 8px;">
-                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
-                                            style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
-                                            onclick="openEditTerminModal(2)">
-                                        <i class="bi bi-pencil-square"></i> Edit
-                                    </button>
-                                    <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
-                                            style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
-                                            onclick="deleteTermin(2)">
-                                        <i class="bi bi-trash3-fill"></i> Hapus
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
+                        @forelse($terminData as $idx => $tItem)
+                            <tr id="terminRow_{{ $idx }}">
+                                <td class="text-center">
+                                    <div class="termin-no-badge">{{ $idx + 1 }}</div>
+                                </td>
+                                <td>
+                                    <div class="fw-bold" style="color: #0F172A; font-size: 0.85rem;">{{ $tItem['name'] }}</div>
+                                    <div class="d-flex align-items-center gap-1.5 mt-1">
+                                        <span style="background: {{ $tItem['badgeColor'] }}; color: {{ $tItem['badgeTextColor'] }}; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px;">{{ $tItem['badge'] }}</span>
+                                        <span style="font-size: 0.72rem; color: #94A3B8;">{{ $tItem['sublabel'] }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div class="fw-semibold text-dark" style="font-size: 0.83rem; line-height: 1.35;">{{ $tItem['deliverable'] }}</div>
+                                    <div class="text-muted mt-0.5" style="font-size: 0.72rem; color: #94A3B8 !important;">{{ $tItem['subtext'] }}</div>
+                                </td>
+                                <td class="text-end fw-bold" style="color: #0F172A; font-size: 0.88rem;">
+                                    {{ $fmtIdr($tItem['nominal']) }}
+                                </td>
+                                <td class="text-center">
+                                    <div class="d-inline-flex align-items-center justify-content-center" style="gap: 8px;">
+                                        <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
+                                                style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
+                                                onclick="openEditTerminModal({{ $idx }})">
+                                            <i class="bi bi-pencil-square"></i> Edit
+                                        </button>
+                                        <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
+                                                style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
+                                                onclick="deleteTermin({{ $idx }})">
+                                            <i class="bi bi-trash3-fill"></i> Hapus
+                                        </button>
+                                    </div>
+                                </td>
+                            </tr>
+                        @empty
+                            <tr id="emptyTerminRow">
+                                <td colspan="5" class="text-center py-4 text-muted" style="font-size: 0.88rem;">
+                                    <i class="bi bi-inbox fs-4 d-block mb-1 text-secondary"></i>
+                                    Belum ada Termin Pembayaran (TOP). Klik tombol <strong>+ Tambah Termin</strong> di atas untuk menginput termin penawaran.
+                                </td>
+                            </tr>
+                        @endforelse
                     </tbody>
                 </table>
                 <div class="d-flex justify-content-end align-items-center px-4 py-3" style="background: #FFFFFF; border-top: 1px solid #E2E8F0;">
                     <div class="fw-bold me-4" style="font-size: 0.86rem; color: #334155;">
-                        Subtotal Termin (<span id="milestoneCountText">3</span> Milestone):
+                        Subtotal Termin (<span id="milestoneCountText">{{ count($terminData) }}</span> Milestone):
                     </div>
                     <div class="fw-bold" id="milestoneSubtotalText" style="font-size: 0.96rem; color: #0F172A;">
-                        Rp 20.000.000
+                        {{ $initialTerminSubtotal > 0 ? $fmtIdr($initialTerminSubtotal) : '-' }}
                     </div>
                 </div>
             </div>
         </div>
 
-        {{-- BOTTOM SECTION: TOTAL HARGA, DOKUMEN & SUMMARY CARD --}}
-        <div class="row g-4 align-items-end mb-4">
+        {{-- BOTTOM SECTION: DOKUMEN & SUMMARY CARD (TOTAL HARGA POJOK KIRI DIHAPUS, DIHITUNG OTOMATIS DARI TERMIN) --}}
+        <div class="row g-4 align-items-start mb-4">
             <div class="col-lg-6 col-12">
-                <div class="mb-3">
-                    <label class="field-label-sm">Total Harga<span class="text-danger">*</span></label>
-                    <input type="text" id="totalHargaField" class="form-control" value="Rp 39.500.000" oninput="onTotalHargaChange(this)"
-                           style="background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 0.95rem; font-weight: 600; color: #0F172A; padding: 0.65rem 0.9rem;">
-                </div>
                 <div>
-                    <label class="field-label-sm">Dokumen<span class="text-danger">*</span></label>
+                    <label class="field-label-sm">Dokumen Penawaran / Quotation<span class="text-danger">*</span></label>
                     <div class="d-flex align-items-center gap-2 p-1.5" style="border: 1.5px solid #CBD5E1; border-radius: 8px; background: #FFFFFF;">
                         <button type="button" class="btn text-white d-flex align-items-center gap-1.5 px-3 py-1.5"
                                 style="background: #0B2545; border-radius: 6px; font-size: 0.8rem; font-weight: 700; border: none;"
@@ -832,12 +951,12 @@
             <div class="col-lg-6 col-12">
                 <div class="p-3.5 p-md-4" style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px;">
                     <div class="d-flex justify-content-between align-items-center mb-1.5" style="font-size: 0.86rem;">
-                        <span style="color: #64748B;">Total Nilai Layanan (10 MD)</span>
-                        <span class="fw-bold" id="nilaiLayananText" style="color: #0F172A;">Rp 35.585.586</span>
+                        <span style="color: #64748B;">Total Nilai Layanan ({{ $totalMandays > 0 ? $totalMandays . ' MD' : 'Nilai Penawaran' }}, DPP)</span>
+                        <span class="fw-bold" id="nilaiLayananText" style="color: #0F172A;">{{ $totalPenawaranFinal > 0 ? $fmtIdr(round($totalPenawaranFinal / 1.11)) : '-' }}</span>
                     </div>
                     <div class="d-flex justify-content-between align-items-center mb-2" style="font-size: 0.86rem;">
                         <span style="color: #64748B;">PPN 11% (UU HPP No. 7/2021)</span>
-                        <span class="fw-bold" id="ppnText" style="color: #0F172A;">Rp 3.914.414</span>
+                        <span class="fw-bold" id="ppnText" style="color: #0F172A;">{{ $totalPenawaranFinal > 0 ? $fmtIdr($totalPenawaranFinal - round($totalPenawaranFinal / 1.11)) : '-' }}</span>
                     </div>
                     <div style="border-top: 1px solid #E2E8F0; margin: 0.65rem 0;"></div>
                     <div class="d-flex justify-content-between align-items-center pt-1">
@@ -846,7 +965,7 @@
                             <div class="text-muted small" style="font-size: 0.72rem;">Nett Termasuk Pajak</div>
                         </div>
                         <div class="fw-bold" id="totalPenawaranFinalText" style="font-size: 1.35rem; color: #0072D2;">
-                            Rp 39.500.000
+                            {{ $totalPenawaranFinal > 0 ? $fmtIdr($totalPenawaranFinal) : '-' }}
                         </div>
                     </div>
                 </div>
@@ -1135,39 +1254,8 @@
 </div>
 
 <script>
-    // Data list termin
-    let terminList = [
-        {
-            name: 'Termin Of Payment 1',
-            badge: '20% DP',
-            badgeColor: '#DBEAFE',
-            badgeTextColor: '#2563EB',
-            sublabel: 'Tahap Awal',
-            deliverable: 'Kickoff meeting, spesifikasi arsitektur & persetujuan analisa API OVO',
-            subtext: 'Disertai Berita Acara Analisa (BAA) bertandatangan',
-            nominal: 5000000
-        },
-        {
-            name: 'Termin Of Payment 2',
-            badge: '35% Dev',
-            badgeColor: '#EDE9FE',
-            badgeTextColor: '#7C3AED',
-            sublabel: 'Implementasi Core',
-            deliverable: 'Penyelesaian integrasi endpoint OAuth 2.0, Create Order & Callback Webhook',
-            subtext: 'Deployment di staging environment & verifikasi Sandbox OVO',
-            nominal: 7000000
-        },
-        {
-            name: 'Termin Of Payment 3',
-            badge: '45% Pelunasan',
-            badgeColor: '#D1FAE5',
-            badgeTextColor: '#059669',
-            sublabel: 'Final Release',
-            deliverable: 'Pelaksanaan UAT berhasil, serah terima source code, dan Go-Live Production',
-            subtext: 'Penandatanganan BAST (Berita Acara Serah Terima)',
-            nominal: 8000000
-        }
-    ];
+    // Data list termin dari server (selaras dengan total penawaran)
+    let terminList = @json($terminData);
 
     function formatRupiah(num) {
         return 'Rp ' + Number(num || 0).toLocaleString('id-ID');
@@ -1179,50 +1267,93 @@
         tbody.innerHTML = '';
         let total = 0;
 
-        terminList.forEach((item, idx) => {
-            total += Number(item.nominal || 0);
+        if (terminList.length === 0) {
             const tr = document.createElement('tr');
-            tr.id = 'terminRow_' + idx;
+            tr.id = 'emptyTerminRow';
             tr.innerHTML = `
-                <td class="text-center">
-                    <div class="termin-no-badge">${idx + 1}</div>
-                </td>
-                <td>
-                    <div class="fw-bold" style="color: #0F172A; font-size: 0.85rem;">${escapeHtml(item.name)}</div>
-                    <div class="d-flex align-items-center gap-1.5 mt-1">
-                        <span style="background: ${item.badgeColor || '#DBEAFE'}; color: ${item.badgeTextColor || '#2563EB'}; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px;">${escapeHtml(item.badge || '')}</span>
-                        <span style="font-size: 0.72rem; color: #94A3B8;">${escapeHtml(item.sublabel || '')}</span>
-                    </div>
-                </td>
-                <td>
-                    <div class="fw-semibold text-dark" style="font-size: 0.83rem; line-height: 1.35;">${escapeHtml(item.deliverable)}</div>
-                    <div class="text-muted mt-0.5" style="font-size: 0.72rem; color: #94A3B8 !important;">${escapeHtml(item.subtext || '')}</div>
-                </td>
-                <td class="text-end fw-bold" style="color: #0F172A; font-size: 0.88rem;">
-                    ${formatRupiah(item.nominal)}
-                </td>
-                <td class="text-center">
-                    <div class="d-inline-flex align-items-center justify-content-center" style="gap: 8px;">
-                        <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
-                                style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
-                                onclick="openEditTerminModal(${idx})">
-                            <i class="bi bi-pencil-square"></i> Edit
-                        </button>
-                        <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
-                                style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
-                                onclick="deleteTermin(${idx})">
-                            <i class="bi bi-trash3-fill"></i> Hapus
-                        </button>
-                    </div>
+                <td colspan="5" class="text-center py-4 text-muted" style="font-size: 0.88rem;">
+                    <i class="bi bi-inbox fs-4 d-block mb-1 text-secondary"></i>
+                    Belum ada Termin Pembayaran (TOP). Klik tombol <strong>+ Tambah Termin</strong> di atas untuk menginput termin penawaran.
                 </td>
             `;
             tbody.appendChild(tr);
-        });
+        } else {
+            terminList.forEach((item, idx) => {
+                total += Number(item.nominal || 0);
+                const tr = document.createElement('tr');
+                tr.id = 'terminRow_' + idx;
+                tr.innerHTML = `
+                    <td class="text-center">
+                        <div class="termin-no-badge">${idx + 1}</div>
+                    </td>
+                    <td>
+                        <div class="fw-bold" style="color: #0F172A; font-size: 0.85rem;">${escapeHtml(item.name)}</div>
+                        <div class="d-flex align-items-center gap-1.5 mt-1">
+                            <span style="background: ${item.badgeColor || '#DBEAFE'}; color: ${item.badgeTextColor || '#2563EB'}; font-size: 0.68rem; font-weight: 700; padding: 2px 7px; border-radius: 4px;">${escapeHtml(item.badge || '')}</span>
+                            <span style="font-size: 0.72rem; color: #94A3B8;">${escapeHtml(item.sublabel || '')}</span>
+                        </div>
+                    </td>
+                    <td>
+                        <div class="fw-semibold text-dark" style="font-size: 0.83rem; line-height: 1.35;">${escapeHtml(item.deliverable)}</div>
+                        <div class="text-muted mt-0.5" style="font-size: 0.72rem; color: #94A3B8 !important;">${escapeHtml(item.subtext || '')}</div>
+                    </td>
+                    <td class="text-end fw-bold" style="color: #0F172A; font-size: 0.88rem;">
+                        ${formatRupiah(item.nominal)}
+                    </td>
+                    <td class="text-center">
+                        <div class="d-inline-flex align-items-center justify-content-center" style="gap: 8px;">
+                            <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
+                                    style="background: #F59E0B; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
+                                    onclick="openEditTerminModal(${idx})">
+                                <i class="bi bi-pencil-square"></i> Edit
+                            </button>
+                            <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
+                                    style="background: #EF4444; border-radius: 6px; font-size: 0.75rem; border: none; padding: 5px 11px;"
+                                    onclick="deleteTermin(${idx})">
+                                <i class="bi bi-trash3-fill"></i> Hapus
+                            </button>
+                        </div>
+                    </td>
+                `;
+                tbody.appendChild(tr);
+            });
+        }
 
         const countEl = document.getElementById('milestoneCountText');
         const subtotalEl = document.getElementById('milestoneSubtotalText');
         if (countEl) countEl.innerText = terminList.length;
-        if (subtotalEl) subtotalEl.innerText = formatRupiah(total);
+        if (subtotalEl) subtotalEl.innerText = total > 0 ? formatRupiah(total) : '-';
+
+        // Sync subtotal termin ke form hidden inputs
+        const formHarga = document.getElementById('formHargaPenawaran');
+        const formBiaya = document.getElementById('formBiayaPengerjaan');
+        const formTermin = document.getElementById('formTerminData');
+
+        if (formHarga) formHarga.value = total;
+        if (formBiaya) formBiaya.value = Math.round(total / 1.11);
+        if (formTermin) formTermin.value = JSON.stringify(terminList);
+
+        // Recalc summary card
+        syncSummary(total);
+    }
+
+    function syncSummary(total) {
+        const nlEl = document.getElementById('nilaiLayananText');
+        const ppnEl = document.getElementById('ppnText');
+        const finalEl = document.getElementById('totalPenawaranFinalText');
+
+        if (total <= 0) {
+            if (nlEl) nlEl.innerText = '-';
+            if (ppnEl) ppnEl.innerText = '-';
+            if (finalEl) finalEl.innerText = '-';
+            return;
+        }
+
+        const nilaiLayanan = Math.round(total / 1.11);
+        const ppn = total - nilaiLayanan;
+        if (nlEl) nlEl.innerText = formatRupiah(nilaiLayanan);
+        if (ppnEl) ppnEl.innerText = formatRupiah(ppn);
+        if (finalEl) finalEl.innerText = formatRupiah(total);
     }
 
     function escapeHtml(str) {
@@ -1312,34 +1443,13 @@
         renderTerminTable();
     }
 
-    function onTotalHargaChange(input) {
-        const raw = input.value.replace(/[^0-9]/g, '');
-        const num = raw === '' ? 0 : parseInt(raw, 10);
-        input.value = num === 0 && raw === '' ? '' : 'Rp ' + num.toLocaleString('id-ID');
-
-        // Kalkulasi DPP dan PPN 11% (UU HPP No. 7/2021)
-        const total = num;
-        const nilaiLayanan = Math.round(total / 1.11);
-        const ppn = total - nilaiLayanan;
-
-        const nlEl = document.getElementById('nilaiLayananText');
-        const ppnEl = document.getElementById('ppnText');
-        const finalEl = document.getElementById('totalPenawaranFinalText');
-
-        if (nlEl) nlEl.innerText = formatRupiah(nilaiLayanan);
-        if (ppnEl) ppnEl.innerText = formatRupiah(ppn);
-        if (finalEl) finalEl.innerText = formatRupiah(total);
-    }
-
     function recalcMandays() {
         const a = parseInt(document.getElementById('inputMdAnalisis')?.value || 0, 10) || 0;
         const d = parseInt(document.getElementById('inputMdDev')?.value || 0, 10) || 0;
         const t = parseInt(document.getElementById('inputMdTest')?.value || 0, 10) || 0;
         const sum = a + d + t;
         const totInput = document.getElementById('inputMdTotal');
-        if (totInput && sum > 0) {
-            totInput.value = sum;
-        }
+        if (totInput) totInput.value = sum;
     }
 
     function onFileSelected(input) {
@@ -1356,20 +1466,57 @@
         }
     }
 
+    function addDefaultFullTermin() {
+        const estFinal = {{ (int) $totalPenawaranFinal ?: ((int) $estimasiNilai ?: 40500000) }};
+        terminList = [
+            {
+                name: 'Termin 1 (Pelunasan 100%)',
+                badge: '100%',
+                badgeColor: '#DBEAFE',
+                badgeTextColor: '#2563EB',
+                sublabel: 'Termin Tunggal / Pelunasan',
+                deliverable: 'Penyelesaian seluruh pengerjaan teknis CR hingga Go-Live',
+                subtext: 'Disertai Berita Acara & Kelengkapan Dokumen',
+                nominal: estFinal
+            }
+        ];
+        renderTerminTable();
+    }
+
     function simpanDanSubmitQuotation() {
-        const totalHargaInput = document.getElementById('totalHargaField');
         const formHarga = document.getElementById('formHargaPenawaran');
         const formBiaya = document.getElementById('formBiayaPengerjaan');
+        const formTermin = document.getElementById('formTerminData');
         const form = document.getElementById('presalesQuotationForm');
 
-        if (totalHargaInput && formHarga) {
-            const rawVal = totalHargaInput.value.replace(/[^0-9]/g, '');
-            formHarga.value = rawVal || '39500000';
-            if (formBiaya) {
-                const num = parseInt(formHarga.value, 10);
-                formBiaya.value = Math.round(num / 1.11);
+        let total = terminList.reduce((acc, it) => acc + (Number(it.nominal) || 0), 0);
+
+        if (terminList.length === 0 || total <= 0) {
+            const estFinal = {{ (int) $totalPenawaranFinal ?: ((int) $estimasiNilai ?: 40500000) }};
+            if (estFinal > 0) {
+                terminList = [
+                    {
+                        name: 'Termin 1 (Pelunasan 100%)',
+                        badge: '100%',
+                        badgeColor: '#DBEAFE',
+                        badgeTextColor: '#2563EB',
+                        sublabel: 'Termin Tunggal / Pelunasan',
+                        deliverable: 'Penyelesaian seluruh pengerjaan teknis CR hingga Go-Live',
+                        subtext: 'Disertai Berita Acara & Kelengkapan Dokumen',
+                        nominal: estFinal
+                    }
+                ];
+                renderTerminTable();
+                total = estFinal;
+            } else {
+                alert('Mohon tambahkan minimal 1 Termin Pembayaran (TOP) dengan nominal sebelum menyimpan quotation.');
+                return;
             }
         }
+
+        if (formHarga) formHarga.value = total;
+        if (formBiaya) formBiaya.value = Math.round(total / 1.11);
+        if (formTermin) formTermin.value = JSON.stringify(terminList);
 
         if (form) {
             form.submit();
@@ -1414,6 +1561,12 @@
         } catch (e) {}
     }
 
+    function toggleBaPresales(val) {
+        const baDiv = document.getElementById('baUploadPresales');
+        if (!baDiv) return;
+        baDiv.style.display = (val === 'golive' || val === 'awaiting_golive_validation') ? 'block' : 'none';
+    }
+
     document.addEventListener('DOMContentLoaded', function () {
         let initialTab = 'quotation';
         try {
@@ -1426,7 +1579,86 @@
             }
         } catch (e) {}
         switchCrTab(initialTab);
+
+        // Render tabel termin & selaraskan subtotal, DPP, dan PPN
         renderTerminTable();
     });
 </script>
+
+{{-- MODAL UPDATE STATUS DEVELOPMENT (PRESALES) --}}
+<div class="modal fade" id="modalUpdateStatusDev" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content" style="border-radius: 16px; border: none; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.15);">
+            <div class="modal-header px-4 py-3" style="background: #F8FAFC; border-bottom: 1px solid #E2E8F0;">
+                <h5 class="modal-title fw-bold mb-0" style="font-size: 0.98rem; color: #0F172A;">
+                    <i class="bi bi-arrow-repeat text-primary me-2"></i>Update Status Development CR
+                </h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <form method="POST" action="{{ route('change-requests.update', $changeRequest) }}" enctype="multipart/form-data">
+                @csrf
+                @method('PUT')
+                <input type="hidden" name="from_tab" value="presales_status">
+
+                <div class="modal-body p-4">
+                    <div class="mb-3">
+                        <label class="form-label fw-bold small text-muted text-uppercase" style="font-size: 0.74rem;">Status Development Saat Ini</label>
+                        <div class="p-2.5 rounded-3 fw-bold d-flex align-items-center gap-2" style="background: #F1F5F9; color: #0F172A; font-size: 0.88rem;">
+                            <span class="badge" style="background: #0284C7;">{{ $pmStatusPct }}</span>
+                            <span>{{ $changeRequest->statusLabel() }}</span>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label for="statusSelectPresales" class="form-label fw-bold small text-muted text-uppercase" style="font-size: 0.74rem;">
+                            Pilih Status Baru <span class="text-danger">*</span>
+                        </label>
+                        <select name="status" id="statusSelectPresales" class="form-select" style="border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 0.88rem; font-weight: 600;" onchange="toggleBaPresales(this.value)">
+                            <option value="analisa" {{ in_array($changeRequest->status, ['diajukan', 'analisa', 'dianalisis', 'awaiting_pm']) ? 'selected' : '' }}>
+                                1. Analisa (Tahap Analisis Kebutuhan)
+                            </option>
+                            <option value="development" {{ in_array($changeRequest->status, ['development', 'dikerjakan', 'validated', 'disetujui']) ? 'selected' : '' }}>
+                                2. Develop (Pengerjaan Teknis &amp; Coding)
+                            </option>
+                            <option value="sit" {{ $changeRequest->status === 'sit' ? 'selected' : '' }}>
+                                3. SIT (System Integration Testing)
+                            </option>
+                            <option value="uat" {{ $changeRequest->status === 'uat' ? 'selected' : '' }}>
+                                4. UAT (User Acceptance Testing)
+                            </option>
+                            <option value="training" {{ $changeRequest->status === 'training' ? 'selected' : '' }}>
+                                5. Training (Pendampingan &amp; Pelatihan)
+                            </option>
+                            <option value="golive" {{ in_array($changeRequest->status, ['golive', 'awaiting_golive_validation', 'selesai', 'invoicing']) ? 'selected' : '' }}>
+                                6. Go Live (Peluncuran Sistem / Production)
+                            </option>
+                        </select>
+                    </div>
+
+                    <div id="baUploadPresales" style="display: {{ in_array($changeRequest->status, ['golive', 'awaiting_golive_validation']) ? 'block' : 'none' }};">
+                        <div class="mb-3 p-3 rounded-3" style="background: #FFFBEB; border: 1px solid #FDE68A;">
+                            <label class="form-label fw-bold small text-warning-emphasis d-flex align-items-center gap-1.5" style="font-size: 0.78rem;">
+                                <i class="bi bi-file-earmark-pdf-fill text-warning"></i> Unggah Berita Acara (BA) <span class="text-danger">*</span>
+                            </label>
+                            <input type="file" name="berita_acara_file" class="form-control" accept=".pdf,.doc,.docx" style="font-size: 0.82rem;">
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Wajib diunggah saat mengubah status menjadi Go-Live.</div>
+                        </div>
+                    </div>
+
+                    <div class="mb-2">
+                        <label class="form-label fw-bold small text-muted text-uppercase" style="font-size: 0.74rem;">Catatan Tambahan (Opsional)</label>
+                        <textarea name="catatan_approval" rows="2" class="form-control" placeholder="Tuliskan catatan progres status bila ada..." style="border: 1.5px solid #CBD5E1; border-radius: 8px; font-size: 0.85rem;"></textarea>
+                    </div>
+                </div>
+
+                <div class="modal-footer px-4 py-3" style="background: #F8FAFC; border-top: 1px solid #E2E8F0;">
+                    <button type="button" class="btn btn-sm btn-light fw-bold" data-bs-dismiss="modal" style="border-radius: 8px; font-size: 0.85rem;">Batal</button>
+                    <button type="submit" class="btn btn-sm text-white fw-bold px-3 py-1.5" style="background: #0284C7; border-radius: 8px; font-size: 0.85rem; border: none;">
+                        <i class="bi bi-check2"></i> Simpan Status Baru
+                    </button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
 @endsection

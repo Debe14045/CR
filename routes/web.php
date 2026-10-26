@@ -122,8 +122,9 @@ Route::middleware('auth')->group(function () {
         });
 
         // 6. Marketing / Presales Internal Record Keeping Only (Quotation, Invoices, GR, Jurnal)
-        Route::middleware('role:presales,admin')->group(function () {
+        Route::middleware('role:presales,admin,pm')->group(function () {
             Route::post('/change-requests/{changeRequest}/quotation', 'saveQuotation')->name('change-requests.quotation.save');
+            Route::post('/change-requests/{changeRequest}/quotation-confirm', 'confirmQuotation')->name('change-requests.quotation.confirm');
             Route::post('/change-requests/{changeRequest}/invoices', 'storeInvoice')->name('change-requests.invoices.store');
             Route::put('/change-requests/invoices/{invoice}/status', 'updateInvoiceStatus')->name('change-requests.invoices.status');
             Route::get('/change-requests/{changeRequest}/invoice', 'downloadInvoice')->name('change-requests.invoice');

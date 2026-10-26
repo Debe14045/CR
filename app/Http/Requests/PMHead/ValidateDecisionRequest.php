@@ -11,6 +11,14 @@ class ValidateDecisionRequest extends FormRequest
         return auth()->check() && (auth()->user()->isPmh() || auth()->user()->isAdmin());
     }
 
+    protected function prepareForValidation(): void
+    {
+        $note = $this->input('catatan_approval') ?: $this->input('reject_reason') ?: $this->input('alasan_penolakan') ?: $this->input('catatan_revisi');
+        if ($note !== null) {
+            $this->merge(['catatan_approval' => trim((string) $note)]);
+        }
+    }
+
     public function rules(): array
     {
         $action = $this->input('action');

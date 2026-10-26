@@ -234,6 +234,16 @@ class ChangeRequest extends Model
         return $this->isPmhApproved() && ! in_array($this->status, ['ditolak', 'revision_needed'], true);
     }
 
+    public function isPresalesPaymentDone(): bool
+    {
+        return $this->harga_penawaran !== null
+            || $this->quotation_approved_tp_at !== null
+            || $this->quotation_approved_client_at !== null
+            || ($this->relationLoaded('invoices') ? $this->invoices->count() > 0 : $this->invoices()->exists())
+            || in_array(strtolower($this->invoicing_status ?? ''), ['paid', 'lunas', 'partial'], true)
+            || in_array($this->status, ['development', 'dikerjakan', 'sit', 'uat', 'training', 'awaiting_golive_validation', 'golive', 'selesai', 'invoicing'], true);
+    }
+
     public function getNamaPmAttribute(): string
     {
         return $this->owner_cr ?: ($this->main_desk ?: ($this->user?->name ?: '-'));

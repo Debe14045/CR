@@ -7,15 +7,13 @@
     $isClientUser = (auth()->check() && auth()->user()->isClient()) && request('role') !== 'pm';
     $statusKey = $changeRequest->status;
 
-    // ══ Workflow & Stepper Mapping (Role PM: Step 1 Selesai, Step 2 Sedang Berjalan) ══
-    $mainStageNum = 2; 
+    // ══ Workflow & Stepper Mapping – baca status aktual untuk semua role termasuk client ══
+    $mainStageNum = 2;
     $progressPct = 17;
 
-    if ($isClientUser) {
-        $mainStageNum = 1;
-        $progressPct = 17;
-    } elseif ($statusKey === 'diajukan' || in_array($statusKey, ['awaiting_pm', 'dianalisis', 'analisa', 'draft'])) {
-        $mainStageNum = 2; // Step 2 (Review PM) is active for PM role!
+    // Status mapping berlaku untuk semua role (termasuk client)
+    if ($statusKey === 'diajukan' || in_array($statusKey, ['awaiting_pm', 'dianalisis', 'analisa', 'draft'])) {
+        $mainStageNum = $isClientUser ? 1 : 2; // Client: step 1 (Diajukan aktif), PM: step 2 (Review PM)
         $progressPct = 17;
     } elseif (in_array($statusKey, ['awaiting_pmh', 'revision_needed'])) {
         $mainStageNum = 3;
@@ -34,6 +32,9 @@
     // Step 5 & 10: Tab Status CR baru terbuka jika CR sudah disetujui PM Head dan quotation selesai (status development dsb)
     $isStatusCrUnlocked = in_array($statusKey, ['development', 'dikerjakan', 'sit', 'uat', 'training', 'awaiting_golive_validation', 'golive', 'invoicing', 'selesai'])
         || ($changeRequest->harga_penawaran !== null && $changeRequest->isPmhApproved());
+
+    // Tab Verifikasi CR di-disable / dikunci ketika presale sudah melakukan payment / quotation
+    $isVerifikasiCrDisabled = $changeRequest->isPresalesPaymentDone();
 
     $crJudul = $changeRequest->judul ?: ('Change Request #' . $changeRequest->id);
     $crKode = $changeRequest->kode_cr ?: ('CR-' . str_pad($changeRequest->id, 4, '0', STR_PAD_LEFT));
@@ -67,49 +68,57 @@
 
     $catatanPengajuan = $changeRequest->catatan_pengajuan ?: ($changeRequest->pesan_client ?: '-');
     
-    // Status Display Badge
-    $statusDisplay = 'Menunggu Review';
-    if ($statusKey === 'dikerjakan' || $statusKey === 'development') {
-        $statusDisplay = 'Sedang Dikerjakan';
-    } elseif ($statusKey === 'disetujui' || $statusKey === 'validated') {
-        $statusDisplay = 'Disetujui';
-    } elseif ($statusKey === 'selesai' || $statusKey === 'golive') {
-        $statusDisplay = 'Selesai Go-Live';
-    } elseif ($statusKey === 'ditolak') {
-        $statusDisplay = 'Ditolak';
-    }
+    // Status Display Badge – semua status ditampilkan dengan label yang akurat
+    $statusDisplay = match($statusKey) {
+        'diajukan'                  => 'Diajukan',
+        'awaiting_pm'               => 'Menunggu Review PM',
+        'analisa', 'dianalisis'     => 'Sedang Dianalisa',
+        'awaiting_pmh'              => 'Menunggu Approval PM Head',
+        'revision_needed'           => 'Perlu Revisi',
+        'validated', 'disetujui'    => 'Disetujui PM Head',
+        'dikerjakan', 'development' => 'Sedang Dikerjakan',
+        'sit'                       => 'SIT (System Integration Test)',
+        'uat'                       => 'UAT (User Acceptance Test)',
+        'training'                  => 'Training',
+        'awaiting_golive_validation'=> 'Menunggu Validasi Go-Live',
+        'golive'                    => 'Go-Live',
+        'selesai', 'invoicing'      => 'Selesai / Invoicing',
+        'ditolak'                   => 'Ditolak',
+        'draft'                     => 'Draft',
+        default                     => ucfirst(str_replace('_', ' ', $statusKey)),
+    };
 
     // Stepper mapping for Status CR (Figma PM Update: 6 Steps: Analisa -> Develop -> SIT -> UAT -> Training -> Go Live)
     $pmStatusStep = 1;
     $pmStatusPct = '17%';
     $pmStatusLabel = 'Analisa';
-    $pmStatusLineWidth = '8%';
+    $pmStatusLineWidth = '0%';
 
     if ($statusKey === 'diajukan' || in_array($statusKey, ['awaiting_pm', 'dianalisis', 'analisa', 'draft', 'revision_needed'])) {
         $pmStatusStep = 1;
         $pmStatusPct = '17%';
         $pmStatusLabel = 'Analisa';
-        $pmStatusLineWidth = '8%';
+        $pmStatusLineWidth = '0%';
     } elseif (in_array($statusKey, ['awaiting_pmh', 'validated', 'disetujui', 'development', 'dikerjakan'])) {
         $pmStatusStep = 2;
         $pmStatusPct = '33%';
         $pmStatusLabel = 'Develop';
-        $pmStatusLineWidth = '26%';
+        $pmStatusLineWidth = '20%';
     } elseif ($statusKey === 'sit') {
         $pmStatusStep = 3;
         $pmStatusPct = '50%';
         $pmStatusLabel = 'SIT';
-        $pmStatusLineWidth = '46%';
+        $pmStatusLineWidth = '40%';
     } elseif ($statusKey === 'uat') {
         $pmStatusStep = 4;
         $pmStatusPct = '67%';
         $pmStatusLabel = 'UAT';
-        $pmStatusLineWidth = '66%';
+        $pmStatusLineWidth = '60%';
     } elseif ($statusKey === 'training') {
         $pmStatusStep = 5;
         $pmStatusPct = '83%';
         $pmStatusLabel = 'Training';
-        $pmStatusLineWidth = '86%';
+        $pmStatusLineWidth = '80%';
     } elseif (in_array($statusKey, ['awaiting_golive_validation', 'golive', 'selesai', 'invoicing'])) {
         $pmStatusStep = 6;
         $pmStatusPct = '100%';
@@ -219,8 +228,13 @@
             Detail Change Request
         </button>
         <button type="button" id="tabBtn-verifikasi" onclick="switchDetailTab('verifikasi')"
-                style="display: flex; align-items: center; justify-content: center; height: 42px; font-weight: 600; font-size: 0.88rem; border: none; border-left: 1.5px solid #CBD5E1; cursor: pointer; transition: all 0.15s ease; {{ $activeTab === 'verifikasi' ? 'background: #0070D2; color: #FFFFFF;' : 'background: #EEF2F6; color: #1E293B;' }}">
-            Verifikasi CR
+                style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 42px; font-weight: 600; font-size: 0.88rem; border: none; border-left: 1.5px solid #CBD5E1; cursor: pointer; transition: all 0.15s ease; {{ $activeTab === 'verifikasi' ? 'background: #0070D2; color: #FFFFFF;' : 'background: #EEF2F6; color: #1E293B;' }}">
+            @if($isVerifikasiCrDisabled)
+                <i class="bi bi-lock-fill" style="font-size: 0.84rem; opacity: 0.85;"></i>
+                <span>Verifikasi CR <small style="font-weight: 700; opacity: 0.85;">(Terkunci)</small></span>
+            @else
+                <span>Verifikasi CR</span>
+            @endif
         </button>
         <button type="button" id="tabBtn-status" onclick="switchDetailTab('status')"
                 style="display: flex; align-items: center; justify-content: center; gap: 6px; height: 42px; font-weight: 600; font-size: 0.88rem; border: none; border-left: 1.5px solid #CBD5E1; cursor: pointer; transition: all 0.15s ease; {{ $activeTab === 'status' ? 'background: #0070D2; color: #FFFFFF;' : 'background: #EEF2F6; color: #1E293B;' }}">
@@ -248,11 +262,26 @@
                     {{ $firstChar }}
                 </div>
                 <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <h2 style="font-size: 1.25rem; font-weight: 800; color: #0F172A; margin: 0; letter-spacing: -0.01em;" data-i18n="cr_title_main">
+                    <h2 style="font-size: 1.25rem; font-weight: 800; color: #0F172A; margin: 0; letter-spacing: -0.01em;">
                         {{ $crJudul }}
                     </h2>
-                    <span style="background: #0098EA; color: #FFFFFF; font-size: 0.72rem; font-weight: 700; padding: 3px 12px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;" data-i18n="badge_analisa">
-                        • {{ $changeRequest->statusLabel() }}
+                    @php
+                        $stKeyLower = strtolower($changeRequest->status ?? '');
+                        $stageBadge = match($stKeyLower) {
+                            'diajukan', 'awaiting_pm', 'analisa', 'dianalisis', 'awaiting_pmh' => '• Analisa',
+                            'validated', 'disetujui' => '• Validated',
+                            'development', 'dikerjakan' => '• Develop',
+                            'sit' => '• SIT',
+                            'uat' => '• UAT',
+                            'training' => '• Training',
+                            'golive', 'selesai' => '• Go-Live',
+                            'invoicing' => '• Invoicing',
+                            'ditolak' => '• Ditolak',
+                            default => '• ' . $changeRequest->statusLabel(),
+                        };
+                    @endphp
+                    <span style="background: #0098EA; color: #FFFFFF; font-size: 0.72rem; font-weight: 700; padding: 3px 12px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;">
+                        {{ $stageBadge }}
                     </span>
                 </div>
             </div>
@@ -267,17 +296,17 @@
                     @if($statusKey === 'ditolak')
                     <span style="background: #FEF2F2; border: 1px solid #FECACA; color: #DC2626; font-size: 0.74rem; font-weight: 700; padding: 3px 12px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 6px; line-height: 1.2;">
                         <span style="width: 7px; height: 7px; border-radius: 50%; background: #EF4444; display: inline-block;"></span>
-                        <span data-i18n="status_review">{{ $statusDisplay }}</span>
+                        <span>{{ $statusDisplay }}</span>
                     </span>
                     @elseif(in_array($statusKey, ['disetujui', 'validated', 'selesai', 'golive']))
                     <span style="background: #F0FDF4; border: 1px solid #BBF7D0; color: #16A34A; font-size: 0.74rem; font-weight: 700; padding: 3px 12px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 6px; line-height: 1.2;">
                         <span style="width: 7px; height: 7px; border-radius: 50%; background: #16A34A; display: inline-block;"></span>
-                        <span data-i18n="status_review">{{ $statusDisplay }}</span>
+                        <span>{{ $statusDisplay }}</span>
                     </span>
                     @else
                     <span style="background: #FFFBEB; border: 1px solid #FDE68A; color: #B45309; font-size: 0.74rem; font-weight: 700; padding: 3px 12px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 6px; line-height: 1.2;">
                         <span style="width: 7px; height: 7px; border-radius: 50%; background: #F59E0B; display: inline-block;"></span>
-                        <span data-i18n="status_review">{{ $statusDisplay }}</span>
+                        <span>{{ $statusDisplay }}</span>
                     </span>
                     @endif
                 </div>
@@ -285,16 +314,16 @@
                 {{-- Tanggal Pengajuan Far-Right --}}
                 <div style="display: flex; align-items: center; gap: 4px; font-size: 0.78rem;">
                     <i class="bi bi-calendar4" style="color: #94A3B8; font-size: 0.82rem; margin-right: 4px;"></i>
-                    <span style="color: #64748B; font-weight: 500;" data-i18n="label_submission_date_inline">Tanggal Pengajuan:</span>
-                    <strong style="color: #0F172A; font-weight: 800; margin-left: 4px;" data-i18n="val_header_date">{{ $headerTanggalPengajuan }}</strong>
+                    <span style="color: #64748B; font-weight: 500;">Tanggal Pengajuan:</span>
+                    <strong style="color: #0F172A; font-weight: 800; margin-left: 4px;">{{ $headerTanggalPengajuan }}</strong>
                 </div>
             </div>
 
             {{-- ── 3. STATUS ALUR CR Card (6-Card Flow with Continuous Progress Line) ── --}}
             <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; width: 100%; box-sizing: border-box;">
                 <div style="display: flex; justify-content: space-between; align-items: center;">
-                    <span style="font-size: 0.74rem; font-weight: 800; color: #334155; letter-spacing: 0.06em; text-transform: uppercase;" data-i18n="status_alur_cr">STATUS ALUR CR</span>
-                    <span style="font-size: 0.72rem; color: #64748B; font-weight: 500;" data-i18n="total_progres_alur">Total Progres Alur: {{ $progressPct }}%</span>
+                    <span style="font-size: 0.74rem; font-weight: 800; color: #334155; letter-spacing: 0.06em; text-transform: uppercase;">STATUS ALUR CR</span>
+                    <span style="font-size: 0.72rem; color: #64748B; font-weight: 500;">Total Progres Alur: {{ $progressPct }}%</span>
                 </div>
 
                 {{-- Continuous Progress Track --}}
@@ -347,6 +376,72 @@
                 </div>
             </div>
 
+            {{-- ── 3b. PROGRESS PENGERJAAN TEKNIS (PM) – Visible for Client & All Roles ── --}}
+            <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; width: 100%; box-sizing: border-box;">
+                <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <span style="font-size: 0.74rem; font-weight: 800; color: #334155; letter-spacing: 0.06em; text-transform: uppercase;">
+                            PROGRESS PENGERJAAN TEKNIS (PM)
+                        </span>
+                        <span style="background: #E0F2FE; color: #0284C7; font-size: 0.68rem; font-weight: 700; padding: 2px 8px; border-radius: 9999px;">
+                            {{ $pmStatusPct }} — {{ $pmStatusLabel }}
+                        </span>
+                    </div>
+                    <span style="font-size: 0.72rem; color: #64748B; font-weight: 500;">
+                        Status Eksekusi Saat Ini: <strong style="color: #0F172A;">{{ $changeRequest->statusLabel() }}</strong>
+                    </span>
+                </div>
+
+                {{-- Stepper 6 Steps --}}
+                <div style="position: relative; margin: 22px 14px 10px;">
+                    {{-- Constrained Track Container between circle 1 and circle 6 centers --}}
+                    <div style="position: absolute; top: 15px; left: 30px; right: 30px; height: 3px; z-index: 1;">
+                        {{-- Base Track --}}
+                        <div style="position: absolute; top: 0; left: 0; right: 0; height: 100%; background: #E2E8F0;"></div>
+                        {{-- Active Track --}}
+                        <div style="position: absolute; top: 0; left: 0; width: {{ $pmStatusLineWidth }}; height: 100%; background: #0098EA; transition: width 0.3s ease;"></div>
+                    </div>
+
+                    <div style="display: flex; justify-content: space-between; position: relative; z-index: 3;">
+                        @php
+                            $techSteps = [
+                                1 => 'Analisa',
+                                2 => 'Develop',
+                                3 => 'SIT',
+                                4 => 'UAT',
+                                5 => 'Training',
+                                6 => 'Go Live',
+                            ];
+                        @endphp
+                        @foreach($techSteps as $stNum => $stTitle)
+                            @php
+                                $isDone = $pmStatusStep > $stNum;
+                                $isAct = $pmStatusStep === $stNum;
+                            @endphp
+                            <div style="display: flex; flex-direction: column; align-items: center; width: 60px;">
+                                <div style="width: 30px; height: 30px; border-radius: 50%; {{ $isDone ? 'background: #10B981; color: #FFFFFF;' : ($isAct ? 'background: #0098EA; color: #FFFFFF; box-shadow: 0 0 0 4px #E0F2FE;' : 'background: #FFFFFF; border: 2px solid #CBD5E1; color: #94A3B8;') }} font-weight: 700; font-size: 0.80rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                                    @if($isDone)
+                                        <i class="bi bi-check-lg" style="font-size: 0.85rem;"></i>
+                                    @else
+                                        {{ $stNum }}
+                                    @endif
+                                </div>
+                                <span style="margin-top: 8px; font-size: 0.72rem; font-weight: {{ ($isDone || $isAct) ? '700' : '500' }}; color: {{ $isAct ? '#0098EA' : ($isDone ? '#10B981' : '#94A3B8') }}; text-align: center;">
+                                    {{ $stTitle }}
+                                </span>
+                            </div>
+                        @endforeach
+                    </div>
+                </div>
+
+                @if($changeRequest->catatan_analisis)
+                    <div style="margin-top: 14px; padding: 10px 14px; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 8px; font-size: 0.76rem; color: #334155; display: flex; align-items: center; gap: 8px;">
+                        <i class="bi bi-info-circle-fill text-primary" style="font-size: 0.85rem;"></i>
+                        <span><strong>Catatan Pengerjaan PM:</strong> {{ $changeRequest->catatan_analisis }}</span>
+                    </div>
+                @endif
+            </div>
+
             {{-- ── 4. ROW: INFORMASI CR (Left) & DOKUMEN (Right) ── --}}
             <div class="cr-grid-info-doc">
                 {{-- Left: INFORMASI CR --}}
@@ -359,25 +454,25 @@
                         {{-- Row 1 --}}
                         <div>
                             <div style="color: #94A3B8; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;" data-i18n="label_company">NAMA PERUSAHAAN</div>
-                            <div style="color: #0F172A; font-size: 0.82rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ $companyName }}" data-i18n="val_company_name">{{ $companyName }}</div>
+                            <div style="color: #0F172A; font-size: 0.82rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ $companyName }}">{{ $companyName }}</div>
                         </div>
                         <div>
                             <div style="color: #94A3B8; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;" data-i18n="label_client_initial">INISIAL KLIEN</div>
-                            <div style="color: #0F172A; font-size: 0.82rem; font-weight: 800;" data-i18n="val_client_initial">{{ $clientInitial }}</div>
+                            <div style="color: #0F172A; font-size: 0.82rem; font-weight: 800;">{{ $clientInitial }}</div>
                         </div>
                         <div>
                             <div style="color: #94A3B8; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;" data-i18n="label_pic_name">NAMA PIC</div>
-                            <div style="color: #0F172A; font-size: 0.82rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ $picName }}" data-i18n="val_pic_name">{{ $picName }}</div>
+                            <div style="color: #0F172A; font-size: 0.82rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ $picName }}">{{ $picName }}</div>
                         </div>
 
                         {{-- Row 2 --}}
                         <div>
                             <div style="color: #94A3B8; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;" data-i18n="label_project_name">NAMA PROJECT</div>
-                            <div style="color: #0F172A; font-size: 0.82rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ $projectName }}" data-i18n="val_project_name">{{ $projectName }}</div>
+                            <div style="color: #0F172A; font-size: 0.82rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ $projectName }}">{{ $projectName }}</div>
                         </div>
                         <div>
                             <div style="color: #94A3B8; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;" data-i18n="label_cr_owner">CR OWNER</div>
-                            <div style="color: #0F172A; font-size: 0.82rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ $crOwner }}" data-i18n="val_cr_owner">{{ $crOwner }}</div>
+                            <div style="color: #0F172A; font-size: 0.82rem; font-weight: 800; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;" title="{{ $crOwner }}">{{ $crOwner }}</div>
                         </div>
                         <div>
                             {{-- Empty space matching Figma Row 2 Col 3 --}}
@@ -386,15 +481,15 @@
                         {{-- Row 3 --}}
                         <div>
                             <div style="color: #94A3B8; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;" data-i18n="label_submission_date">TANGGAL PENGAJUAN</div>
-                            <div style="color: #0F172A; font-size: 0.82rem; font-weight: 800;" data-i18n="val_submission_date">{{ $tanggalPengajuan }}</div>
+                            <div style="color: #0F172A; font-size: 0.82rem; font-weight: 800;">{{ $tanggalPengajuan }}</div>
                         </div>
                         <div>
                             <div style="color: #94A3B8; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;" data-i18n="label_request_golive">REQUEST GO-LIVE</div>
-                            <div style="color: #0F172A; font-size: 0.82rem; font-weight: 800;" data-i18n="val_request_golive">{{ $requestGoLive }}</div>
+                            <div style="color: #0F172A; font-size: 0.82rem; font-weight: 800;">{{ $requestGoLive }}</div>
                         </div>
                         <div>
                             <div style="color: #94A3B8; font-size: 0.65rem; font-weight: 700; text-transform: uppercase; margin-bottom: 4px;" data-i18n="label_cr_priority">PRIORITAS CR</div>
-                            <div style="color: #0F172A; font-size: 0.82rem; font-weight: 800;" data-i18n="val_priority_normal">{{ $priorityLabel }}</div>
+                            <div style="color: #0F172A; font-size: 0.82rem; font-weight: 800;">{{ $priorityLabel }}</div>
                         </div>
                     </div>
                 </div>
@@ -463,7 +558,7 @@
                         1. LATAR BELAKANG &amp; TUJUAN
                     </div>
                     @if($changeRequest->alasan || $changeRequest->deskripsi)
-                    <p style="font-size: 0.80rem; color: #334155; line-height: 1.6; margin-bottom: 14px;" data-i18n="cr_description_text">
+                    <p style="font-size: 0.80rem; color: #334155; line-height: 1.6; margin-bottom: 14px;">
                         {!! nl2br(e($changeRequest->alasan ?: $changeRequest->deskripsi)) !!}
                     </p>
                     @else
@@ -489,7 +584,7 @@
                     @if($changeRequest->dampak || $changeRequest->solution_paper_note)
                     <div style="background: #FFFDF0; border: 1px solid #FDE68A; border-left: 3.5px solid #EAB308; border-radius: 6px; padding: 10px 14px; color: #854D0E; font-size: 0.76rem; line-height: 1.55;">
                         <strong data-i18n="callout_dependency_title">Catatan Dependensi:</strong>
-                        <span style="font-weight: 700;" data-i18n="callout_dependency_body">{{ $changeRequest->dampak ?: $changeRequest->solution_paper_note }}</span>
+                        <span style="font-weight: 700;">{{ $changeRequest->dampak ?: $changeRequest->solution_paper_note }}</span>
                     </div>
                     @else
                     <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 8px 14px; color: #64748B; font-size: 0.76rem;">
@@ -511,7 +606,7 @@
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span style="font-size: 0.76rem; color: #64748B;" data-i18n="mandays_analisis">Analisis</span>
-                            <strong style="font-size: 0.76rem; font-weight: 800; color: #0F172A;" data-i18n="mandays_analisis_val">{{ $mandaysAnalisis }} hari</strong>
+                            <strong style="font-size: 0.76rem; font-weight: 800; color: #0F172A;">{{ $mandaysAnalisis }} hari</strong>
                         </div>
                         <div style="height: 4px; background: #E0F2FE; border-radius: 999px; margin: 6px 0 14px; overflow: hidden;">
                             <div style="height: 100%; width: {{ $pctAnalisis }}%; background: #0098EA; border-radius: 999px;"></div>
@@ -522,7 +617,7 @@
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span style="font-size: 0.76rem; color: #64748B;" data-i18n="mandays_development">Development</span>
-                            <strong style="font-size: 0.76rem; font-weight: 800; color: #0F172A;" data-i18n="mandays_dev_val">{{ $mandaysDevelopment }} hari</strong>
+                            <strong style="font-size: 0.76rem; font-weight: 800; color: #0F172A;">{{ $mandaysDevelopment }} hari</strong>
                         </div>
                         <div style="height: 4px; background: #E0F2FE; border-radius: 999px; margin: 6px 0 14px; overflow: hidden;">
                             <div style="height: 100%; width: {{ $pctDev }}%; background: #0098EA; border-radius: 999px;"></div>
@@ -533,7 +628,7 @@
                     <div>
                         <div style="display: flex; justify-content: space-between; align-items: center;">
                             <span style="font-size: 0.76rem; color: #64748B;" data-i18n="mandays_testing">Testing</span>
-                            <strong style="font-size: 0.76rem; font-weight: 800; color: #0F172A;" data-i18n="mandays_test_val">{{ $mandaysTesting }} hari</strong>
+                            <strong style="font-size: 0.76rem; font-weight: 800; color: #0F172A;">{{ $mandaysTesting }} hari</strong>
                         </div>
                         <div style="height: 4px; background: #E0F2FE; border-radius: 999px; margin: 6px 0 14px; overflow: hidden;">
                             <div style="height: 100%; width: {{ $pctTest }}%; background: #0098EA; border-radius: 999px;"></div>
@@ -545,7 +640,7 @@
                     {{-- Total --}}
                     <div style="display: flex; justify-content: space-between; align-items: center;">
                         <span style="font-size: 0.78rem; color: #64748B; font-weight: 500;" data-i18n="mandays_total">Total</span>
-                        <strong style="font-size: 0.84rem; font-weight: 800; color: #0F172A;" data-i18n="mandays_total_val">{{ $totalMandays }} hari kerja</strong>
+                        <strong style="font-size: 0.84rem; font-weight: 800; color: #0F172A;">{{ $totalMandays }} hari kerja</strong>
                     </div>
                 </div>
 
@@ -558,7 +653,7 @@
                         </span>
                     </div>
 
-                    <div style="flex: 1; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 20px 22px; color: #475569; font-size: 0.78rem; line-height: 1.6; display: flex; align-items: center;" data-i18n="cr_notes_quote">
+                    <div style="flex: 1; background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px; padding: 20px 22px; color: #475569; font-size: 0.78rem; line-height: 1.6; display: flex; align-items: center;">
                         &ldquo;{{ $catatanPengajuan }}&rdquo;
                     </div>
                 </div>
@@ -581,19 +676,45 @@
                     {{ $firstChar }}
                 </div>
                 <div style="display: flex; align-items: center; flex-wrap: wrap; gap: 10px;">
-                    <h2 style="font-size: 1.25rem; font-weight: 800; color: #0F172A; margin: 0; letter-spacing: -0.01em;" data-i18n="cr_title_main">
+                    <h2 style="font-size: 1.25rem; font-weight: 800; color: #0F172A; margin: 0; letter-spacing: -0.01em;">
                         {{ $crJudul }}
                     </h2>
-                    <span style="background: #0098EA; color: #FFFFFF; font-size: 0.72rem; font-weight: 700; padding: 3px 12px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;" data-i18n="badge_analisa">
-                        • Analisa
+                    <span style="background: #0098EA; color: #FFFFFF; font-size: 0.72rem; font-weight: 700; padding: 3px 12px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;">
+                        • {{ $changeRequest->statusLabel() }}
                     </span>
+                    @if($isVerifikasiCrDisabled)
+                    <span style="background: #E2E8F0; color: #475569; font-size: 0.72rem; font-weight: 700; padding: 3px 12px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;">
+                        <i class="bi bi-lock-fill"></i> Verifikasi Terkunci
+                    </span>
+                    @endif
                 </div>
             </div>
+
+            {{-- ── Alert Banner: Verifikasi Terkunci jika Presales telah melakukan pembayaran/quotation ── --}}
+            @if($isVerifikasiCrDisabled)
+            <div style="background: #EFF6FF; border: 1.5px solid #BFDBFE; border-radius: 12px; padding: 14px 18px; margin-bottom: 22px; display: flex; align-items: flex-start; gap: 12px;">
+                <div style="width: 34px; height: 34px; border-radius: 8px; background: #DBEAFE; color: #1D4ED8; display: flex; align-items: center; justify-content: center; flex-shrink: 0; font-size: 1.15rem;">
+                    <i class="bi bi-shield-lock-fill"></i>
+                </div>
+                <div style="flex: 1;">
+                    <div style="font-size: 0.88rem; font-weight: 700; color: #1E3A8A; margin-bottom: 2px;">
+                        Form Verifikasi CR Dinonaktifkan (Read-Only)
+                    </div>
+                    <div style="font-size: 0.80rem; color: #3B82F6; line-height: 1.5;">
+                        Proses quotation dan pembayaran/TOP oleh bagian Presales telah selesai dilakukan. Formulir verifikasi, estimasi mandays, target jadwal, dan Solution Paper saat ini telah dinonaktifkan (disable) untuk menjaga konsistensi data pengerjaan teknis.
+                    </div>
+                </div>
+                <span style="background: #DBEAFE; color: #1E40AF; font-size: 0.72rem; font-weight: 700; padding: 4px 10px; border-radius: 6px; white-space: nowrap; display: inline-flex; align-items: center; gap: 4px;">
+                    <i class="bi bi-lock-fill"></i> Terkunci
+                </span>
+            </div>
+            @endif
 
             {{-- ── 2. Form Verifikasi CR PM ── --}}
             <form method="POST" action="{{ route('change-requests.update', $changeRequest) }}" enctype="multipart/form-data">
                 @csrf
                 @method('PUT')
+                <input type="hidden" name="from_tab" value="verifikasi">
 
                 {{-- Section 1: Estimasi Mandays PM --}}
                 <div style="margin-bottom: 20px;">
@@ -607,8 +728,9 @@
                                 Analisis (hari)<span style="color: #EF4444; font-weight: 700; margin-left: 2px;">*</span>
                             </label>
                             <input type="number" id="v_analisis" name="mindesk_analisis" min="0" value="{{ $changeRequest->mindesk_analisis ?? 0 }}" oninput="calcVerifikasiTotal()"
-                                   style="width: 100%; height: 40px; background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 0 14px; font-size: 0.82rem; font-weight: 500; color: #0F172A; outline: none; transition: border-color 0.15s ease;"
-                                   onfocus="this.style.borderColor='#0098EA'" onblur="this.style.borderColor='#CBD5E1'">
+                                   {{ $isVerifikasiCrDisabled ? 'disabled readonly' : '' }}
+                                   style="width: 100%; height: 40px; background: {{ $isVerifikasiCrDisabled ? '#EEF2F6' : '#FFFFFF' }}; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 0 14px; font-size: 0.82rem; font-weight: 500; color: {{ $isVerifikasiCrDisabled ? '#64748B' : '#0F172A' }}; cursor: {{ $isVerifikasiCrDisabled ? 'not-allowed' : 'text' }}; outline: none; transition: border-color 0.15s ease;"
+                                   @if(!$isVerifikasiCrDisabled) onfocus="this.style.borderColor='#0098EA'" onblur="this.style.borderColor='#CBD5E1'" @endif>
                         </div>
 
                         {{-- Development (hari)* --}}
@@ -617,8 +739,9 @@
                                 Development (hari)<span style="color: #EF4444; font-weight: 700; margin-left: 2px;">*</span>
                             </label>
                             <input type="number" id="v_dev" name="mindesk_development" min="0" value="{{ $changeRequest->mindesk_development ?? 0 }}" oninput="calcVerifikasiTotal()"
-                                   style="width: 100%; height: 40px; background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 0 14px; font-size: 0.82rem; font-weight: 500; color: #0F172A; outline: none; transition: border-color 0.15s ease;"
-                                   onfocus="this.style.borderColor='#0098EA'" onblur="this.style.borderColor='#CBD5E1'">
+                                   {{ $isVerifikasiCrDisabled ? 'disabled readonly' : '' }}
+                                   style="width: 100%; height: 40px; background: {{ $isVerifikasiCrDisabled ? '#EEF2F6' : '#FFFFFF' }}; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 0 14px; font-size: 0.82rem; font-weight: 500; color: {{ $isVerifikasiCrDisabled ? '#64748B' : '#0F172A' }}; cursor: {{ $isVerifikasiCrDisabled ? 'not-allowed' : 'text' }}; outline: none; transition: border-color 0.15s ease;"
+                                   @if(!$isVerifikasiCrDisabled) onfocus="this.style.borderColor='#0098EA'" onblur="this.style.borderColor='#CBD5E1'" @endif>
                         </div>
 
                         {{-- Testing (hari)* --}}
@@ -627,8 +750,9 @@
                                 Testing (hari)<span style="color: #EF4444; font-weight: 700; margin-left: 2px;">*</span>
                             </label>
                             <input type="number" id="v_test" name="mindesk_testing" min="0" value="{{ $changeRequest->mindesk_testing ?? 0 }}" oninput="calcVerifikasiTotal()"
-                                   style="width: 100%; height: 40px; background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 0 14px; font-size: 0.82rem; font-weight: 500; color: #0F172A; outline: none; transition: border-color 0.15s ease;"
-                                   onfocus="this.style.borderColor='#0098EA'" onblur="this.style.borderColor='#CBD5E1'">
+                                   {{ $isVerifikasiCrDisabled ? 'disabled readonly' : '' }}
+                                   style="width: 100%; height: 40px; background: {{ $isVerifikasiCrDisabled ? '#EEF2F6' : '#FFFFFF' }}; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 0 14px; font-size: 0.82rem; font-weight: 500; color: {{ $isVerifikasiCrDisabled ? '#64748B' : '#0F172A' }}; cursor: {{ $isVerifikasiCrDisabled ? 'not-allowed' : 'text' }}; outline: none; transition: border-color 0.15s ease;"
+                                   @if(!$isVerifikasiCrDisabled) onfocus="this.style.borderColor='#0098EA'" onblur="this.style.borderColor='#CBD5E1'" @endif>
                         </div>
 
                         {{-- Total Mandays --}}
@@ -642,14 +766,42 @@
                     </div>
                 </div>
 
+                {{-- Section 1b: Target Jadwal Pengerjaan & Go-Live (PM) --}}
+                <div style="margin-bottom: 20px;">
+                    <label style="font-size: 0.78rem; font-weight: 700; color: #1E293B; margin-bottom: 10px; display: block;">
+                        Target Jadwal Pengerjaan &amp; Go-Live (PM)
+                    </label>
+                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+                        <div>
+                            <label style="font-size: 0.74rem; font-weight: 700; color: #0F172A; margin-bottom: 6px; display: block;">
+                                Target Mulai Pengerjaan
+                            </label>
+                            <input type="date" name="target_start_date" value="{{ $changeRequest->target_start_date ? $changeRequest->target_start_date->format('Y-m-d') : ($changeRequest->mulai_dikerjakan_pada ? $changeRequest->mulai_dikerjakan_pada->format('Y-m-d') : date('Y-m-d')) }}"
+                                   {{ $isVerifikasiCrDisabled ? 'disabled readonly' : '' }}
+                                   style="width: 100%; height: 40px; background: {{ $isVerifikasiCrDisabled ? '#EEF2F6' : '#FFFFFF' }}; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 0 14px; font-size: 0.82rem; font-weight: 500; color: {{ $isVerifikasiCrDisabled ? '#64748B' : '#0F172A' }}; cursor: {{ $isVerifikasiCrDisabled ? 'not-allowed' : 'text' }}; outline: none; transition: border-color 0.15s ease;"
+                                   @if(!$isVerifikasiCrDisabled) onfocus="this.style.borderColor='#0098EA'" onblur="this.style.borderColor='#CBD5E1'" @endif>
+                        </div>
+                        <div>
+                            <label style="font-size: 0.74rem; font-weight: 700; color: #0F172A; margin-bottom: 6px; display: block;">
+                                Target Selesai / Go-Live<span style="color: #EF4444; font-weight: 700; margin-left: 2px;">*</span>
+                            </label>
+                            <input type="date" name="target_selesai" value="{{ $changeRequest->target_selesai ? $changeRequest->target_selesai->format('Y-m-d') : date('Y-m-d', strtotime('+30 days')) }}"
+                                   {{ $isVerifikasiCrDisabled ? 'disabled readonly' : '' }}
+                                   style="width: 100%; height: 40px; background: {{ $isVerifikasiCrDisabled ? '#EEF2F6' : '#FFFFFF' }}; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 0 14px; font-size: 0.82rem; font-weight: 500; color: {{ $isVerifikasiCrDisabled ? '#64748B' : '#0F172A' }}; cursor: {{ $isVerifikasiCrDisabled ? 'not-allowed' : 'text' }}; outline: none; transition: border-color 0.15s ease;"
+                                   @if(!$isVerifikasiCrDisabled) onfocus="this.style.borderColor='#0098EA'" onblur="this.style.borderColor='#CBD5E1'" @endif>
+                        </div>
+                    </div>
+                </div>
+
                 {{-- Section 2: CR Notes --}}
                 <div style="margin-bottom: 22px;">
                     <label style="font-size: 0.78rem; font-weight: 700; color: #0F172A; margin-bottom: 6px; display: block;" data-i18n="lbl_cr_notes">
                         CR Notes
                     </label>
                     <textarea name="catatan_analisis" rows="4" placeholder="Catatan tambahan atau konteks..."
-                              style="width: 100%; height: 95px; background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 12px 14px; font-size: 0.82rem; font-family: 'Plus Jakarta Sans', sans-serif; color: #0F172A; outline: none; resize: vertical; transition: border-color 0.15s ease;"
-                              onfocus="this.style.borderColor='#0098EA'" onblur="this.style.borderColor='#CBD5E1'">{{ $changeRequest->catatan_analisis ?: $changeRequest->catatan_admin }}</textarea>
+                              {{ $isVerifikasiCrDisabled ? 'disabled readonly' : '' }}
+                              style="width: 100%; height: 95px; background: {{ $isVerifikasiCrDisabled ? '#EEF2F6' : '#FFFFFF' }}; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 12px 14px; font-size: 0.82rem; font-family: 'Plus Jakarta Sans', sans-serif; color: {{ $isVerifikasiCrDisabled ? '#64748B' : '#0F172A' }}; cursor: {{ $isVerifikasiCrDisabled ? 'not-allowed' : 'text' }}; outline: none; resize: {{ $isVerifikasiCrDisabled ? 'none' : 'vertical' }}; transition: border-color 0.15s ease;"
+                              @if(!$isVerifikasiCrDisabled) onfocus="this.style.borderColor='#0098EA'" onblur="this.style.borderColor='#CBD5E1'" @endif>{{ $changeRequest->catatan_analisis ?: $changeRequest->catatan_admin }}</textarea>
                 </div>
 
                 {{-- Section 3: Butuh Solution Paper? & Upload Solution Paper (PDF) --}}
@@ -662,8 +814,7 @@
                         <input type="hidden" id="input_sp_required" name="solution_paper_required" value="{{ $changeRequest->solution_paper_required ?? 1 }}">
                         <div style="display: flex; align-items: center; gap: 10px;">
                             {{-- Option Ya --}}
-                            <button type="button" id="btn_sp_ya" onclick="toggleSolutionPaper(1)"
-                                    style="background: #E0F2FE; border: 1.5px solid #0098EA; border-radius: 8px; padding: 7px 18px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: #0284C7; font-weight: 700; font-size: 0.82rem; transition: all 0.15s ease;">
+                            <button type="button" id="btn_sp_ya" @if($isVerifikasiCrDisabled) disabled style="background: #E0F2FE; border: 1.5px solid #0098EA; border-radius: 8px; padding: 7px 18px; display: inline-flex; align-items: center; gap: 8px; cursor: not-allowed; color: #0284C7; font-weight: 700; font-size: 0.82rem; opacity: 0.65; pointer-events: none;" @else onclick="toggleSolutionPaper(1)" style="background: #E0F2FE; border: 1.5px solid #0098EA; border-radius: 8px; padding: 7px 18px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: #0284C7; font-weight: 700; font-size: 0.82rem; transition: all 0.15s ease;" @endif>
                                 <span id="dot_sp_ya" style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #0098EA; display: inline-flex; align-items: center; justify-content: center;">
                                     <span style="width: 8px; height: 8px; border-radius: 50%; background: #0098EA;"></span>
                                 </span>
@@ -671,8 +822,7 @@
                             </button>
 
                             {{-- Option Tidak --}}
-                            <button type="button" id="btn_sp_tidak" onclick="toggleSolutionPaper(0)"
-                                    style="background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 7px 18px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: #64748B; font-weight: 600; font-size: 0.82rem; transition: all 0.15s ease;">
+                            <button type="button" id="btn_sp_tidak" @if($isVerifikasiCrDisabled) disabled style="background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 7px 18px; display: inline-flex; align-items: center; gap: 8px; cursor: not-allowed; color: #64748B; font-weight: 600; font-size: 0.82rem; opacity: 0.65; pointer-events: none;" @else onclick="toggleSolutionPaper(0)" style="background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 7px 18px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: #64748B; font-weight: 600; font-size: 0.82rem; transition: all 0.15s ease;" @endif>
                                 <span id="dot_sp_tidak" style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #CBD5E1; display: inline-block;"></span>
                                 Tidak
                             </button>
@@ -684,38 +834,72 @@
                         <label style="font-size: 0.74rem; font-weight: 700; color: #0F172A; margin-bottom: 8px; display: block;" data-i18n="lbl_upload_sp">
                             Upload Solution Paper (PDF)<span style="color: #EF4444; font-weight: 700; margin-left: 2px;">*</span>
                         </label>
-                        <div style="display: flex; align-items: center; background: #FFFFFF; border: 1.5px solid #38BDF8; border-radius: 8px; height: 40px; overflow: hidden; width: 100%; max-width: 540px;">
-                            <input type="file" id="sp_file_input" name="solution_paper_file" accept=".pdf,.doc,.docx" style="display: none;" onchange="handleSolutionPaperFile(this)">
+                        <div style="display: flex; align-items: center; background: {{ $isVerifikasiCrDisabled ? '#EEF2F6' : '#FFFFFF' }}; border: 1.5px solid {{ $isVerifikasiCrDisabled ? '#CBD5E1' : '#38BDF8' }}; border-radius: 8px; height: 40px; overflow: hidden; width: 100%; max-width: 540px;">
+                            <input type="file" id="sp_file_input" name="solution_paper_file" accept=".pdf,.doc,.docx" style="display: none;" @if(!$isVerifikasiCrDisabled) onchange="handleSolutionPaperFile(this)" @endif {{ $isVerifikasiCrDisabled ? 'disabled' : '' }}>
+                            @if($isVerifikasiCrDisabled)
+                            <button type="button" disabled
+                                    style="background: #94A3B8; color: #FFFFFF; font-size: 0.78rem; font-weight: 700; height: 100%; padding: 0 16px; display: inline-flex; align-items: center; gap: 8px; border: none; cursor: not-allowed; flex-shrink: 0; opacity: 0.75;">
+                                <i class="bi bi-lock-fill" style="font-size: 0.95rem;"></i>
+                                Terkunci
+                            </button>
+                            @else
                             <button type="button" onclick="document.getElementById('sp_file_input').click()"
                                     style="background: #0B3C70; color: #FFFFFF; font-size: 0.78rem; font-weight: 700; height: 100%; padding: 0 16px; display: inline-flex; align-items: center; gap: 8px; border: none; cursor: pointer; flex-shrink: 0; transition: background 0.15s ease;"
                                     onmouseover="this.style.background='#082E55'" onmouseout="this.style.background='#0B3C70'">
                                 <i class="bi bi-cloud-arrow-up-fill" style="font-size: 0.95rem;"></i>
                                 Pilih File
                             </button>
-                            <span id="sp_file_name" style="padding: 0 16px; color: #94A3B8; font-size: 0.78rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">
-                                {{ $changeRequest->solutionPaper?->file_path ? basename($changeRequest->solutionPaper->file_path) : 'Tidak ada file yang dipilih' }}
+                            @endif
+                            <span id="sp_file_name" style="padding: 0 16px; color: {{ $isVerifikasiCrDisabled ? '#64748B' : '#94A3B8' }}; font-size: 0.78rem; font-weight: 500; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1;">
+                                {{ $changeRequest->solutionPaper?->solution_paper_file ? basename($changeRequest->solutionPaper->solution_paper_file) : ($changeRequest->solutionPaper?->file_path ? basename($changeRequest->solutionPaper->file_path) : 'Tidak ada file yang dipilih') }}
                             </span>
                         </div>
+                        @if($solutionPaperUrl)
+                        <div style="margin-top: 6px;">
+                            <a href="{{ $solutionPaperUrl }}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.74rem; font-weight: 600; color: #0070D2; text-decoration: none;">
+                                <i class="bi bi-box-arrow-up-right"></i> Lihat Solution Paper Terunggah
+                            </a>
+                        </div>
+                        @elseif($changeRequest->solutionPaper?->solution_paper_file)
+                        <div style="margin-top: 6px;">
+                            <a href="{{ \Illuminate\Support\Facades\Storage::url($changeRequest->solutionPaper->solution_paper_file) }}" target="_blank" style="display: inline-flex; align-items: center; gap: 6px; font-size: 0.74rem; font-weight: 600; color: #0070D2; text-decoration: none;">
+                                <i class="bi bi-file-earmark-pdf-fill" style="color: #EF4444;"></i> Unduh Berkas Solution Paper
+                            </a>
+                        </div>
+                        @endif
                     </div>
                 </div>
 
                 {{-- Section 4: Bottom Action Buttons (Far Right) --}}
                 <div style="display: flex; justify-content: flex-end; align-items: center; gap: 12px; margin-top: 40px;">
-                    {{-- ✕ Tolak --}}
-                    <button type="button" onclick="openRejectModal()"
-                            style="background: #DC2626; color: #FFFFFF; border: none; border-radius: 8px; padding: 10px 24px; font-size: 0.82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: background 0.15s ease;"
-                            onmouseover="this.style.background='#B91C1C'" onmouseout="this.style.background='#DC2626'">
-                        <i class="bi bi-x-lg" style="font-size: 0.82rem;"></i>
-                        Tolak
-                    </button>
+                    @if($isVerifikasiCrDisabled)
+                        <button type="button" disabled
+                                style="background: #94A3B8; color: #FFFFFF; border: none; border-radius: 8px; padding: 10px 24px; font-size: 0.82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; cursor: not-allowed; opacity: 0.65;">
+                            <i class="bi bi-x-lg" style="font-size: 0.82rem;"></i>
+                            Tolak (Nonaktif)
+                        </button>
+                        <button type="button" disabled
+                                style="background: #94A3B8; color: #FFFFFF; border: none; border-radius: 8px; padding: 10px 24px; font-size: 0.82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; cursor: not-allowed; opacity: 0.65;">
+                            <i class="bi bi-lock-fill" style="font-size: 0.95rem;"></i>
+                            Verifikasi CR (Terkunci)
+                        </button>
+                    @else
+                        {{-- ✕ Tolak --}}
+                        <button type="button" onclick="openRejectModal()"
+                                style="background: #DC2626; color: #FFFFFF; border: none; border-radius: 8px; padding: 10px 24px; font-size: 0.82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: background 0.15s ease;"
+                                onmouseover="this.style.background='#B91C1C'" onmouseout="this.style.background='#DC2626'">
+                            <i class="bi bi-x-lg" style="font-size: 0.82rem;"></i>
+                            Tolak
+                        </button>
 
-                    {{-- ✓ Verifikasi CR --}}
-                    <button type="submit" name="action" value="approve"
-                            style="background: #10B981; color: #FFFFFF; border: none; border-radius: 8px; padding: 10px 24px; font-size: 0.82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: background 0.15s ease;"
-                            onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10B981'">
-                        <i class="bi bi-check-lg" style="font-size: 0.95rem;"></i>
-                        Verifikasi CR
-                    </button>
+                        {{-- ✓ Verifikasi CR --}}
+                        <button type="submit" name="action" value="approve"
+                                style="background: #10B981; color: #FFFFFF; border: none; border-radius: 8px; padding: 10px 24px; font-size: 0.82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; transition: background 0.15s ease;"
+                                onmouseover="this.style.background='#059669'" onmouseout="this.style.background='#10B981'">
+                            <i class="bi bi-check-lg" style="font-size: 0.95rem;"></i>
+                            Verifikasi CR
+                        </button>
+                    @endif
                 </div>
             </form>
 
@@ -825,7 +1009,7 @@
                 <div style="width: 40px; height: 40px; border-radius: 50%; background: #FEE2E2; color: #DC2626; display: flex; align-items: center; justify-content: center; font-size: 1.25rem; flex-shrink: 0;">
                     <i class="bi bi-lock-fill"></i>
                 </div>
-                <div>
+                <div style="flex: 1;">
                     <h4 style="font-size: 0.95rem; font-weight: 800; color: #991B1B; margin: 0 0 4px 0;">
                         Tab Status CR Belum Bisa Diisi (Terkunci)
                     </h4>
@@ -834,7 +1018,47 @@
                         <br><strong>1. Verifikasi CR oleh PM</strong> &bull; <strong>2. Validasi & Approval oleh PM Head</strong> &bull; <strong>3. Input Quotation & Konfirmasi Pembayaran oleh Presales</strong>.
                         <br>Setelah data Quotation disimpan dan dikonfirmasi, status CR akan otomatis terbuka ke tahap <strong>Development</strong> sehingga progress pengerjaan dapat diupdate.
                     </p>
+
+                    @if($changeRequest->isPmhApproved())
+                    <div style="margin-top: 14px; padding-top: 12px; border-top: 1px dashed #FECACA; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                        <div style="font-size: 0.80rem; color: #991B1B; font-weight: 600;">
+                            <i class="bi bi-info-circle-fill me-1"></i> CR telah disetujui PM Head. Anda dapat langsung mengonfirmasi Quotation untuk membuka tahap Development:
+                        </div>
+                        <form method="POST" action="{{ route('change-requests.quotation.confirm', $changeRequest) }}" style="margin: 0;">
+                            @csrf
+                            <button type="submit"
+                                    style="background: #0284C7; color: #FFFFFF; border: none; border-radius: 8px; padding: 8px 18px; font-size: 0.82rem; font-weight: 700; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; box-shadow: 0 2px 4px rgba(2, 132, 199, 0.25); transition: background 0.15s ease;"
+                                    onmouseover="this.style.background='#0369A1'" onmouseout="this.style.background='#0284C7'">
+                                <i class="bi bi-check-circle-fill"></i>
+                                Simpan &amp; Konfirmasi Quotation (Buka Tahap Development)
+                                @if($changeRequest->saranHargaPenawaran() > 0)
+                                    &bull; Rp {{ number_format($changeRequest->saranHargaPenawaran(), 0, ',', '.') }}
+                                @endif
+                            </button>
+                        </form>
+                    </div>
+                    @endif
                 </div>
+            </div>
+            @else
+            {{-- Unlocked Success Banner --}}
+            <div style="background: #F0FDF4; border: 1.5px solid #BBF7D0; border-radius: 12px; padding: 14px 20px; margin-bottom: 24px; display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 10px;">
+                <div style="display: flex; align-items: center; gap: 10px;">
+                    <div style="width: 32px; height: 32px; border-radius: 50%; background: #DCFCE7; color: #16A34A; display: flex; align-items: center; justify-content: center; font-size: 1.05rem; flex-shrink: 0;">
+                        <i class="bi bi-check-circle-fill"></i>
+                    </div>
+                    <div>
+                        <div style="font-size: 0.88rem; font-weight: 800; color: #166534;">
+                            Tahap Development Aktif (Telah Terbuka)
+                        </div>
+                        <div style="font-size: 0.78rem; color: #15803D;">
+                            Quotation telah dikonfirmasi ({{ $changeRequest->harga_penawaran ? 'Rp ' . number_format($changeRequest->harga_penawaran, 0, ',', '.') : 'Selesai' }}). Anda dapat mengupdate status dan progres pengerjaan di bawah.
+                        </div>
+                    </div>
+                </div>
+                <span class="badge" style="background: #16A34A; color: #FFFFFF; font-size: 0.72rem; padding: 4px 12px; border-radius: 9999px;">
+                    Tahap: {{ $pmStatusLabel }} ({{ $pmStatusPct }})
+                </span>
             </div>
             @endif
 
@@ -847,8 +1071,8 @@
                     <h2 style="font-size: 1.25rem; font-weight: 800; color: #0F172A; margin: 0; letter-spacing: -0.01em;" data-i18n="cr_title_main">
                         {{ $crJudul }}
                     </h2>
-                    <span style="background: #0098EA; color: #FFFFFF; font-size: 0.72rem; font-weight: 700; padding: 3px 12px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;" data-i18n="badge_analisa">
-                        • Analisa
+                    <span style="background: #0098EA; color: #FFFFFF; font-size: 0.72rem; font-weight: 700; padding: 3px 12px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;">
+                        • {{ $changeRequest->statusLabel() }}
                     </span>
                 </div>
             </div>
@@ -866,10 +1090,13 @@
 
                 {{-- Horizontal Continuous Stepper Line --}}
                 <div style="position: relative; margin-top: 32px; margin-bottom: 8px;">
-                    {{-- Background Inactive Line --}}
-                    <div style="position: absolute; top: 15px; left: 4%; right: 4%; height: 3px; background: #E2E8F0; z-index: 1;"></div>
-                    {{-- Foreground Active Blue Line --}}
-                    <div id="stepper_active_line" style="position: absolute; top: 15px; left: 4%; width: {{ $pmStatusLineWidth }}; height: 3px; background: #0098EA; z-index: 2; transition: width 0.3s ease;"></div>
+                    {{-- Constrained Track Container between circle 1 and circle 6 centers --}}
+                    <div style="position: absolute; top: 15px; left: 30px; right: 30px; height: 3px; z-index: 1;">
+                        {{-- Background Inactive Line --}}
+                        <div style="position: absolute; top: 0; left: 0; right: 0; height: 100%; background: #E2E8F0;"></div>
+                        {{-- Foreground Active Blue Line --}}
+                        <div id="stepper_active_line" style="position: absolute; top: 0; left: 0; width: {{ $pmStatusLineWidth }}; height: 100%; background: #0098EA; transition: width 0.3s ease;"></div>
+                    </div>
 
                     {{-- 6 Step Nodes --}}
                     <div style="display: flex; justify-content: space-between; position: relative; z-index: 3;">
@@ -962,7 +1189,7 @@
                                         style="width: 100%; height: 42px; background: {{ !$isStatusCrUnlocked ? '#F1F5F9' : '#FFFFFF' }}; border: 1.5px solid {{ !$isStatusCrUnlocked ? '#CBD5E1' : '#0098EA' }}; border-radius: 8px; padding: 0 36px 0 14px; font-size: 0.84rem; font-weight: 600; color: {{ !$isStatusCrUnlocked ? '#94A3B8' : '#0F172A' }}; outline: none; appearance: none; -webkit-appearance: none; cursor: {{ !$isStatusCrUnlocked ? 'not-allowed' : 'pointer' }}; transition: border-color 0.15s ease;">
                                     <option value="diajukan" {{ in_array($statusKey, ['diajukan', 'awaiting_pm']) ? 'selected' : '' }}>Diajukan</option>
                                     <option value="analisa" {{ in_array($statusKey, ['analisa', 'dianalisis']) ? 'selected' : '' }}>Analysis</option>
-                                    <option value="development" {{ in_array($statusKey, ['development', 'dikerjakan']) ? 'selected' : '' }}>Develop</option>
+                                    <option value="development" {{ in_array($statusKey, ['development', 'dikerjakan', 'validated', 'disetujui']) ? 'selected' : '' }}>Develop</option>
                                     <option value="sit" {{ $statusKey === 'sit' ? 'selected' : '' }}>SIT</option>
                                     <option value="uat" {{ $statusKey === 'uat' ? 'selected' : '' }}>UAT</option>
                                     <option value="training" {{ $statusKey === 'training' ? 'selected' : '' }}>Training</option>
@@ -1010,6 +1237,17 @@
                             <span id="ba_file_status_label" style="font-size: 0.80rem; color: #64748B; font-weight: 500;">
                                 {{ $changeRequest->berita_acara_file ? basename($changeRequest->berita_acara_file) : ($isStatusCrUnlocked ? 'Klik untuk upload PDF' : 'Terkunci (Belum bisa diunggah)') }}
                             </span>
+                        </div>
+
+                        {{-- Tanggal Berita Acara (BA) --}}
+                        <div style="margin-top: 14px;">
+                            <label for="status_ba_date" style="font-size: 0.72rem; font-weight: 800; color: #64748B; letter-spacing: 0.04em; text-transform: uppercase; margin-bottom: 6px; display: block;">
+                                Tanggal Berita Acara (BA)
+                            </label>
+                            <input type="date" id="status_ba_date" name="berita_acara_date"
+                                   value="{{ $changeRequest->berita_acara_date ? $changeRequest->berita_acara_date->format('Y-m-d') : date('Y-m-d') }}"
+                                   {{ !$isStatusCrUnlocked ? 'disabled' : '' }}
+                                   style="width: 100%; height: 38px; background: {{ !$isStatusCrUnlocked ? '#F1F5F9' : '#FFFFFF' }}; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 0 12px; font-size: 0.82rem; color: #0F172A; outline: none;">
                         </div>
                     </div>
                 </div>
@@ -1176,12 +1414,12 @@
 
     function updateStepperPreview(statusVal) {
         var stageMap = {
-            'diajukan': { num: 1, pct: '17%', label: 'Diajukan', lineWidth: '8%' },
-            'analisa': { num: 1, pct: '17%', label: 'Analisa', lineWidth: '8%' },
-            'development': { num: 2, pct: '33%', label: 'Develop', lineWidth: '26%' },
-            'sit': { num: 3, pct: '50%', label: 'SIT', lineWidth: '46%' },
-            'uat': { num: 4, pct: '67%', label: 'UAT', lineWidth: '66%' },
-            'training': { num: 5, pct: '83%', label: 'Training', lineWidth: '86%' },
+            'diajukan': { num: 1, pct: '17%', label: 'Diajukan', lineWidth: '0%' },
+            'analisa': { num: 1, pct: '17%', label: 'Analisa', lineWidth: '0%' },
+            'development': { num: 2, pct: '33%', label: 'Develop', lineWidth: '20%' },
+            'sit': { num: 3, pct: '50%', label: 'SIT', lineWidth: '40%' },
+            'uat': { num: 4, pct: '67%', label: 'UAT', lineWidth: '60%' },
+            'training': { num: 5, pct: '83%', label: 'Training', lineWidth: '80%' },
             'golive': { num: 6, pct: '100%', label: 'Go Live', lineWidth: '100%' },
             'ditolak': { num: 1, pct: '0%', label: 'Ditolak', lineWidth: '0%' }
         };

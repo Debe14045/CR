@@ -206,4 +206,57 @@ class TenStepWorkflowTest extends TestCase
         $draftCr->refresh();
         $this->assertSame('sit', $draftCr->status);
     }
+
+    public function test_pm_verifikasi_cr_is_disabled_when_presales_payment_is_done(): void
+    {
+        $client = User::factory()->create(['role' => 'client', 'name' => 'Client Test']);
+        $pm = User::factory()->create(['role' => 'pm', 'name' => 'PM Test']);
+        $cr = ChangeRequest::create([
+            'user_id' => $client->id,
+            'kode_cr' => 'CR-2026-TEST',
+            'judul' => 'CR Test Payment Done',
+            'proyek_terkait' => 'Core Test System',
+            'klien' => 'Client Test Company',
+            'deskripsi' => 'Testing disabled verifikasi after payment.',
+            'prioritas' => 'normal',
+            'status' => 'development',
+            'tanggal_pengajuan' => now(),
+            'harga_penawaran' => 50000000,
+            'quotation_approved_tp_at' => now(),
+            'quotation_approved_client_at' => now(),
+        ]);
+        CrInvoice::create([
+            'change_request_id' => $cr->id,
+            'invoice_number' => 'INV-TEST-001',
+            'term_name' => 'Termin 1',
+            'job_description' => 'Test Payment',
+            'percentage' => 100,
+            'amount' => 50000000,
+            'payment_status' => 'paid',
+            'planned_payment_date' => now(),
+            'actual_payment_date' => now(),
+        ]);
+
+        $this->assertTrue($cr->isPresalesPaymentDone());
+
+        // PM opens show view
+        $viewResponse = $this->actingAs($pm)->get(route('change-requests.show', [$cr, 'tab' => 'verifikasi']));
+        $viewResponse->assertOk();
+        $viewResponse->assertSee('(Terkunci)');
+        $viewResponse->assertSee('Form Verifikasi CR Dinonaktifkan (Read-Only)');
+        $viewResponse->assertSee('Verifikasi CR (Terkunci)');
+        $viewResponse->assertSee('disabled readonly', false);
+
+        // PM attempts to submit verification (approve)
+        $verifyAttempt = $this->actingAs($pm)
+            ->from(route('change-requests.show', [$cr, 'tab' => 'verifikasi']))
+            ->put(route('change-requests.update', $cr), [
+                'from_tab' => 'verifikasi',
+                'action' => 'approve',
+                'mindesk_analisis' => 5,
+            ]);
+
+        $verifyAttempt->assertRedirect(route('change-requests.show', [$cr, 'tab' => 'verifikasi']));
+        $verifyAttempt->assertSessionHas('error', 'Form Verifikasi CR telah dikunci karena proses quotation dan pembayaran dari Presales telah selesai dilakukan.');
+    }
 }

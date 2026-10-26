@@ -122,7 +122,11 @@ class PMHeadFeatureTest extends TestCase
         $response->assertSee('Integrasi API Pembayaran OVO');
         $response->assertSee('STATUS ALUR CR');
         $response->assertSee('Approval PM Head');
+        $response->assertSee('ESTIMASI MANDAYS');
+        $response->assertSee('CR Notes / Catatan');
         $response->assertSee('Keputusan Approval');
+        $response->assertSee('CR Notes');
+        $response->assertSee('Catatan tambahan, prioritas, atau informasi lain yang perlu diketahui PM...');
         $response->assertSee('Tolak');
         $response->assertSee('Setujui');
     }

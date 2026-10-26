@@ -235,11 +235,29 @@
                                         <span style="width: 6px; height: 6px; border-radius: 50%; background: #7C3AED;"></span>
                                         Develop
                                     </span>
-                                @elseif (in_array($statusKey, ['golive', 'selesai']))
+                                @elseif ($statusKey === 'sit')
+                                    <span class="badge px-3 py-1 fw-bold d-inline-flex align-items-center gap-1.5"
+                                          style="background: #FEF3C7; color: #D97706; border-radius: 999px; font-size: 0.74rem;">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706;"></span>
+                                        SIT
+                                    </span>
+                                @elseif ($statusKey === 'uat')
+                                    <span class="badge px-3 py-1 fw-bold d-inline-flex align-items-center gap-1.5"
+                                          style="background: #E0E7FF; color: #4338CA; border-radius: 999px; font-size: 0.74rem;">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #4338CA;"></span>
+                                        UAT
+                                    </span>
+                                @elseif ($statusKey === 'training')
+                                    <span class="badge px-3 py-1 fw-bold d-inline-flex align-items-center gap-1.5"
+                                          style="background: #FCE7F3; color: #BE185D; border-radius: 999px; font-size: 0.74rem;">
+                                        <span style="width: 6px; height: 6px; border-radius: 50%; background: #BE185D;"></span>
+                                        Training
+                                    </span>
+                                @elseif (in_array($statusKey, ['golive', 'selesai', 'invoicing', 'awaiting_golive_validation']))
                                     <span class="badge px-3 py-1 fw-bold d-inline-flex align-items-center gap-1.5"
                                           style="background: #DCFCE7; color: #16A34A; border-radius: 999px; font-size: 0.74rem;">
                                         <span style="width: 6px; height: 6px; border-radius: 50%; background: #16A34A;"></span>
-                                        Go Live
+                                        {{ $statusKey === 'awaiting_golive_validation' ? 'Validasi Go-Live' : 'Go Live' }}
                                     </span>
                                 @else
                                     <span class="badge px-3 py-1 fw-bold d-inline-flex align-items-center gap-1.5"

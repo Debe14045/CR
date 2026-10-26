@@ -34,20 +34,618 @@
 
         {{-- Hidden inputs for backend compatibility --}}
         @php
+            $isPmUser = auth()->user()?->isPm() || auth()->user()?->isAdmin() || (!empty($isPm) && empty($isClient));
+            
+            $companies = [];
+            if (isset($clients) && count($clients) > 0) {
+                foreach ($clients as $cl) {
+                    $clName = is_object($cl) ? $cl->company : $cl;
+                    $clClean = trim(preg_replace('/^(pt\.?|cv\.?)\s+/i', '', $clName));
+                    $clInit = strtoupper(substr($clClean, 0, 2)) ?: 'CL';
+                    $companies[] = ['name' => $clName, 'initial' => $clInit];
+                }
+            } elseif (Auth::user()?->client?->company) {
+                $clName = Auth::user()->client->company;
+                $companies[] = ['name' => $clName, 'initial' => strtoupper(substr($clName, 0, 2))];
+            } else {
+                $companies[] = ['name' => 'PT Maju Bersama', 'initial' => 'MB'];
+            }
+
             $defaultComp = old('nama_perusahaan', !empty($changeRequest) ? ($changeRequest->klien ?: '') : (Auth::user()?->client?->company ?? ''));
+            if (empty($defaultComp) && count($companies) > 0) {
+                $defaultComp = $companies[0]['name'];
+            }
             $defaultProj = old('nama_project', !empty($changeRequest) ? ($changeRequest->proyek_terkait ?: '') : '');
+            if (empty($defaultProj)) {
+                $defaultProj = 'Eprocurement PT eagle Hight plantanions TBK';
+            }
             $defaultInitial = !empty($defaultComp) ? strtoupper(substr(trim(preg_replace('/^(pt\.?|cv\.?)\s+/i', '', $defaultComp)), 0, 2)) : '';
             if (!$defaultInitial && !empty($defaultComp)) $defaultInitial = strtoupper(substr($defaultComp, 0, 2));
-            if (!$defaultInitial) $defaultInitial = '-';
+            if (!$defaultInitial) $defaultInitial = 'MB';
+
+            $selectedProject = old('nama_project', !empty($changeRequest) ? ($changeRequest->proyek_terkait ?: '') : 'Eprocurement PT eagle Hight plantanions TBK');
         @endphp
         <input type="hidden" name="nama_perusahaan" id="nama_perusahaan_input" value="{{ $defaultComp }}">
         <input type="hidden" name="nama_project" id="nama_project_input" value="{{ $defaultProj }}">
         <input type="hidden" name="prioritas" id="prioritas_input" value="{{ old('prioritas', !empty($changeRequest) ? ($changeRequest->prioritas ?: 'normal') : 'normal') }}">
 
-        {{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
-             CARD 1: INFORMASI KLIEN (#DFEDFD Header Strip)
-        ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
-        <div class="card border-0 mb-4 shadow-xs" style="border-radius: 14px; background: #FFFFFF; border: 1px solid #E2E8F0 !important; position: relative; z-index: 50;">
+        @if ($isPmUser)
+            {{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                 PM VIEW: AJUKAN CR BARU (Unified Layout matching screenshot)
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
+
+            {{-- Thin Blue Divider --}}
+            <div style="height: 1.5px; background: #CDE7FE; margin: -0.5rem 0 1.5rem 0;"></div>
+
+            {{-- Single Unified Gray Container (#F4F6F9) --}}
+            <div class="p-4 mb-4" style="background: #F4F6F9; border: 1.5px solid #DCE6F1; border-radius: 18px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
+
+                {{-- ── ROW 1: Nama Perusahaan*, Inisial Klien, Nama PIC, CR Owner* ── --}}
+                <div class="row g-3 mb-3 align-items-end">
+                    {{-- Col 1: Nama Perusahaan* --}}
+                    <div class="col-lg-5 col-12">
+                        <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                            Nama Perusahaan <span style="color: #EF4444;">*</span>
+                        </label>
+                        <div class="position-relative" id="pmCompanyDropdownWrapper">
+                            <button type="button" class="btn w-100 d-flex align-items-center justify-content-between text-start"
+                                    id="pmCompanyDropdownBtn"
+                                    onclick="togglePmDropdown('pmCompanyDropdownMenu', event)"
+                                    style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; font-weight: 500; color: #1E293B; transition: all 0.15s ease;">
+                                <span id="pmSelectedCompanyName">{{ $defaultComp ?: 'PT Maju Bersama' }}</span>
+                                <svg id="pmCompanyChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ms-2 flex-shrink-0" style="transition: transform 0.2s ease;">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+                            
+                            <div class="position-absolute w-100 py-1" id="pmCompanyDropdownMenu"
+                                 style="display: none; top: calc(100% + 4px); left: 0; z-index: 9999; background: #FFFFFF; border: 1.5px solid #0098EA; border-radius: 8px; box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.18); max-height: 240px; overflow-y: auto;">
+                                @foreach ($companies as $comp)
+                                    <div class="dropdown-item py-2 px-3 cursor-pointer d-flex align-items-center justify-content-between"
+                                         onclick="selectPmCompany('{{ $comp['name'] }}', '{{ $comp['initial'] }}')"
+                                         style="font-size: 0.84rem; color: #1E293B; cursor: pointer;"
+                                         onmouseover="this.style.background='#F0F9FF'; this.style.color='#0098EA';"
+                                         onmouseout="this.style.background='transparent'; this.style.color='#1E293B';">
+                                        <span style="font-weight: 600;">{{ $comp['name'] }}</span>
+                                        <span style="background: #E0F2FE; color: #0284C7; font-size: 0.70rem; font-weight: 700; padding: 2px 8px; border-radius: 4px;">{{ $comp['initial'] }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Col 2: Inisial Klien --}}
+                    <div class="col-lg-1 col-3" style="min-width: 65px; max-width: 85px;">
+                        <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                            Inisial Klien
+                        </label>
+                        <div id="pm_inisial_klien_box" class="d-flex align-items-center justify-content-center fw-bold"
+                             style="background: #CBD5E1; color: #334155; border-radius: 8px; height: 42px; font-size: 0.84rem;">
+                            {{ $defaultInitial ?: 'MB' }}
+                        </div>
+                        <input type="hidden" name="inisial_klien" id="pm_inisial_klien_input" value="{{ $defaultInitial ?: 'MB' }}">
+                    </div>
+
+                    {{-- Col 3: Nama PIC --}}
+                    <div class="col-lg-3 col-9">
+                        <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                            Nama PIC
+                        </label>
+                        <input type="text" name="nama_pic" id="pm_nama_pic"
+                               value="{{ old('nama_pic', !empty($changeRequest) ? ($changeRequest->pic_sales ?: 'Totok Antok') : 'Totok Antok') }}"
+                               class="form-control"
+                               style="background: #CBD5E1; color: #334155; border: none; border-radius: 8px; height: 42px; font-size: 0.84rem; font-weight: 500; padding: 0 14px;">
+                    </div>
+
+                    {{-- Col 4: CR Owner* --}}
+                    <div class="col-lg-3 col-12">
+                        <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                            CR Owner <span style="color: #EF4444;">*</span>
+                        </label>
+                        <input type="text" name="cr_owner" id="pm_cr_owner" required
+                               value="{{ old('cr_owner', !empty($changeRequest) ? ($changeRequest->owner_cr ?: 'Andik Vermansyah') : 'Andik Vermansyah') }}"
+                               class="form-control"
+                               style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; font-size: 0.84rem; font-weight: 500; padding: 0 14px; color: #1E293B;">
+                    </div>
+                </div>
+
+                {{-- ── ROW 2: Nama Project*, Tanggal, Request Date* ── --}}
+                <div class="row g-3 mb-3 align-items-end">
+                    {{-- Col 1: Nama Project* --}}
+                    <div class="col-lg-6 col-12">
+                        <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                            Nama Project <span style="color: #EF4444;">*</span>
+                        </label>
+                        <div class="position-relative" id="pmProjectDropdownWrapper">
+                            <button type="button" class="btn w-100 d-flex align-items-center justify-content-between text-start"
+                                    id="pmProjectDropdownBtn"
+                                    onclick="togglePmDropdown('pmProjectDropdownMenu', event)"
+                                    style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; font-weight: 500; color: #1E293B; transition: all 0.15s ease;">
+                                <span id="pmSelectedProjectName" class="text-truncate">{{ $selectedProject ?: 'Eprocurement PT eagle Hight plantanions TBK' }}</span>
+                                <svg id="pmProjectChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ms-2 flex-shrink-0" style="transition: transform 0.2s ease;">
+                                    <polyline points="6 9 12 15 18 9"></polyline>
+                                </svg>
+                            </button>
+
+                            <div class="position-absolute w-100 py-1" id="pmProjectDropdownMenu"
+                                 style="display: none; top: calc(100% + 4px); left: 0; z-index: 9999; background: #FFFFFF; border: 1.5px solid #0098EA; border-radius: 8px; box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.18); max-height: 240px; overflow-y: auto;">
+                                @php
+                                    $projOptions = [
+                                        'Eprocurement PT eagle Hight plantanions TBK',
+                                        'Enterprise HR Management System',
+                                        'Mobile Banking Platform App',
+                                        'Core ERP Migration & Integration',
+                                        'Single Sign-On & Authentication Gateway',
+                                    ];
+                                @endphp
+                                @foreach ($projOptions as $proj)
+                                    <div class="dropdown-item py-2 px-3 cursor-pointer d-flex align-items-center justify-content-between"
+                                         onclick="selectPmProject('{{ $proj }}')"
+                                         style="font-size: 0.84rem; color: #1E293B; cursor: pointer;"
+                                         onmouseover="this.style.background='#F0F9FF'; this.style.color='#0098EA';"
+                                         onmouseout="this.style.background='transparent'; this.style.color='#1E293B';">
+                                        <span style="font-weight: 500;">{{ $proj }}</span>
+                                    </div>
+                                @endforeach
+                            </div>
+                        </div>
+                    </div>
+
+                    {{-- Col 2: Tanggal --}}
+                    <div class="col-lg-3 col-6">
+                        <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                            Tanggal
+                        </label>
+                        <div class="position-relative" id="pm_date_input_wrap">
+                            <input type="text" name="date" id="pm_date_input"
+                                   value="{{ old('date', !empty($changeRequest) && $changeRequest->tanggal_pengajuan ? date('d M Y', strtotime($changeRequest->tanggal_pengajuan)) : '04 Sep 2026') }}"
+                                   readonly onclick="openDatePicker('pm_date_input', event)"
+                                   class="form-control"
+                                   style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; font-size: 0.84rem; padding: 0 38px 0 14px; cursor: pointer; color: #1E293B; font-weight: 500;">
+                            <span class="position-absolute end-0 top-50 translate-middle-y me-3 text-muted" style="cursor: pointer;" onclick="openDatePicker('pm_date_input', event)">
+                                <i class="bi bi-calendar3" style="font-size: 0.95rem; color: #334155;"></i>
+                            </span>
+                        </div>
+                    </div>
+
+                    {{-- Col 3: Request Date* --}}
+                    <div class="col-lg-3 col-6">
+                        <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                            Request Date <span style="color: #EF4444;">*</span>
+                        </label>
+                        <div class="position-relative" id="pm_request_date_input_wrap">
+                            <input type="text" name="request_date" id="pm_request_date_input"
+                                   value="{{ old('request_date', !empty($changeRequest) && $changeRequest->target_selesai ? date('d M Y', strtotime($changeRequest->target_selesai)) : '04 Sep 2026') }}"
+                                   readonly onclick="openDatePicker('pm_request_date_input', event)"
+                                   class="form-control"
+                                   style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; font-size: 0.84rem; padding: 0 38px 0 14px; cursor: pointer; color: #1E293B; font-weight: 500;">
+                            <span class="position-absolute end-0 top-50 translate-middle-y me-3 text-muted" style="cursor: pointer;" onclick="openDatePicker('pm_request_date_input', event)">
+                                <i class="bi bi-calendar3" style="font-size: 0.95rem; color: #334155;"></i>
+                            </span>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ── ROW 3: Nama CR* ── --}}
+                <div class="mb-3">
+                    <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                        Nama CR <span style="color: #EF4444;">*</span>
+                    </label>
+                    <input type="text" name="cr_name" id="pm_cr_name" class="form-control"
+                           placeholder="Contoh: Integrasi API Pembayaran OVO"
+                           value="{{ old('cr_name', old('judul', !empty($changeRequest) ? $changeRequest->judul : '')) }}"
+                           required
+                           style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; font-size: 0.84rem; padding: 0 14px; color: #1E293B;">
+                </div>
+
+                {{-- ── ROW 4: Detail CR* (TinyMCE WYSIWYG Editor) ── --}}
+                <div class="mb-3">
+                    <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                        Detail CR <span style="color: #EF4444;">*</span>
+                    </label>
+                    
+                    <div style="border: 1px solid #CBD5E1; border-radius: 8px; overflow: hidden; background: #FFFFFF;" id="pmEditorWrapper">
+                        {{-- Menubar with Working Dropdowns --}}
+                        <div class="d-flex align-items-center gap-1 px-2 py-1 bg-white border-bottom position-relative"
+                             style="font-size: 0.78rem; user-select: none; color: #475569; border-color: #F1F5F9 !important;">
+                            
+                            {{-- File Menu --}}
+                            <div class="dropdown d-inline-block">
+                                <span class="cursor-pointer py-1 px-2 rounded menubar-btn" data-bs-toggle="dropdown" aria-expanded="false" role="button">File</span>
+                                <ul class="dropdown-menu shadow-sm border py-1" style="font-size: 0.8rem; border-radius: 8px; min-width: 140px;">
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onclick="editorAction('new')"><i class="bi bi-file-earmark me-2"></i> Dokumen Baru</a></li>
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onclick="window.print()"><i class="bi bi-printer me-2"></i> Cetak (Print)</a></li>
+                                </ul>
+                            </div>
+
+                            {{-- Edit Menu --}}
+                            <div class="dropdown d-inline-block">
+                                <span class="cursor-pointer py-1 px-2 rounded menubar-btn" data-bs-toggle="dropdown" aria-expanded="false" role="button">Edit</span>
+                                <ul class="dropdown-menu shadow-sm border py-1" style="font-size: 0.8rem; border-radius: 8px; min-width: 150px;">
+                                    <li><a class="dropdown-item py-1 px-3 d-flex justify-content-between" href="javascript:void(0)" onmousedown="event.preventDefault();" onclick="execCmd('undo')"><span><i class="bi bi-arrow-counterclockwise me-2"></i> Undo</span> <small class="text-muted">Ctrl+Z</small></a></li>
+                                    <li><a class="dropdown-item py-1 px-3 d-flex justify-content-between" href="javascript:void(0)" onmousedown="event.preventDefault();" onclick="execCmd('redo')"><span><i class="bi bi-arrow-clockwise me-2"></i> Redo</span> <small class="text-muted">Ctrl+Y</small></a></li>
+                                    <li><hr class="dropdown-divider my-1"></li>
+                                    <li><a class="dropdown-item py-1 px-3 d-flex justify-content-between" href="javascript:void(0)" onmousedown="event.preventDefault();" onclick="execCmd('selectAll')"><span><i class="bi bi-check-all me-2"></i> Pilih Semua</span> <small class="text-muted">Ctrl+A</small></a></li>
+                                </ul>
+                            </div>
+
+                            {{-- View Menu --}}
+                            <div class="dropdown d-inline-block">
+                                <span class="cursor-pointer py-1 px-2 rounded menubar-btn" data-bs-toggle="dropdown" aria-expanded="false" role="button">View</span>
+                                <ul class="dropdown-menu shadow-sm border py-1" style="font-size: 0.8rem; border-radius: 8px; min-width: 140px;">
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onclick="openPreviewModal()"><i class="bi bi-eye me-2"></i> Preview CR</a></li>
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onclick="toggleEditorFullscreen()"><i class="bi bi-arrows-fullscreen me-2"></i> Layar Penuh</a></li>
+                                </ul>
+                            </div>
+
+                            {{-- Insert Menu --}}
+                            <div class="dropdown d-inline-block">
+                                <span class="cursor-pointer py-1 px-2 rounded menubar-btn" data-bs-toggle="dropdown" aria-expanded="false" role="button">Insert</span>
+                                <ul class="dropdown-menu shadow-sm border py-1" style="font-size: 0.8rem; border-radius: 8px; min-width: 160px;">
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onclick="insertLinkPrompt()"><i class="bi bi-link-45deg me-2"></i> Tautan Link</a></li>
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onclick="insertImagePrompt()"><i class="bi bi-image me-2"></i> Gambar / Mockup</a></li>
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onmousedown="event.preventDefault();" onclick="execCmd('insertHorizontalRule')"><i class="bi bi-dash-lg me-2"></i> Garis Horizontal</a></li>
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onclick="insertCurrentDate()"><i class="bi bi-calendar-event me-2"></i> Tanggal Hari Ini</a></li>
+                                </ul>
+                            </div>
+
+                            {{-- Format Menu --}}
+                            <div class="dropdown d-inline-block">
+                                <span class="cursor-pointer py-1 px-2 rounded menubar-btn" data-bs-toggle="dropdown" aria-expanded="false" role="button">Format</span>
+                                <ul class="dropdown-menu shadow-sm border py-1" style="font-size: 0.8rem; border-radius: 8px; min-width: 150px;">
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onmousedown="event.preventDefault();" onclick="execCmd('bold')"><strong>Tebal (Bold)</strong></a></li>
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onmousedown="event.preventDefault();" onclick="execCmd('italic')"><em>Miring (Italic)</em></a></li>
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onmousedown="event.preventDefault();" onclick="execCmd('underline')"><u>Garis Bawah</u></a></li>
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onmousedown="event.preventDefault();" onclick="execCmd('strikeThrough')"><del>Coret</del></a></li>
+                                    <li><hr class="dropdown-divider my-1"></li>
+                                    <li><a class="dropdown-item py-1 px-3 text-danger" href="javascript:void(0)" onmousedown="event.preventDefault();" onclick="execCmd('removeFormat')"><i class="bi bi-eraser me-2"></i> Hapus Format</a></li>
+                                </ul>
+                            </div>
+
+                            {{-- Tools Menu --}}
+                            <div class="dropdown d-inline-block">
+                                <span class="cursor-pointer py-1 px-2 rounded menubar-btn" data-bs-toggle="dropdown" aria-expanded="false" role="button">Tools</span>
+                                <ul class="dropdown-menu shadow-sm border py-1" style="font-size: 0.8rem; border-radius: 8px; min-width: 150px;">
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onclick="showWordCount()"><i class="bi bi-calculator me-2"></i> Hitung Kata</a></li>
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onclick="openSourceModal()"><i class="bi bi-code-slash me-2"></i> Kode Sumber HTML</a></li>
+                                </ul>
+                            </div>
+
+                            {{-- Table Menu --}}
+                            <div class="dropdown d-inline-block">
+                                <span class="cursor-pointer py-1 px-2 rounded menubar-btn" data-bs-toggle="dropdown" aria-expanded="false" role="button">Table</span>
+                                <ul class="dropdown-menu shadow-sm border py-1" style="font-size: 0.8rem; border-radius: 8px; min-width: 140px;">
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onclick="insertTable(2, 2)"><i class="bi bi-table me-2"></i> Tabel 2 x 2</a></li>
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onclick="insertTable(3, 3)"><i class="bi bi-table me-2"></i> Tabel 3 x 3</a></li>
+                                </ul>
+                            </div>
+
+                            {{-- Help Menu --}}
+                            <div class="dropdown d-inline-block">
+                                <span class="cursor-pointer py-1 px-2 rounded menubar-btn" data-bs-toggle="dropdown" aria-expanded="false" role="button">Help</span>
+                                <ul class="dropdown-menu shadow-sm border py-1" style="font-size: 0.8rem; border-radius: 8px; min-width: 160px;">
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onclick="openHelpModal()"><i class="bi bi-question-circle me-2"></i> Bantuan & Shortcut</a></li>
+                                </ul>
+                            </div>
+
+                        </div>
+
+                        {{-- Toolbar Icons --}}
+                        <div class="d-flex align-items-center gap-1 px-3 py-1 border-bottom bg-white flex-wrap" style="font-size: 0.82rem; color: #334155; border-color: #F1F5F9 !important;">
+                            
+                            {{-- Undo / Redo --}}
+                            <button type="button" class="btn btn-sm btn-light border-0 p-1 text-secondary"
+                                    onmousedown="event.preventDefault();" onclick="execCmd('undo')" title="Undo">
+                                <i class="bi bi-arrow-counterclockwise"></i>
+                            </button>
+                            <button type="button" class="btn btn-sm btn-light border-0 p-1 text-secondary"
+                                    onmousedown="event.preventDefault();" onclick="execCmd('redo')" title="Redo">
+                                <i class="bi bi-arrow-clockwise"></i>
+                            </button>
+
+                            <div class="vr my-1 mx-1 text-muted" style="opacity: 0.25;"></div>
+
+                            {{-- Paragraph Dropdown --}}
+                            <div class="dropdown d-inline-block">
+                                <button type="button" class="btn btn-sm btn-light border-0 px-2 py-0 text-dark d-flex align-items-center gap-1"
+                                        id="pmParagraphDropdownBtn" data-bs-toggle="dropdown" aria-expanded="false"
+                                        style="font-size: 0.78rem; font-weight: 500; height: 26px;">
+                                    <span id="pmCurrentParagraphLabel">Paragraph</span>
+                                    <i class="bi bi-chevron-down" style="font-size: 0.65rem;"></i>
+                                </button>
+                                <ul class="dropdown-menu shadow-sm border py-1" style="font-size: 0.8rem; border-radius: 8px; min-width: 140px;">
+                                    <li><a class="dropdown-item py-1 px-3" href="javascript:void(0)" onmousedown="event.preventDefault();" onclick="applyFormatBlock('p', 'Paragraph')">Paragraph</a></li>
+                                    <li><a class="dropdown-item py-1 px-3 fw-bold" href="javascript:void(0)" onmousedown="event.preventDefault();" onclick="applyFormatBlock('h1', 'Heading 1')">Heading 1</a></li>
+                                    <li><a class="dropdown-item py-1 px-3 fw-bold" href="javascript:void(0)" onmousedown="event.preventDefault();" onclick="applyFormatBlock('h2', 'Heading 2')">Heading 2</a></li>
+                                    <li><a class="dropdown-item py-1 px-3 fw-bold" href="javascript:void(0)" onmousedown="event.preventDefault();" onclick="applyFormatBlock('h3', 'Heading 3')">Heading 3</a></li>
+                                    <li><a class="dropdown-item py-1 px-3 fst-italic" href="javascript:void(0)" onmousedown="event.preventDefault();" onclick="applyFormatBlock('blockquote', 'Quote')">Quote</a></li>
+                                    <li><a class="dropdown-item py-1 px-3 font-monospace" href="javascript:void(0)" onmousedown="event.preventDefault();" onclick="applyFormatBlock('pre', 'Code')">Code Block</a></li>
+                                </ul>
+                            </div>
+
+                            <div class="vr my-1 mx-1 text-muted" style="opacity: 0.25;"></div>
+
+                            {{-- Bold, Italic, Underline, Strikethrough --}}
+                            <button type="button" class="btn btn-sm btn-light border-0 px-2 py-0 fw-bold text-dark"
+                                    onmousedown="event.preventDefault();" onclick="execCmd('bold')" title="Bold (Ctrl+B)">B</button>
+                            <button type="button" class="btn btn-sm btn-light border-0 px-2 py-0 fst-italic text-dark"
+                                    onmousedown="event.preventDefault();" onclick="execCmd('italic')" title="Italic (Ctrl+I)">I</button>
+                            <button type="button" class="btn btn-sm btn-light border-0 px-2 py-0 text-decoration-underline text-dark"
+                                    onmousedown="event.preventDefault();" onclick="execCmd('underline')" title="Underline (Ctrl+U)">U</button>
+                            <button type="button" class="btn btn-sm btn-light border-0 px-2 py-0 text-decoration-line-through text-dark"
+                                    onmousedown="event.preventDefault();" onclick="execCmd('strikeThrough')" title="Strikethrough">S</button>
+
+                            <div class="vr my-1 mx-1 text-muted" style="opacity: 0.25;"></div>
+
+                            {{-- Alignments --}}
+                            <button type="button" class="btn btn-sm btn-light border-0 p-1 text-secondary"
+                                    onmousedown="event.preventDefault();" onclick="execCmd('justifyLeft')" title="Align Left"><i class="bi bi-text-left"></i></button>
+                            <button type="button" class="btn btn-sm btn-light border-0 p-1 text-secondary"
+                                    onmousedown="event.preventDefault();" onclick="execCmd('justifyCenter')" title="Align Center"><i class="bi bi-text-center"></i></button>
+                            <button type="button" class="btn btn-sm btn-light border-0 p-1 text-secondary"
+                                    onmousedown="event.preventDefault();" onclick="execCmd('justifyRight')" title="Align Right"><i class="bi bi-text-right"></i></button>
+                            <button type="button" class="btn btn-sm btn-light border-0 p-1 text-secondary"
+                                    onmousedown="event.preventDefault();" onclick="execCmd('justifyFull')" title="Justify"><i class="bi bi-justify"></i></button>
+
+                            <div class="vr my-1 mx-1 text-muted" style="opacity: 0.25;"></div>
+
+                            {{-- Lists & Indents --}}
+                            <button type="button" class="btn btn-sm btn-light border-0 p-1 text-secondary"
+                                    onmousedown="event.preventDefault();" onclick="execCmd('insertUnorderedList')" title="Bullet List"><i class="bi bi-list-ul"></i></button>
+                            <button type="button" class="btn btn-sm btn-light border-0 p-1 text-secondary"
+                                    onmousedown="event.preventDefault();" onclick="execCmd('insertOrderedList')" title="Numbered List"><i class="bi bi-list-ol"></i></button>
+                            <button type="button" class="btn btn-sm btn-light border-0 p-1 text-secondary"
+                                    onmousedown="event.preventDefault();" onclick="execCmd('outdent')" title="Kurangi Inden"><i class="bi bi-text-indent-right"></i></button>
+                            <button type="button" class="btn btn-sm btn-light border-0 p-1 text-secondary"
+                                    onmousedown="event.preventDefault();" onclick="execCmd('indent')" title="Tambah Inden"><i class="bi bi-text-indent-left"></i></button>
+
+                            <div class="vr my-1 mx-1 text-muted" style="opacity: 0.25;"></div>
+
+                            {{-- Link & Image --}}
+                            <button type="button" class="btn btn-sm btn-light border-0 p-1 text-secondary"
+                                    onmousedown="event.preventDefault();" onclick="insertLinkPrompt()" title="Insert Link"><i class="bi bi-link-45deg"></i></button>
+                            <button type="button" class="btn btn-sm btn-light border-0 p-1 text-secondary"
+                                    onmousedown="event.preventDefault();" onclick="insertImagePrompt()" title="Insert Image"><i class="bi bi-image"></i></button>
+                        </div>
+
+                        {{-- Contenteditable Area --}}
+                        <div id="pmEditorBody" contenteditable="true"
+                             style="min-height: 250px; padding: 14px 16px; outline: none; font-size: 0.86rem; line-height: 1.6; color: #1E293B;"
+                             oninput="syncEditor()"
+                             data-placeholder="Tuliskan rincian kebutuhan perubahan sistem, spesifikasi fitur baru, atau alur kerja yang diinginkan...">
+                            {!! old('detail_cr', old('deskripsi_cr', old('deskripsi', !empty($changeRequest) ? $changeRequest->deskripsi : ''))) !!}
+                        </div>
+                        <textarea name="detail_cr" id="pm_deskripsi_cr_hidden" class="d-none">{{ old('detail_cr', old('deskripsi_cr', old('deskripsi', !empty($changeRequest) ? $changeRequest->deskripsi : ''))) }}</textarea>
+
+                        {{-- TinyMCE Statusbar at bottom --}}
+                        <div class="px-3 py-1 border-top d-flex justify-content-between align-items-center text-muted"
+                             style="background: #F8FAFC; font-size: 0.72rem; user-select: none; border-color: #F1F5F9 !important;">
+                            <span style="color: #64748B;">p</span>
+                            <span style="color: #94A3B8; cursor: pointer;" onclick="openHelpModal()" title="Klik untuk bantuan shortcut">Press ⌥0 for help</span>
+                            <div class="d-flex align-items-center gap-1" style="color: #64748B;">
+                                <span>Build with</span>
+                                <span class="fw-bold" style="color: #1E293B;">tinyMCE</span>
+                                <svg width="10" height="10" viewBox="0 0 10 10" fill="none" style="margin-left: 4px; opacity: 0.5;">
+                                    <path d="M9 1L1 9M9 5L5 9M9 9H9.01" stroke="#475569" stroke-width="1.5" stroke-linecap="round"/>
+                                </svg>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ── ROW 5: Dokumen Lainnya* (50%) & Prioritas CR* (50%) ── --}}
+                <div class="row g-3 mb-3 align-items-end">
+                    {{-- Dokumen Lainnya* --}}
+                    <div class="col-lg-6 col-12">
+                        <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                            Dokumen Lainnya <span style="color: #EF4444;">*</span>
+                        </label>
+                        <div class="d-flex align-items-center" style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; overflow: hidden;">
+                            <button type="button" class="btn text-white d-flex align-items-center justify-content-center gap-2 px-3 h-100 flex-shrink-0"
+                                    onclick="document.getElementById('pm_dokumen_lainnya').click()"
+                                    style="background: #0F2A4A; border: none; border-radius: 0; font-size: 0.82rem; font-weight: 600;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <span>Pilih File</span>
+                            </button>
+                            <span id="pm_dokumen_lainnya_label" class="px-3 text-truncate flex-grow-1" style="font-size: 0.82rem; color: #64748B;">
+                                Tidak ada file yang dipilih
+                            </span>
+                            <input type="file" name="dokumen_lainnya" id="pm_dokumen_lainnya" class="d-none" onchange="handlePmFileInput(this, 'pm_dokumen_lainnya_label')">
+                        </div>
+                    </div>
+
+                    {{-- Prioritas CR* --}}
+                    <div class="col-lg-6 col-12">
+                        <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                            Prioritas CR <span style="color: #EF4444;">*</span>
+                        </label>
+                        <div class="d-flex gap-3">
+                            {{-- Normal Pill --}}
+                            <div id="pmPriorityNormalCard" class="flex-grow-1 d-flex align-items-center justify-content-between px-3 cursor-pointer"
+                                 onclick="selectPmPriority('normal')"
+                                 style="background: #FFFFFF; border: 1.5px solid #0098EA; border-radius: 8px; height: 42px; transition: all 0.15s ease;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span style="width: 10px; height: 10px; border-radius: 50%; background: #22C55E; box-shadow: 0 0 6px rgba(34, 197, 94, 0.6); display: inline-block;"></span>
+                                    <span id="pmLabelNormal" class="fw-semibold" style="font-size: 0.84rem; color: #0284C7;">Normal</span>
+                                </div>
+                                <span id="pmRadioNormal">
+                                    <span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #0098EA; display: inline-flex; align-items: center; justify-content: center;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #0098EA;"></span></span>
+                                </span>
+                            </div>
+
+                            {{-- Urgent Pill --}}
+                            <div id="pmPriorityUrgentCard" class="flex-grow-1 d-flex align-items-center justify-content-between px-3 cursor-pointer"
+                                 onclick="selectPmPriority('urgent')"
+                                 style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; transition: all 0.15s ease;">
+                                <div class="d-flex align-items-center gap-2">
+                                    <span style="width: 10px; height: 10px; border-radius: 50%; background: #EF4444; box-shadow: 0 0 6px rgba(239, 68, 68, 0.6); display: inline-block;"></span>
+                                    <span id="pmLabelUrgent" class="fw-semibold" style="font-size: 0.84rem; color: #64748B;">Urgent</span>
+                                </div>
+                                <span id="pmRadioUrgent">
+                                    <span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #CBD5E1; display: inline-block;"></span>
+                                </span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ── ROW 6: Estimasi Mandays (Analisis*, Development*, Testing*, Total Mandays) ── --}}
+                <div class="mb-3">
+                    <div class="fw-bold mb-2" style="font-size: 0.8rem; color: #0F172A;">Estimasi Mandays</div>
+                    <div class="row g-3">
+                        <div class="col-lg-3 col-6">
+                            <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                                Analisis (hari) <span style="color: #EF4444;">*</span>
+                            </label>
+                            <input type="number" step="0.5" min="0" name="mindesk_analisis" id="pm_mindesk_analisis"
+                                   value="{{ old('mindesk_analisis', !empty($changeRequest) && $changeRequest->mindesk_analisis !== null ? $changeRequest->mindesk_analisis : 0) }}"
+                                   oninput="this.dataset.touched = '1'; calcPmTotalMandays();"
+                                   class="form-control"
+                                   style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; font-size: 0.84rem; padding: 0 14px; color: #1E293B;">
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                                Development (hari) <span style="color: #EF4444;">*</span>
+                            </label>
+                            <input type="number" step="0.5" min="0" name="mindesk_development" id="pm_mindesk_development"
+                                   value="{{ old('mindesk_development', !empty($changeRequest) && $changeRequest->mindesk_development !== null ? $changeRequest->mindesk_development : 0) }}"
+                                   oninput="this.dataset.touched = '1'; calcPmTotalMandays();"
+                                   class="form-control"
+                                   style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; font-size: 0.84rem; padding: 0 14px; color: #1E293B;">
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                                Testing (hari) <span style="color: #EF4444;">*</span>
+                            </label>
+                            <input type="number" step="0.5" min="0" name="mindesk_testing" id="pm_mindesk_testing"
+                                   value="{{ old('mindesk_testing', !empty($changeRequest) && $changeRequest->mindesk_testing !== null ? $changeRequest->mindesk_testing : 0) }}"
+                                   oninput="this.dataset.touched = '1'; calcPmTotalMandays();"
+                                   class="form-control"
+                                   style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; font-size: 0.84rem; padding: 0 14px; color: #1E293B;">
+                        </div>
+                        <div class="col-lg-3 col-6">
+                            <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                                Total Mandays
+                            </label>
+                            <input type="text" id="pm_total_mandays" readonly
+                                   value="10"
+                                   class="form-control fw-bold"
+                                   style="background: #CBD5E1; color: #1E293B; border: none; border-radius: 8px; height: 42px; font-size: 0.84rem; padding: 0 14px;">
+                        </div>
+                    </div>
+                </div>
+
+                {{-- ── ROW 7: CR Notes ── --}}
+                <div class="mb-3">
+                    <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                        CR Notes
+                    </label>
+                    <textarea name="cr_notes" id="pm_cr_notes" rows="3" class="form-control"
+                              style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 0.84rem; padding: 12px 14px; width: 100%; height: 90px; outline: none; color: #1E293B;"
+                              placeholder="Catatan tambahan atau konteks...">{{ old('cr_notes', !empty($changeRequest) ? ($changeRequest->catatan_pengajuan ?: $changeRequest->catatan_analisis) : '') }}</textarea>
+                </div>
+
+                {{-- ── ROW 8: Butuh Solution Paper?* & Upload Solution Paper (PDF)* ── --}}
+                <div class="row g-3 align-items-end">
+                    {{-- Butuh Solution Paper?* --}}
+                    <div class="col-lg-4 col-12">
+                        <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                            Butuh Solution Paper? <span style="color: #EF4444;">*</span>
+                        </label>
+                        <div class="d-flex gap-2">
+                            {{-- Ya Pill --}}
+                            <div id="pmSpYaCard" class="d-flex align-items-center gap-2 px-3 cursor-pointer"
+                                 onclick="selectPmSolutionPaper(1)"
+                                 style="background: #FFFFFF; border: 1.5px solid #0098EA; border-radius: 8px; height: 42px; min-width: 95px; transition: all 0.15s ease;">
+                                <span id="pmSpYaRadio">
+                                    <span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #0098EA; display: inline-flex; align-items: center; justify-content: center;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #0098EA;"></span></span>
+                                </span>
+                                <span id="pmSpYaLabel" class="fw-semibold" style="font-size: 0.84rem; color: #0284C7;">Ya</span>
+                            </div>
+
+                            {{-- Tidak Pill --}}
+                            <div id="pmSpTidakCard" class="d-flex align-items-center gap-2 px-3 cursor-pointer"
+                                 onclick="selectPmSolutionPaper(0)"
+                                 style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; min-width: 95px; transition: all 0.15s ease;">
+                                <span id="pmSpTidakRadio">
+                                    <span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #CBD5E1; display: inline-block;"></span>
+                                </span>
+                                <span id="pmSpTidakLabel" class="fw-semibold" style="font-size: 0.84rem; color: #64748B;">Tidak</span>
+                            </div>
+                        </div>
+                        <input type="hidden" name="solution_paper_required" id="pm_solution_paper_required" value="1">
+                    </div>
+
+                    {{-- Upload Solution Paper (PDF)* --}}
+                    <div class="col-lg-8 col-12">
+                        <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
+                            Upload Solution Paper (PDF) <span style="color: #EF4444;">*</span>
+                        </label>
+                        <div class="d-flex align-items-center" style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; overflow: hidden;">
+                            <button type="button" class="btn text-white d-flex align-items-center justify-content-center gap-2 px-3 h-100 flex-shrink-0"
+                                    onclick="document.getElementById('pm_solution_paper_file').click()"
+                                    style="background: #0F2A4A; border: none; border-radius: 0; font-size: 0.82rem; font-weight: 600;">
+                                <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                    <polyline points="17 8 12 3 7 8"></polyline>
+                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                </svg>
+                                <span>Pilih File</span>
+                            </button>
+                            <span id="pm_solution_paper_label" class="px-3 text-truncate flex-grow-1" style="font-size: 0.82rem; color: #64748B;">
+                                Tidak ada file yang dipilih
+                            </span>
+                            <input type="file" name="solution_paper_file" id="pm_solution_paper_file" accept=".pdf,.doc,.docx" class="d-none" onchange="handlePmFileInput(this, 'pm_solution_paper_label')">
+                        </div>
+                    </div>
+                </div>
+
+            </div>
+
+            {{-- ── ROW 9: Bottom Actions (Outside container, bottom right) ── --}}
+            <div class="d-flex align-items-center justify-content-end gap-3 mt-4 mb-4">
+                {{-- Kembali (Red) --}}
+                <a href="{{ route('change-requests.index') }}"
+                   class="btn text-white fw-semibold d-inline-flex align-items-center justify-content-center"
+                   style="background: #DC2626; border-radius: 8px; font-size: 0.84rem; border: none; padding: 0.55rem 1.8rem; text-decoration: none; transition: all 0.15s ease;"
+                   onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">
+                    Kembali
+                </a>
+
+                {{-- Simpan Draft (Yellow/Amber) --}}
+                <button type="submit" name="action" value="draft" formnovalidate
+                        onclick="preparePmDraftSubmit()"
+                        class="btn text-white fw-semibold d-inline-flex align-items-center justify-content-center gap-1"
+                        style="background: #F59E0B; border-radius: 8px; font-size: 0.84rem; border: none; padding: 0.55rem 1.8rem; transition: all 0.15s ease;"
+                        onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">
+                    <i class="bi bi-check-lg" style="font-size: 1rem;"></i>
+                    <span>Simpan Draft</span>
+                </button>
+
+                {{-- Submit CR (Green) --}}
+                <button type="submit" name="action" value="submit"
+                        onclick="syncEditor()"
+                        class="btn text-white fw-semibold d-inline-flex align-items-center justify-content-center gap-1"
+                        style="background: #10B981; border-radius: 8px; font-size: 0.84rem; border: none; padding: 0.55rem 1.8rem; transition: all 0.15s ease;"
+                        onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">
+                    <i class="bi bi-check-lg" style="font-size: 1rem;"></i>
+                    <span>Submit CR</span>
+                </button>
+            </div>
+
+        @else
+            {{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                 CLIENT VIEW: 3-CARD FIGMA LAYOUT
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
+
+            {{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+                 CARD 1: INFORMASI KLIEN (#DFEDFD Header Strip)
+            ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
+            <div class="card border-0 mb-4 shadow-xs" style="border-radius: 14px; background: #FFFFFF; border: 1px solid #E2E8F0 !important; position: relative; z-index: 50;">
             
             {{-- Header Strip --}}
             <div class="d-flex align-items-center justify-content-between px-4 py-3" style="background: #DFEDFD; border-bottom: 1px solid rgba(0,0,0,0.03); border-top-left-radius: 13px; border-top-right-radius: 13px;">
@@ -97,6 +695,8 @@
                                     } elseif (Auth::user()?->client?->company) {
                                         $clName = Auth::user()->client->company;
                                         $companies[] = ['name' => $clName, 'initial' => strtoupper(substr($clName, 0, 2))];
+                                    } else {
+                                        $companies[] = ['name' => 'PT Maju Bersama', 'initial' => 'MB'];
                                     }
                                 @endphp
                                 @forelse ($companies as $comp)
@@ -640,6 +1240,8 @@
 
         </div>
 
+        @endif
+
     </form>
 
 </div>
@@ -861,11 +1463,75 @@
             if (m2) m2.style.display = 'none';
             if (c2) c2.style.transform = 'rotate(0deg)';
         }
+        if (!e.target.closest('#pmCompanyDropdownWrapper')) {
+            const pm1 = document.getElementById('pmCompanyDropdownMenu');
+            const pc1 = document.getElementById('pmCompanyChevron');
+            if (pm1) pm1.style.display = 'none';
+            if (pc1) pc1.style.transform = 'rotate(0deg)';
+        }
+        if (!e.target.closest('#pmProjectDropdownWrapper')) {
+            const pm2 = document.getElementById('pmProjectDropdownMenu');
+            const pc2 = document.getElementById('pmProjectChevron');
+            if (pm2) pm2.style.display = 'none';
+            if (pc2) pc2.style.transform = 'rotate(0deg)';
+        }
     });
+
+    // PM Dropdown Handlers
+    function togglePmDropdown(menuId, event) {
+        if (event) event.stopPropagation();
+        const menu = document.getElementById(menuId);
+        const isOpen = menu && menu.style.display === 'block';
+
+        const pm1 = document.getElementById('pmCompanyDropdownMenu');
+        const pm2 = document.getElementById('pmProjectDropdownMenu');
+        const pc1 = document.getElementById('pmCompanyChevron');
+        const pc2 = document.getElementById('pmProjectChevron');
+
+        if (pm1) pm1.style.display = 'none';
+        if (pm2) pm2.style.display = 'none';
+        if (pc1) pc1.style.transform = 'rotate(0deg)';
+        if (pc2) pc2.style.transform = 'rotate(0deg)';
+
+        if (!isOpen && menu) {
+            menu.style.display = 'block';
+            if (menuId === 'pmCompanyDropdownMenu' && pc1) pc1.style.transform = 'rotate(180deg)';
+            if (menuId === 'pmProjectDropdownMenu' && pc2) pc2.style.transform = 'rotate(180deg)';
+        }
+    }
+
+    function selectPmCompany(companyName, initial) {
+        const nameEl = document.getElementById('pmSelectedCompanyName');
+        if (nameEl) nameEl.innerText = companyName;
+        const inputComp = document.getElementById('nama_perusahaan_input');
+        if (inputComp) inputComp.value = companyName;
+        const initBox = document.getElementById('pm_inisial_klien_box');
+        if (initBox) initBox.innerText = initial;
+        const initInput = document.getElementById('pm_inisial_klien_input');
+        if (initInput) initInput.value = initial;
+
+        const pm1 = document.getElementById('pmCompanyDropdownMenu');
+        const pc1 = document.getElementById('pmCompanyChevron');
+        if (pm1) pm1.style.display = 'none';
+        if (pc1) pc1.style.transform = 'rotate(0deg)';
+    }
+
+    function selectPmProject(projectName) {
+        const projEl = document.getElementById('pmSelectedProjectName');
+        if (projEl) projEl.innerText = projectName;
+        const inputProj = document.getElementById('nama_project_input');
+        if (inputProj) inputProj.value = projectName;
+
+        const pm2 = document.getElementById('pmProjectDropdownMenu');
+        const pc2 = document.getElementById('pmProjectChevron');
+        if (pm2) pm2.style.display = 'none';
+        if (pc2) pc2.style.transform = 'rotate(0deg)';
+    }
 
     // 2. Priority Selection Handler
     function selectPriority(val) {
-        document.getElementById('prioritas_input').value = val;
+        const prioInput = document.getElementById('prioritas_input');
+        if (prioInput) prioInput.value = val;
         
         const cardNormal = document.getElementById('priorityCardNormal');
         const cardUrgent = document.getElementById('priorityCardUrgent');
@@ -874,44 +1540,175 @@
         const radioNormal = document.getElementById('radioIndicatorNormal');
         const radioUrgent = document.getElementById('radioIndicatorUrgent');
 
-        if (val === 'normal') {
-            cardNormal.style.borderColor = '#00A3FF';
-            cardNormal.style.borderWidth = '1.5px';
-            labelNormal.style.color = '#0284C7';
-            radioNormal.innerHTML = '<span style="width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid #00A3FF; display: inline-flex; align-items: center; justify-content: center;"><span style="width: 9px; height: 9px; border-radius: 50%; background: #00A3FF; display: inline-block;"></span></span>';
+        if (cardNormal && cardUrgent) {
+            if (val === 'normal') {
+                cardNormal.style.borderColor = '#00A3FF';
+                cardNormal.style.borderWidth = '1.5px';
+                labelNormal.style.color = '#0284C7';
+                radioNormal.innerHTML = '<span style="width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid #00A3FF; display: inline-flex; align-items: center; justify-content: center;"><span style="width: 9px; height: 9px; border-radius: 50%; background: #00A3FF; display: inline-block;"></span></span>';
 
-            cardUrgent.style.borderColor = '#CBD5E1';
-            cardUrgent.style.borderWidth = '1px';
-            labelUrgent.style.color = '#64748B';
-            radioUrgent.innerHTML = '<span style="width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid #CBD5E1; display: inline-block;"></span>';
+                cardUrgent.style.borderColor = '#CBD5E1';
+                cardUrgent.style.borderWidth = '1px';
+                labelUrgent.style.color = '#64748B';
+                radioUrgent.innerHTML = '<span style="width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid #CBD5E1; display: inline-block;"></span>';
+            } else {
+                cardUrgent.style.borderColor = '#EF4444';
+                cardUrgent.style.borderWidth = '1.5px';
+                labelUrgent.style.color = '#DC2626';
+                radioUrgent.innerHTML = '<span style="width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid #EF4444; display: inline-flex; align-items: center; justify-content: center;"><span style="width: 9px; height: 9px; border-radius: 50%; background: #EF4444; display: inline-block;"></span></span>';
+
+                cardNormal.style.borderColor = '#CBD5E1';
+                cardNormal.style.borderWidth = '1px';
+                labelNormal.style.color = '#64748B';
+                radioNormal.innerHTML = '<span style="width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid #CBD5E1; display: inline-block;"></span>';
+            }
+        }
+    }
+
+    function selectPmPriority(val) {
+        selectPriority(val);
+        const cardNormal = document.getElementById('pmPriorityNormalCard');
+        const cardUrgent = document.getElementById('pmPriorityUrgentCard');
+        const labelNormal = document.getElementById('pmLabelNormal');
+        const labelUrgent = document.getElementById('pmLabelUrgent');
+        const radioNormal = document.getElementById('pmRadioNormal');
+        const radioUrgent = document.getElementById('pmRadioUrgent');
+
+        if (cardNormal && cardUrgent) {
+            if (val === 'normal') {
+                cardNormal.style.borderColor = '#0098EA';
+                cardNormal.style.borderWidth = '1.5px';
+                if (labelNormal) labelNormal.style.color = '#0284C7';
+                if (radioNormal) radioNormal.innerHTML = '<span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #0098EA; display: inline-flex; align-items: center; justify-content: center;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #0098EA;"></span></span>';
+
+                cardUrgent.style.borderColor = '#CBD5E1';
+                cardUrgent.style.borderWidth = '1px';
+                if (labelUrgent) labelUrgent.style.color = '#64748B';
+                if (radioUrgent) radioUrgent.innerHTML = '<span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #CBD5E1; display: inline-block;"></span>';
+            } else {
+                cardUrgent.style.borderColor = '#EF4444';
+                cardUrgent.style.borderWidth = '1.5px';
+                if (labelUrgent) labelUrgent.style.color = '#DC2626';
+                if (radioUrgent) radioUrgent.innerHTML = '<span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #EF4444; display: inline-flex; align-items: center; justify-content: center;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #EF4444; display: inline-block;"></span></span>';
+
+                cardNormal.style.borderColor = '#CBD5E1';
+                cardNormal.style.borderWidth = '1px';
+                if (labelNormal) labelNormal.style.color = '#64748B';
+                if (radioNormal) radioNormal.innerHTML = '<span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #CBD5E1; display: inline-block;"></span>';
+            }
+        }
+    }
+
+    // Solution Paper Option
+    function selectPmSolutionPaper(val) {
+        const inputSp = document.getElementById('pm_solution_paper_required');
+        if (inputSp) inputSp.value = val;
+
+        const cardYa = document.getElementById('pmSpYaCard');
+        const cardTidak = document.getElementById('pmSpTidakCard');
+        const radioYa = document.getElementById('pmSpYaRadio');
+        const radioTidak = document.getElementById('pmSpTidakRadio');
+        const labelYa = document.getElementById('pmSpYaLabel');
+        const labelTidak = document.getElementById('pmSpTidakLabel');
+
+        if (cardYa && cardTidak) {
+            if (val === 1) {
+                cardYa.style.borderColor = '#0098EA';
+                cardYa.style.borderWidth = '1.5px';
+                if (labelYa) labelYa.style.color = '#0284C7';
+                if (radioYa) radioYa.innerHTML = '<span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #0098EA; display: inline-flex; align-items: center; justify-content: center;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #0098EA;"></span></span>';
+
+                cardTidak.style.borderColor = '#CBD5E1';
+                cardTidak.style.borderWidth = '1px';
+                if (labelTidak) labelTidak.style.color = '#64748B';
+                if (radioTidak) radioTidak.innerHTML = '<span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #CBD5E1; display: inline-block;"></span>';
+            } else {
+                cardTidak.style.borderColor = '#0098EA';
+                cardTidak.style.borderWidth = '1.5px';
+                if (labelTidak) labelTidak.style.color = '#0284C7';
+                if (radioTidak) radioTidak.innerHTML = '<span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #0098EA; display: inline-flex; align-items: center; justify-content: center;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #0098EA;"></span></span>';
+
+                cardYa.style.borderColor = '#CBD5E1';
+                cardYa.style.borderWidth = '1px';
+                if (labelYa) labelYa.style.color = '#64748B';
+                if (radioYa) radioYa.innerHTML = '<span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #CBD5E1; display: inline-block;"></span>';
+            }
+        }
+    }
+
+    // PM File Input Handler
+    function handlePmFileInput(input, labelId) {
+        const label = document.getElementById(labelId);
+        if (!label) return;
+        if (input.files && input.files[0]) {
+            label.innerText = input.files[0].name;
+            label.style.color = '#1E293B';
+            label.style.fontWeight = '600';
         } else {
-            cardUrgent.style.borderColor = '#EF4444';
-            cardUrgent.style.borderWidth = '1.5px';
-            labelUrgent.style.color = '#DC2626';
-            radioUrgent.innerHTML = '<span style="width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid #EF4444; display: inline-flex; align-items: center; justify-content: center;"><span style="width: 9px; height: 9px; border-radius: 50%; background: #EF4444; display: inline-block;"></span></span>';
+            label.innerText = 'Tidak ada file yang dipilih';
+            label.style.color = '#64748B';
+            label.style.fontWeight = 'normal';
+        }
+    }
 
-            cardNormal.style.borderColor = '#CBD5E1';
-            cardNormal.style.borderWidth = '1px';
-            labelNormal.style.color = '#64748B';
-            radioNormal.innerHTML = '<span style="width: 17px; height: 17px; border-radius: 50%; border: 1.5px solid #CBD5E1; display: inline-block;"></span>';
+    // Mandays Calculation
+    function calcPmTotalMandays() {
+        const aInput = document.getElementById('pm_mindesk_analisis');
+        const dInput = document.getElementById('pm_mindesk_development');
+        const tInput = document.getElementById('pm_mindesk_testing');
+        if (!aInput || !dInput || !tInput) return;
+
+        const a = parseFloat(aInput.value || 0) || 0;
+        const d = parseFloat(dInput.value || 0) || 0;
+        const t = parseFloat(tInput.value || 0) || 0;
+        const total = a + d + t;
+        const totalBox = document.getElementById('pm_total_mandays');
+        if (totalBox) {
+            if (total === 0 && !aInput.dataset.touched && !dInput.dataset.touched && !tInput.dataset.touched) {
+                totalBox.value = '10';
+            } else {
+                totalBox.value = total % 1 === 0 ? total.toFixed(0) : total.toFixed(1);
+            }
+        }
+    }
+
+    function preparePmDraftSubmit() {
+        syncEditor();
+        const crNameInput = document.getElementById('pm_cr_name');
+        if (crNameInput && !crNameInput.value.trim()) {
+            crNameInput.value = 'Draft Pengajuan CR';
         }
     }
 
     // 3. TinyMCE Editor Logic
     function execCmd(command, value = null) {
+        const editor = document.getElementById('pmEditorBody') || document.getElementById('editorBody');
+        if (editor) {
+            editor.focus();
+        }
         document.execCommand(command, false, value);
         syncEditor();
     }
 
     function applyFormatBlock(tag, label) {
         document.execCommand('formatBlock', false, '<' + tag + '>');
-        document.getElementById('currentParagraphLabel').innerText = label;
+        const lbl = document.getElementById('pmCurrentParagraphLabel') || document.getElementById('currentParagraphLabel');
+        if (lbl) lbl.innerText = label;
         syncEditor();
     }
 
     function syncEditor() {
-        const content = document.getElementById('editorBody').innerHTML;
-        document.getElementById('deskripsi_cr_hidden').value = content;
+        const pmBody = document.getElementById('pmEditorBody');
+        const pmHidden = document.getElementById('pm_deskripsi_cr_hidden');
+        if (pmBody && pmHidden) {
+            pmHidden.value = pmBody.innerHTML;
+        }
+
+        const clientBody = document.getElementById('editorBody');
+        const clientHidden = document.getElementById('deskripsi_cr_hidden');
+        if (clientBody && clientHidden) {
+            clientHidden.value = clientBody.innerHTML;
+        }
     }
 
     function insertLinkPrompt() {
@@ -950,32 +1747,42 @@
     function editorAction(act) {
         if (act === 'new') {
             if (confirm('Bersihkan konten editor ini?')) {
-                document.getElementById('editorBody').innerHTML = '';
+                const pmBody = document.getElementById('pmEditorBody');
+                if (pmBody) pmBody.innerHTML = '';
+                const clientBody = document.getElementById('editorBody');
+                if (clientBody) clientBody.innerHTML = '';
                 syncEditor();
             }
         }
     }
 
     function showWordCount() {
-        const text = document.getElementById('editorBody').innerText || '';
+        const editor = document.getElementById('pmEditorBody') || document.getElementById('editorBody');
+        const text = editor ? (editor.innerText || '') : '';
         const words = text.trim() ? text.trim().split(/\s+/).length : 0;
         const chars = text.length;
         alert('Statistik Teks:\n- Jumlah Kata: ' + words + '\n- Jumlah Karakter: ' + chars);
     }
 
     function openSourceModal() {
-        document.getElementById('rawHtmlTextarea').value = document.getElementById('editorBody').innerHTML;
+        const editor = document.getElementById('pmEditorBody') || document.getElementById('editorBody');
+        document.getElementById('rawHtmlTextarea').value = editor ? editor.innerHTML : '';
         new bootstrap.Modal(document.getElementById('sourceCodeModal')).show();
     }
 
     function saveSourceHtml() {
-        document.getElementById('editorBody').innerHTML = document.getElementById('rawHtmlTextarea').value;
+        const val = document.getElementById('rawHtmlTextarea').value;
+        const pmBody = document.getElementById('pmEditorBody');
+        if (pmBody) pmBody.innerHTML = val;
+        const clientBody = document.getElementById('editorBody');
+        if (clientBody) clientBody.innerHTML = val;
         syncEditor();
         bootstrap.Modal.getInstance(document.getElementById('sourceCodeModal')).hide();
     }
 
     function openPreviewModal() {
-        document.getElementById('previewModalBody').innerHTML = document.getElementById('editorBody').innerHTML || '<div class="text-muted fst-italic">Belum ada konten.</div>';
+        const editor = document.getElementById('pmEditorBody') || document.getElementById('editorBody');
+        document.getElementById('previewModalBody').innerHTML = (editor && editor.innerHTML.trim()) ? editor.innerHTML : '<div class="text-muted fst-italic">Belum ada konten.</div>';
         new bootstrap.Modal(document.getElementById('previewModal')).show();
     }
 
@@ -984,19 +1791,22 @@
     }
 
     function toggleEditorFullscreen() {
-        const wrap = document.getElementById('editorWrapper');
-        if (!document.fullscreenElement) {
-            wrap.requestFullscreen().catch(err => {
-                alert(`Gagal layar penuh: ${err.message}`);
-            });
-        } else {
-            document.exitFullscreen();
+        const wrap = document.getElementById('pmEditorWrapper') || document.getElementById('editorWrapper');
+        if (wrap) {
+            if (!document.fullscreenElement) {
+                wrap.requestFullscreen().catch(err => {
+                    alert(`Gagal layar penuh: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
         }
     }
 
-    // 4. File Upload & Dropzone Handling
+    // 4. File Upload & Dropzone Handling (Client)
     function triggerFileInput() {
-        document.getElementById('dokumen_fsd_file').click();
+        const input = document.getElementById('dokumen_fsd_file');
+        if (input) input.click();
     }
 
     function handleFileChange(input) {
@@ -1006,35 +1816,45 @@
     }
 
     function displaySelectedFile(file) {
-        document.getElementById('dropzonePlaceholder').style.display = 'none';
-        document.getElementById('dropzoneFilePreview').style.display = 'block';
-        document.getElementById('fileNameDisplay').innerText = file.name;
-        document.getElementById('fileSizeDisplay').innerText = (file.size / 1024).toFixed(1) + ' KB';
-        
+        const pl = document.getElementById('dropzonePlaceholder');
+        const pr = document.getElementById('dropzoneFilePreview');
+        const fn = document.getElementById('fileNameDisplay');
+        const fs = document.getElementById('fileSizeDisplay');
         const box = document.getElementById('dropzoneBox');
-        box.style.borderColor = '#50CD89';
-        box.style.background = '#F0FDF4';
+        if (pl) pl.style.display = 'none';
+        if (pr) pr.style.display = 'block';
+        if (fn) fn.innerText = file.name;
+        if (fs) fs.innerText = (file.size / 1024).toFixed(1) + ' KB';
+        if (box) {
+            box.style.borderColor = '#50CD89';
+            box.style.background = '#F0FDF4';
+        }
     }
 
     function removeSelectedFile(event) {
         event.stopPropagation();
         const input = document.getElementById('dokumen_fsd_file');
-        input.value = '';
+        if (input) input.value = '';
         
-        document.getElementById('dropzonePlaceholder').style.display = 'block';
-        document.getElementById('dropzoneFilePreview').style.display = 'none';
-        
+        const pl = document.getElementById('dropzonePlaceholder');
+        const pr = document.getElementById('dropzoneFilePreview');
         const box = document.getElementById('dropzoneBox');
-        box.style.borderColor = '#93C5FD';
-        box.style.background = '#FFFFFF';
+        if (pl) pl.style.display = 'block';
+        if (pr) pr.style.display = 'none';
+        if (box) {
+            box.style.borderColor = '#93C5FD';
+            box.style.background = '#FFFFFF';
+        }
     }
 
     function handleDragOver(e) {
         e.preventDefault();
         e.stopPropagation();
         const box = document.getElementById('dropzoneBox');
-        box.style.borderColor = '#0063D7';
-        box.style.background = '#EFF6FF';
+        if (box) {
+            box.style.borderColor = '#0063D7';
+            box.style.background = '#EFF6FF';
+        }
     }
 
     function handleDragLeave(e) {
@@ -1042,12 +1862,14 @@
         e.stopPropagation();
         const box = document.getElementById('dropzoneBox');
         const input = document.getElementById('dokumen_fsd_file');
-        if (input.files && input.files.length > 0) {
-            box.style.borderColor = '#50CD89';
-            box.style.background = '#F0FDF4';
-        } else {
-            box.style.borderColor = '#93C5FD';
-            box.style.background = '#FFFFFF';
+        if (box) {
+            if (input && input.files && input.files.length > 0) {
+                box.style.borderColor = '#50CD89';
+                box.style.background = '#F0FDF4';
+            } else {
+                box.style.borderColor = '#93C5FD';
+                box.style.background = '#FFFFFF';
+            }
         }
     }
 
@@ -1057,11 +1879,11 @@
         if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             const file = e.dataTransfer.files[0];
             const fileInput = document.getElementById('dokumen_fsd_file');
-            
-            const dt = new DataTransfer();
-            dt.items.add(file);
-            fileInput.files = dt.files;
-            
+            if (fileInput) {
+                const dt = new DataTransfer();
+                dt.items.add(file);
+                fileInput.files = dt.files;
+            }
             displaySelectedFile(file);
         }
     }
@@ -1070,7 +1892,7 @@
     function prepareDraftSubmit() {
         syncEditor();
         const crNameInput = document.getElementById('cr_name');
-        if (!crNameInput.value.trim()) {
+        if (crNameInput && !crNameInput.value.trim()) {
             crNameInput.value = 'Draft Pengajuan CR';
         }
     }
@@ -1094,9 +1916,10 @@
         currentActiveDateInputId = inputId;
         const targetInput = document.getElementById(inputId);
         const modal = document.getElementById('customDatePickerModal');
+        if (!targetInput || !modal) return;
         
         // Parse current input date if available
-        if (targetInput && targetInput.value) {
+        if (targetInput.value) {
             const parts = targetInput.value.split(' ');
             if (parts.length === 3) {
                 const day = parseInt(parts[0]);
@@ -1119,7 +1942,8 @@
     }
 
     function closeDatePicker() {
-        document.getElementById('customDatePickerModal').style.display = 'none';
+        const modal = document.getElementById('customDatePickerModal');
+        if (modal) modal.style.display = 'none';
         currentActiveDateInputId = null;
     }
 
@@ -1150,7 +1974,8 @@
     function renderCalendar() {
         const year = pickerDate.getFullYear();
         const month = pickerDate.getMonth();
-        document.getElementById('calendarMonthYear').innerText = monthNames[month] + " " + year;
+        const myEl = document.getElementById('calendarMonthYear');
+        if (myEl) myEl.innerText = monthNames[month] + " " + year;
 
         const firstDay = new Date(year, month, 1).getDay(); // 0 is Sun
         const startOffset = (firstDay === 0 ? 6 : firstDay - 1); // Monday is 0
@@ -1158,6 +1983,7 @@
         const prevMonthDays = new Date(year, month, 0).getDate();
 
         const grid = document.getElementById('calendarDaysGrid');
+        if (!grid) return;
         grid.innerHTML = '';
 
         // Trailing days from previous month (grayed out)
@@ -1228,7 +2054,8 @@
         const yearStr = pickerDate.getFullYear();
         
         const formatted = dayStr + " " + monthStr + " " + yearStr;
-        document.getElementById(currentActiveDateInputId).value = formatted;
+        const input = document.getElementById(currentActiveDateInputId);
+        if (input) input.value = formatted;
         closeDatePicker();
     }
 
@@ -1236,10 +2063,18 @@
     document.addEventListener('click', function(e) {
         const modal = document.getElementById('customDatePickerModal');
         if (modal && modal.style.display === 'block') {
-            if (!e.target.closest('#customDatePickerModal') && !e.target.closest('#date_input_1') && !e.target.closest('#date_input_2')) {
+            if (!e.target.closest('#customDatePickerModal') &&
+                !e.target.closest('#date_input_1') &&
+                !e.target.closest('#date_input_2') &&
+                !e.target.closest('#pm_date_input_wrap') &&
+                !e.target.closest('#pm_request_date_input_wrap')) {
                 closeDatePicker();
             }
         }
+    });
+
+    document.addEventListener('DOMContentLoaded', function() {
+        calcPmTotalMandays();
     });
 </script>
 @endsection

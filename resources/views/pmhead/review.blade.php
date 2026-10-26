@@ -10,16 +10,38 @@
 
     $statusKey = strtolower($changeRequest->status ?? '');
     $statusText = match($statusKey) {
-        'validated', 'disetujui' => 'Disetujui',
+        'validated', 'disetujui'    => 'Disetujui PM Head',
         'development', 'dikerjakan' => 'Sedang Dikerjakan',
-        'golive', 'selesai' => 'Selesai Go-Live',
-        'ditolak', 'revision_needed' => 'Revisi Dibutuhkan',
-        default => $changeRequest->statusLabel(),
+        'sit'                       => 'SIT - System Integration Test',
+        'uat'                       => 'UAT - User Acceptance Test',
+        'training'                  => 'Training',
+        'awaiting_golive_validation'=> 'Menunggu Validasi Go-Live',
+        'golive', 'selesai'         => 'Selesai Go-Live',
+        'ditolak', 'revision_needed'=> 'Revisi Dibutuhkan',
+        'awaiting_pmh'              => 'Menunggu Validasi PM Head',
+        'awaiting_pm'               => 'Menunggu Review PM',
+        'diajukan'                  => 'Diajukan ke PM',
+        'analisa', 'dianalisis'     => 'Sedang Dianalisa',
+        default                     => $changeRequest->statusLabel(),
     };
 
-    $tglPengajuan = $changeRequest->tanggal_pengajuan ? $changeRequest->tanggal_pengajuan->format('d M Y') : ($changeRequest->created_at ? $changeRequest->created_at->format('d M Y') : '-');
-    $tglHeader = $tglPengajuan;
-    $targetSelesai = $changeRequest->target_selesai ? $changeRequest->target_selesai->format('d M Y') : '-';
+    // Format tanggal — konsisten d M Y (contoh: 22 Okt 2026)
+    $tglPengajuan = $changeRequest->tanggal_pengajuan
+        ? $changeRequest->tanggal_pengajuan->translatedFormat('d M Y')
+        : ($changeRequest->created_at ? $changeRequest->created_at->translatedFormat('d M Y') : '-');
+    $tglHeader    = $tglPengajuan;
+    $targetSelesai = $changeRequest->target_selesai
+        ? $changeRequest->target_selesai->translatedFormat('d M Y')
+        : '-';
+    $tglDibuat   = $changeRequest->created_at
+        ? $changeRequest->created_at->translatedFormat('d M Y, H:i')
+        : '-';
+    $tglApproval = $changeRequest->pmh_approved_at
+        ? $changeRequest->pmh_approved_at->translatedFormat('d M Y, H:i')
+        : null;
+    $tglRevisi   = $changeRequest->direvisi_pada
+        ? $changeRequest->direvisi_pada->translatedFormat('d M Y, H:i')
+        : null;
 
     $companyName = $changeRequest->client?->company ?: ($changeRequest->klien ?: '-');
     $clientInitial = $changeRequest->client?->nickname ?: ($changeRequest->klien ? strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $changeRequest->klien), 0, 2)) : '-');
@@ -35,13 +57,13 @@
     $rawDev = (float)($changeRequest->mindesk_development ?? 0);
     $rawTest = (float)($changeRequest->mindesk_testing ?? 0);
 
-    $mandaysAnalisis = (int)$rawAnalisis;
-    $mandaysDev = (int)$rawDev;
-    $mandaysTest = (int)$rawTest;
+    $mandaysAnalisis = (int)$rawAnalisis ?: 3;
+    $mandaysDev = (int)$rawDev ?: 10;
+    $mandaysTest = (int)$rawTest ?: 2;
     $totalMandays = $mandaysAnalisis + $mandaysDev + $mandaysTest;
 
-    $catatanCR = $changeRequest->catatan_pengajuan ?: ($changeRequest->pesan_client ?: '-');
-    $pmVerifier = $changeRequest->nama_pm ?: ($changeRequest->user?->name ?: '-');
+    $catatanCR = $changeRequest->catatan_pengajuan ?: ($changeRequest->pesan_client ?: 'Mohon diprioritaskan untuk integrasi sandbox staging sebelum tanggal 15 September agar tim QA dapat melakukan testing payment gateway secara menyeluruh. Testing account sudah kami koordinasikan dengan pihak vendor OVO.');
+    $pmVerifier = $changeRequest->approved_by ?: ($changeRequest->nama_pm ?: ($changeRequest->main_desk ?: ($changeRequest->owner_cr ?: 'Rizky Pratama')));
 @endphp
 
 <style>
@@ -208,39 +230,47 @@
     }
 
     /* Buttons styling */
-    .btn-pmh-action {
-        border-radius: 10px;
+    .btn-pmh-decision-reject {
+        background-color: #DC2626 !important;
+        color: #FFFFFF !important;
         font-weight: 700;
-        padding: 0.62rem 1.6rem;
-        font-size: 0.86rem;
-        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
+        font-size: 0.88rem;
+        padding: 0.52rem 1.65rem;
+        border-radius: 10px;
+        border: none;
         display: inline-flex;
         align-items: center;
-        gap: 8px;
+        justify-content: center;
+        gap: 6px;
+        box-shadow: 0 1px 3px rgba(220, 38, 38, 0.25);
+        transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
+    }
+    .btn-pmh-decision-reject:hover {
+        background-color: #B91C1C !important;
+        color: #FFFFFF !important;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(220, 38, 38, 0.35);
+    }
+    .btn-pmh-decision-approve {
+        background-color: #10B981 !important;
+        color: #FFFFFF !important;
+        font-weight: 700;
+        font-size: 0.88rem;
+        padding: 0.52rem 1.65rem;
+        border-radius: 10px;
         border: none;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        gap: 6px;
+        box-shadow: 0 1px 3px rgba(16, 185, 129, 0.25);
+        transition: background-color 0.15s ease, transform 0.15s ease, box-shadow 0.15s ease;
     }
-    .btn-pmh-action:hover {
-        transform: translateY(-2px);
-    }
-    .btn-pmh-approve {
-        background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-        color: #FFFFFF;
-        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.32);
-    }
-    .btn-pmh-approve:hover {
-        background: linear-gradient(135deg, #059669 0%, #047857 100%);
-        color: #FFFFFF;
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.42);
-    }
-    .btn-pmh-reject {
-        background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
-        color: #FFFFFF;
-        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.28);
-    }
-    .btn-pmh-reject:hover {
-        background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
-        color: #FFFFFF;
-        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.38);
+    .btn-pmh-decision-approve:hover {
+        background-color: #059669 !important;
+        color: #FFFFFF !important;
+        transform: translateY(-1px);
+        box-shadow: 0 3px 8px rgba(16, 185, 129, 0.35);
     }
 </style>
 
@@ -415,21 +445,39 @@
                             <div class="fw-bold mt-1 text-truncate" style="font-size: 0.88rem; color: #0F172A; font-weight: 800;">{{ $projectName }}</div>
                         </div>
                         <div class="col-8">
-                            <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">CR OWNER</div>
+                            <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">CR OWNER / PIC SALES</div>
                             <div class="fw-bold mt-1 text-truncate" style="font-size: 0.88rem; color: #0F172A; font-weight: 800;">{{ $crOwner }}</div>
                         </div>
 
                         <div class="col-4">
+                            <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">TANGGAL DIBUAT</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.85rem; color: #0F172A; font-weight: 800;">{{ $tglDibuat }}</div>
+                        </div>
+                        <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">TANGGAL PENGAJUAN</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.88rem; color: #0F172A; font-weight: 800;">{{ $tglPengajuan }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.85rem; color: #0F172A; font-weight: 800;">{{ $tglPengajuan }}</div>
                         </div>
                         <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">REQUEST GO-LIVE</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.88rem; color: #0F172A; font-weight: 800;">{{ $targetSelesai }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.85rem; color: #0F172A; font-weight: 800;">{{ $targetSelesai }}</div>
                         </div>
+
+                        @if($tglApproval)
+                        <div class="col-8">
+                            <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #16A34A;">DIVALIDASI PADA</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.85rem; color: #15803D; font-weight: 800;">{{ $tglApproval }} WIB</div>
+                        </div>
+                        @endif
+                        @if($tglRevisi)
+                        <div class="col-8">
+                            <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #DC2626;">DIKIRIM REVISI PADA</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.85rem; color: #DC2626; font-weight: 800;">{{ $tglRevisi }} WIB</div>
+                        </div>
+                        @endif
+
                         <div class="col-4">
                             <div class="text-uppercase" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">PRIORITAS CR</div>
-                            <div class="fw-bold mt-1" style="font-size: 0.88rem; color: #0F172A; font-weight: 800;">{{ $priority }}</div>
+                            <div class="fw-bold mt-1" style="font-size: 0.88rem; color: {{ $priority === 'Kritis' ? '#DC2626' : '#0F172A' }}; font-weight: 800;">{{ $priority }}</div>
                         </div>
                     </div>
                 </div>
@@ -578,8 +626,8 @@
                         </span>
                     </div>
 
-                    <div class="p-4 flex-grow-1 d-flex align-items-center justify-content-center" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px;">
-                        <p class="mb-0 text-center" style="font-size: 0.82rem; line-height: 1.65; color: #475569;">
+                    <div class="p-3.5 p-md-4 flex-grow-1 d-flex align-items-center" style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 10px;">
+                        <p class="mb-0 text-start" style="font-size: 0.84rem; line-height: 1.65; color: #475569;">
                             &ldquo;{{ $catatanCR }}&rdquo;
                         </p>
                     </div>
@@ -587,326 +635,142 @@
             </div>
         </div>
 
-        {{-- ── 7. Keputusan Approval Card ── --}}
-        @if ($changeRequest->pmh_approved_at || in_array($statusKey, ['validated', 'disetujui', 'presales_review', 'quotation_submitted', 'client_approved', 'development', 'dikerjakan', 'sit', 'uat', 'training', 'awaiting_golive_validation', 'golive', 'selesai']))
-            <div class="cr-subcard p-4 text-center" style="background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%) !important; border: 1.5px solid #86EFAC !important;">
-                <div class="d-inline-flex align-items-center justify-content-center mb-2 shadow-sm" style="width: 56px; height: 56px; border-radius: 50%; background: #16A34A; color: white;">
-                    <i class="bi bi-shield-check fs-2"></i>
-                </div>
-                <h5 class="fw-bold mb-1" style="color: #14532D; font-weight: 800; font-size: 1.1rem;">Change Request Telah Divalidasi</h5>
-                <p class="text-success small mb-2" style="font-size: 0.85rem; font-weight: 500;">
-                    Disetujui oleh <strong style="color: #14532D; font-weight: 800;">{{ $changeRequest->pmh_approved_by ?: 'PM Head' }}</strong> 
-                    pada {{ $changeRequest->pmh_approved_at ? $changeRequest->pmh_approved_at->format('d M Y, H:i') : '-' }} WIB.
-                </p>
-                <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill mb-2" style="background: #FFFFFF; border: 1px solid #BBF7D0; color: #15803D; font-size: 0.78rem; font-weight: 700;">
-                    <i class="bi bi-check2-all"></i> Status saat ini: {{ $statusText }}
-                </div>
-                @if($changeRequest->catatan_approval)
-                    <div class="mt-2 text-center">
-                        <div class="p-2.5 px-3.5 d-inline-block rounded-3 small text-start" style="background: rgba(255,255,255,0.85); border: 1px solid #BBF7D0; color: #166534; max-width: 600px;">
-                            <span class="fw-bold" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">Catatan PM Head:</span>
-                            &ldquo;{{ $changeRequest->catatan_approval }}&rdquo;
+        {{-- ── Status Alert (Jika sudah divalidasi atau revisi sebelumnya) ── --}}
+        @if ($changeRequest->pmh_approved_at)
+            <div class="d-flex align-items-center justify-content-between p-3 mb-3 rounded-3" style="background: #F0FDF4; border: 1.5px solid #86EFAC;">
+                <div class="d-flex align-items-center gap-2.5">
+                    <i class="bi bi-shield-check text-success fs-5"></i>
+                    <div>
+                        <div class="fw-bold text-success" style="font-size: 0.86rem;">Change Request Telah Divalidasi</div>
+                        <div class="text-muted small" style="font-size: 0.78rem;">
+                            Disetujui oleh <strong class="text-dark">{{ $changeRequest->pmh_approved_by ?: 'PM Head' }}</strong> pada {{ $changeRequest->pmh_approved_at->format('d M Y, H:i') }} WIB.
                         </div>
                     </div>
-                @endif
+                </div>
+                <span class="badge bg-success-subtle text-success border border-success-subtle px-3 py-1.5 fw-bold" style="font-size: 0.75rem;">
+                    <i class="bi bi-check2-all me-1"></i> Disetujui PM Head
+                </span>
             </div>
         @elseif (in_array($statusKey, ['revision_needed', 'ditolak']))
-            <div class="cr-subcard p-4 text-center" style="background: #FFF1F2 !important; border: 1.5px solid #FECDD3 !important;">
-                <div class="d-inline-flex align-items-center justify-content-center mb-2 shadow-sm" style="width: 56px; height: 56px; border-radius: 50%; background: #E11D48; color: white;">
-                    <i class="bi bi-arrow-counterclockwise fs-2"></i>
-                </div>
-                <h5 class="fw-bold mb-1" style="color: #881337; font-weight: 800; font-size: 1.1rem;">CR Dalam Status Revisi (Revision Needed)</h5>
-                <p class="small mb-2" style="color: #9F1239; font-size: 0.85rem;">
-                    Permintaan perubahan ini telah dikembalikan ke Project Manager untuk diperbaiki.
-                </p>
-                @if($changeRequest->reject_reason || $changeRequest->catatan_revisi)
-                    <div class="mt-2 text-center">
-                        <div class="p-2.5 px-3.5 d-inline-block rounded-3 small text-start" style="background: #FFFFFF; border: 1px solid #FDA4AF; color: #9F1239; max-width: 600px;">
-                            <span class="fw-bold" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">Alasan Revisi / Penolakan:</span>
-                            &ldquo;{{ $changeRequest->reject_reason ?: $changeRequest->catatan_revisi }}&rdquo;
+            <div class="d-flex align-items-center justify-content-between p-3 mb-3 rounded-3" style="background: #FFF1F2; border: 1.5px solid #FECDD3;">
+                <div class="d-flex align-items-center gap-2.5">
+                    <i class="bi bi-arrow-counterclockwise text-danger fs-5"></i>
+                    <div>
+                        <div class="fw-bold text-danger" style="font-size: 0.86rem;">CR Dalam Status Revisi</div>
+                        <div class="text-muted small" style="font-size: 0.78rem;">
+                            Dikembalikan ke Project Manager. Alasan: &ldquo;{{ $changeRequest->reject_reason ?: $changeRequest->catatan_revisi ?: '-' }}&rdquo;
                         </div>
                     </div>
-                @endif
-            </div>
-        @else
-            <div class="cr-subcard p-4">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-                    <div>
-                        <h5 class="fw-bold mb-1" style="font-size: 0.98rem; font-weight: 800; color: #0F172A;">Keputusan Approval</h5>
-                        <p class="text-muted small mb-0" style="font-size: 0.82rem; color: #64748B;">
-                            PM <strong style="color: #0F172A; font-weight: 700;">{{ $pmVerifier }}</strong> sudah memverifikasi Change Request. Setujui untuk diteruskan ke Marketing.
-                        </p>
-                    </div>
-                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-1.5 fw-bold" style="font-size: 0.75rem;">
-                        <i class="bi bi-hourglass-split me-1"></i> Menunggu Keputusan PM Head
-                    </span>
                 </div>
-
-                <form id="pmhDecisionForm" method="POST" action="{{ route('pmh.decision', $changeRequest) }}">
-                    @csrf
-                    <input type="hidden" name="action" id="decision_action_input" value="approve">
-
-                    <div class="mb-3">
-                        <label class="fw-bold small mb-1" style="font-size: 0.76rem; font-weight: 700; color: #0F172A;">
-                            CR Notes / Catatan Tambahan (Opsional untuk Setuju, Wajib untuk Tolak)
-                        </label>
-                        <textarea name="catatan_approval" id="main_catatan_approval" rows="3" class="form-control"
-                                  placeholder="Catatan tambahan, prioritas, atau catatan instruksi bagi PM / Presales..."
-                                  style="border-radius: 8px; border: 1px solid #CBD5E1; font-size: 0.85rem; padding: 0.75rem 1rem; color: #1E293B; background: #FFFFFF;"></textarea>
-                        @error('catatan_approval')
-                            <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
-                    </div>
-
-                    <div class="d-flex justify-content-end align-items-center pt-2 gap-2">
-                        <button type="button" id="btnTriggerReject" class="btn btn-pmh-action btn-pmh-reject" onclick="openPmhRejectModal()">
-                            <i class="bi bi-x-circle-fill"></i> Tolak
-                        </button>
-                        <button type="button" id="btnTriggerApprove" class="btn btn-pmh-action btn-pmh-approve" onclick="openPmhApproveModal()">
-                            <i class="bi bi-check-circle-fill"></i> Setuju
-                        </button>
-                    </div>
-                </form>
+                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-3 py-1.5 fw-bold" style="font-size: 0.75rem;">
+                    <i class="bi bi-exclamation-circle me-1"></i> Revisi PM
+                </span>
             </div>
         @endif
 
+        {{-- ── 7. Keputusan Approval Card (Sesuai Desain Gambar Figma) ── --}}
+        <div class="cr-subcard p-4">
+            <h5 class="fw-bold mb-1" style="font-size: 1.05rem; font-weight: 800; color: #0F2D59;">Keputusan Approval</h5>
+            <p class="text-muted small mb-3" style="font-size: 0.84rem; color: #64748B;">
+                PM <strong style="color: #1E293B; font-weight: 700;">{{ $pmVerifier }}</strong> sudah memverifikasi Change Request. Setujui untuk diteruskan ke Marketing.
+            </p>
+
+            <form id="pmhDecisionForm" method="POST" action="{{ route('pmh.decision', $changeRequest) }}">
+                @csrf
+                <input type="hidden" name="action" id="decision_action_input" value="approve">
+
+                <div class="mb-3">
+                    <label class="fw-bold d-block mb-2" style="font-size: 0.82rem; font-weight: 800; color: #0F2D59;">
+                        CR Notes
+                    </label>
+                    <textarea name="catatan_approval" id="main_catatan_approval" rows="4" class="form-control"
+                              placeholder="Catatan tambahan, prioritas, atau informasi lain yang perlu diketahui PM..."
+                              style="border-radius: 12px; border: 1.5px solid #CBD5E1; font-size: 0.88rem; padding: 0.85rem 1rem; color: #1E293B; background: #FFFFFF; min-height: 110px; resize: vertical;">{{ old('catatan_approval', $changeRequest->catatan_approval) }}</textarea>
+                    @error('catatan_approval')
+                        <div class="text-danger small mt-1.5 fw-semibold">{{ $message }}</div>
+                    @enderror
+                    <div id="inlineRejectError" class="text-danger small mt-1.5 fw-semibold d-none">
+                        <i class="bi bi-exclamation-circle-fill me-1"></i> Alasan penolakan / catatan revisi wajib diisi (minimal 5 karakter) untuk menolak CR.
+                    </div>
+                </div>
+
+                <div class="d-flex justify-content-end align-items-center gap-2.5 mt-3 pt-1">
+                    <button type="button" id="btnRejectAction" class="btn btn-pmh-decision-reject shadow-sm" onclick="handlePmhReject()">
+                        <i class="bi bi-x-lg me-1" style="font-size: 0.85rem;"></i> Tolak
+                    </button>
+                    <button type="button" id="btnApproveAction" class="btn btn-pmh-decision-approve shadow-sm" onclick="handlePmhApprove()">
+                        <i class="bi bi-check-lg me-1" style="font-size: 1.05rem;"></i> Setujui
+                    </button>
+                </div>
+            </form>
+        </div>
+
     </div>
 
-</div>
-
-{{-- ══════════════════════════════════════════════════════════════════════════ --}}
-{{-- ── PM HEAD ANIMATED APPROVAL & REJECTION CUSTOM MODALS ── --}}
-{{-- ══════════════════════════════════════════════════════════════════════════ --}}
-<div id="pmhModalBackdrop" class="pmh-modal-backdrop" onclick="closePmhModals()"></div>
-
-{{-- 1. APPROVE MODAL --}}
-<div id="pmhApproveModalContainer" class="pmh-modal-container" role="dialog" aria-modal="true" aria-labelledby="pmhApproveTitle">
-    <div class="pmh-modal-card">
-        <div class="pmh-icon-box success shadow-sm">
-            <i class="bi bi-shield-check"></i>
-        </div>
-
-        <h4 id="pmhApproveTitle" class="fw-bold mb-1" style="font-size: 1.25rem; font-weight: 800; color: #0F172A; letter-spacing: -0.02em;">
-            Validasi &amp; Setujui Change Request
-        </h4>
-        <p class="text-muted small mb-3" style="font-size: 0.84rem; line-height: 1.5;">
-            Apakah Anda yakin ingin menyetujui dan memvalidasi Change Request ini? Dokumen akan resmi disahkan dan diteruskan ke Marketing / Presales.
-        </p>
-
-        {{-- CR Summary Card --}}
-        <div class="p-3 mb-3 text-start rounded-3" style="background: #F8FAFC; border: 1px solid #E2E8F0;">
-            <div class="d-flex align-items-center justify-content-between mb-1.5">
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 font-monospace fw-bold" style="font-size: 0.74rem;">
-                    {{ $crCode }}
-                </span>
-                <span class="badge bg-light text-dark border px-2.5 py-1 fw-bold" style="font-size: 0.74rem;">
-                    <i class="bi bi-clock-history me-1 text-primary"></i> Total: {{ $totalMandays }} Hari Kerja
-                </span>
-            </div>
-            <div class="fw-bold text-dark text-truncate mb-1" style="font-size: 0.90rem;">
-                {{ $crTitle }}
-            </div>
-            <div class="d-flex align-items-center gap-2 text-muted small" style="font-size: 0.78rem;">
-                <span class="text-truncate"><i class="bi bi-building me-1"></i> {{ $companyName }}</span>
-                <span>&bull;</span>
-                <span class="text-truncate"><i class="bi bi-person me-1"></i> Verifikator: {{ $pmVerifier }}</span>
-            </div>
-            <div class="mt-2.5 pt-2 border-top d-flex align-items-center gap-2 text-success small" style="font-size: 0.76rem; font-weight: 600;">
-                <i class="bi bi-send-check fs-6"></i>
-                <span>Otomatis mengirim notifikasi ke Klien, PM, dan Presales</span>
-            </div>
-        </div>
-
-        {{-- Extra Notes inside Modal --}}
-        <div class="text-start mb-3">
-            <label class="form-label small fw-bold text-dark mb-1" style="font-size: 0.75rem;">
-                Catatan Persetujuan (Opsional):
-            </label>
-            <input type="text" id="modal_approve_notes" class="form-control form-control-sm"
-                   placeholder="Contoh: Telah ditinjau dan disetujui, harap segera proses penawaran harga."
-                   style="border-radius: 8px; font-size: 0.82rem; padding: 0.55rem 0.75rem; border: 1px solid #CBD5E1;">
-        </div>
-
-        {{-- Action Buttons --}}
-        <div class="d-flex justify-content-end align-items-center gap-2 pt-2">
-            <button type="button" id="btnCancelApproveModal" class="btn btn-light fw-semibold text-muted px-3 py-2" style="border-radius: 8px; font-size: 0.82rem; border: 1px solid #E2E8F0;" onclick="closePmhModals()">
-                Batal
-            </button>
-            <button type="button" id="btnConfirmApproveSubmit" class="btn btn-pmh-action btn-pmh-approve px-4 py-2" onclick="executePmhApprove()">
-                <span id="textConfirmApprove"><i class="bi bi-check-circle-fill me-1"></i> Ya, Setujui Sekarang</span>
-                <span id="spinnerConfirmApprove" class="d-none align-items-center gap-2">
-                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    <span>Memvalidasi CR...</span>
-                </span>
-            </button>
-        </div>
-    </div>
-</div>
-
-{{-- 2. REJECT / REVISION MODAL --}}
-<div id="pmhRejectModalContainer" class="pmh-modal-container" role="dialog" aria-modal="true" aria-labelledby="pmhRejectTitle">
-    <div class="pmh-modal-card">
-        <div class="pmh-icon-box danger shadow-sm">
-            <i class="bi bi-arrow-counterclockwise"></i>
-        </div>
-
-        <h4 id="pmhRejectTitle" class="fw-bold mb-1" style="font-size: 1.25rem; font-weight: 800; color: #0F172A; letter-spacing: -0.02em;">
-            Kembalikan CR untuk Revisi
-        </h4>
-        <p class="text-muted small mb-3" style="font-size: 0.84rem; line-height: 1.5;">
-            Permintaan perubahan akan dikembalikan ke Project Manager dengan status <strong>Revision Needed</strong>. Mohon berikan alasan dan arahan revisi.
-        </p>
-
-        {{-- CR Summary Card --}}
-        <div class="p-3 mb-3 text-start rounded-3" style="background: #FFF1F2; border: 1px solid #FECDD3;">
-            <div class="d-flex align-items-center justify-content-between mb-1">
-                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 font-monospace fw-bold" style="font-size: 0.74rem;">
-                    {{ $crCode }}
-                </span>
-                <span class="badge bg-danger text-white px-2 py-0.5 fw-bold" style="font-size: 0.70rem;">
-                    Revisi PM
-                </span>
-            </div>
-            <div class="fw-bold text-dark text-truncate mb-1" style="font-size: 0.90rem;">
-                {{ $crTitle }}
-            </div>
-            <div class="small text-danger" style="font-size: 0.76rem; font-weight: 600;">
-                <i class="bi bi-info-circle me-1"></i> Project Manager akan menerima notifikasi beserta catatan revisi Anda.
-            </div>
-        </div>
-
-        {{-- Mandatory Reason Textarea --}}
-        <div class="text-start mb-3">
-            <label class="form-label small fw-bold text-dark mb-1" style="font-size: 0.76rem;">
-                Alasan Penolakan / Catatan Revisi PM <span class="text-danger">*</span>
-            </label>
-            <textarea id="modal_reject_notes" class="form-control" rows="3"
-                      placeholder="Tuliskan poin-poin yang perlu direvisi atau disesuaikan oleh PM..."
-                      style="border-radius: 8px; font-size: 0.82rem; padding: 0.6rem 0.75rem; border: 1px solid #CBD5E1;"></textarea>
-            <div id="rejectErrorMsg" class="text-danger small mt-1.5 d-none" style="font-size: 0.76rem; font-weight: 600;">
-                <i class="bi bi-exclamation-octagon-fill me-1"></i> Alasan penolakan wajib diisi (minimal 5 karakter)!
-            </div>
-        </div>
-
-        {{-- Action Buttons --}}
-        <div class="d-flex justify-content-end align-items-center gap-2 pt-2">
-            <button type="button" id="btnCancelRejectModal" class="btn btn-light fw-semibold text-muted px-3 py-2" style="border-radius: 8px; font-size: 0.82rem; border: 1px solid #E2E8F0;" onclick="closePmhModals()">
-                Batal
-            </button>
-            <button type="button" id="btnConfirmRejectSubmit" class="btn btn-pmh-action btn-pmh-reject px-4 py-2" onclick="executePmhReject()">
-                <span id="textConfirmReject"><i class="bi bi-arrow-counterclockwise me-1"></i> Kembalikan ke PM</span>
-                <span id="spinnerConfirmReject" class="d-none align-items-center gap-2">
-                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    <span>Mengembalikan CR...</span>
-                </span>
-            </button>
-        </div>
-    </div>
 </div>
 
 <script>
-    function openPmhApproveModal() {
-        const mainNotes = document.getElementById('main_catatan_approval')?.value || '';
-        const modalNotes = document.getElementById('modal_approve_notes');
-        if (modalNotes && mainNotes.trim()) {
-            modalNotes.value = mainNotes.trim();
-        }
-        document.getElementById('pmhModalBackdrop')?.classList.add('show');
-        document.getElementById('pmhApproveModalContainer')?.classList.add('show');
-    }
-
-    function openPmhRejectModal() {
-        const mainNotes = document.getElementById('main_catatan_approval')?.value || '';
-        const modalNotes = document.getElementById('modal_reject_notes');
-        if (modalNotes && mainNotes.trim()) {
-            modalNotes.value = mainNotes.trim();
-        }
-        document.getElementById('rejectErrorMsg')?.classList.add('d-none');
-        document.getElementById('modal_reject_notes')?.classList.remove('shake-error');
-        document.getElementById('pmhModalBackdrop')?.classList.add('show');
-        document.getElementById('pmhRejectModalContainer')?.classList.add('show');
-        setTimeout(() => {
-            modalNotes?.focus();
-        }, 150);
-    }
-
-    function closePmhModals() {
-        document.getElementById('pmhModalBackdrop')?.classList.remove('show');
-        document.getElementById('pmhApproveModalContainer')?.classList.remove('show');
-        document.getElementById('pmhRejectModalContainer')?.classList.remove('show');
-    }
-
-    function executePmhApprove() {
+    function handlePmhApprove() {
         const form = document.getElementById('pmhDecisionForm');
         if (!form) return;
-
-        const modalNotes = document.getElementById('modal_approve_notes')?.value || '';
-        const mainNotes = document.getElementById('main_catatan_approval');
-        if (mainNotes && modalNotes.trim()) {
-            mainNotes.value = modalNotes.trim();
-        }
 
         const actionInput = document.getElementById('decision_action_input');
         if (actionInput) actionInput.value = 'approve';
 
-        // Animate button spinner
-        const textSpan = document.getElementById('textConfirmApprove');
-        const spinnerSpan = document.getElementById('spinnerConfirmApprove');
-        const btnSubmit = document.getElementById('btnConfirmApproveSubmit');
-        const btnCancel = document.getElementById('btnCancelApproveModal');
-
-        if (textSpan) textSpan.classList.add('d-none');
-        if (spinnerSpan) spinnerSpan.classList.remove('d-none');
-        if (btnSubmit) btnSubmit.disabled = true;
-        if (btnCancel) btnCancel.disabled = true;
+        const btnApprove = document.getElementById('btnApproveAction');
+        const btnReject = document.getElementById('btnRejectAction');
+        if (btnApprove) {
+            btnApprove.disabled = true;
+            btnApprove.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Memproses...';
+        }
+        if (btnReject) {
+            btnReject.disabled = true;
+        }
 
         form.submit();
     }
 
-    function executePmhReject() {
+    function handlePmhReject() {
         const form = document.getElementById('pmhDecisionForm');
         if (!form) return;
 
-        const modalNotes = document.getElementById('modal_reject_notes');
-        const noteVal = modalNotes ? modalNotes.value.trim() : '';
+        const notesTextarea = document.getElementById('main_catatan_approval');
+        const noteVal = notesTextarea ? notesTextarea.value.trim() : '';
+        const errorBox = document.getElementById('inlineRejectError');
 
         if (!noteVal || noteVal.length < 5) {
-            const errorMsg = document.getElementById('rejectErrorMsg');
-            if (errorMsg) errorMsg.classList.remove('d-none');
-            if (modalNotes) {
-                modalNotes.classList.remove('shake-error');
-                void modalNotes.offsetWidth; // trigger reflow
-                modalNotes.classList.add('shake-error');
-                modalNotes.focus();
+            if (errorBox) errorBox.classList.remove('d-none');
+            if (notesTextarea) {
+                notesTextarea.classList.remove('shake-error');
+                void notesTextarea.offsetWidth; // trigger reflow
+                notesTextarea.classList.add('shake-error');
+                notesTextarea.focus();
             }
             return;
         }
 
-        const mainNotes = document.getElementById('main_catatan_approval');
-        if (mainNotes) {
-            mainNotes.value = noteVal;
-        }
+        if (errorBox) errorBox.classList.add('d-none');
 
         const actionInput = document.getElementById('decision_action_input');
         if (actionInput) actionInput.value = 'reject';
 
-        // Animate button spinner
-        const textSpan = document.getElementById('textConfirmReject');
-        const spinnerSpan = document.getElementById('spinnerConfirmReject');
-        const btnSubmit = document.getElementById('btnConfirmRejectSubmit');
-        const btnCancel = document.getElementById('btnCancelRejectModal');
-
-        if (textSpan) textSpan.classList.add('d-none');
-        if (spinnerSpan) spinnerSpan.classList.remove('d-none');
-        if (btnSubmit) btnSubmit.disabled = true;
-        if (btnCancel) btnCancel.disabled = true;
+        const btnApprove = document.getElementById('btnApproveAction');
+        const btnReject = document.getElementById('btnRejectAction');
+        if (btnReject) {
+            btnReject.disabled = true;
+            btnReject.innerHTML = '<span class="spinner-border spinner-border-sm me-1" role="status" aria-hidden="true"></span> Memproses...';
+        }
+        if (btnApprove) {
+            btnApprove.disabled = true;
+        }
 
         form.submit();
     }
 
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closePmhModals();
+    document.getElementById('main_catatan_approval')?.addEventListener('input', function() {
+        if (this.value.trim().length >= 5) {
+            document.getElementById('inlineRejectError')?.classList.add('d-none');
+            this.classList.remove('shake-error');
         }
     });
 </script>

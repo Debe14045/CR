@@ -10,6 +10,5 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(UserSeeder::class);
         $this->call(MasterDataSeeder::class);
-        $this->call(ChangeRequestSeeder::class);
     }
 }

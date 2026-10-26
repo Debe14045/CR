@@ -12,9 +12,9 @@ class PresalesController extends Controller
     public function dashboard(Request $request)
     {
         $figmaTotalCr = ChangeRequest::count();
-        $figmaNeedApprovalCr = ChangeRequest::whereIn('status', ['awaiting_pm', 'diajukan', 'awaiting_pmh', 'dianalisis'])->count();
-        $figmaDevCr = ChangeRequest::whereIn('status', ['development', 'dikerjakan'])->count();
-        $figmaGoLiveCr = ChangeRequest::whereIn('status', ['golive', 'selesai', 'awaiting_golive_validation'])->count();
+        $figmaNeedApprovalCr = ChangeRequest::whereIn('status', ['awaiting_pm', 'diajukan', 'awaiting_pmh', 'dianalisis', 'analisa', 'persetujuan'])->count();
+        $figmaDevCr = ChangeRequest::whereIn('status', ['development', 'dikerjakan', 'sit', 'uat', 'training'])->count();
+        $figmaGoLiveCr = ChangeRequest::whereIn('status', ['golive', 'selesai', 'invoicing', 'awaiting_golive_validation'])->count();
 
         // 7 Hari Terakhir untuk grafik request CR
         $today = Carbon::today();
@@ -59,7 +59,7 @@ class PresalesController extends Controller
         // Notifikasi Terkini Dinamis dari Database untuk Dashboard Presales
         $notifPendingCount = ChangeRequest::whereIn('status', ['awaiting_pmh', 'diajukan', 'analisa', 'dianalisis'])->count();
         $notifNeedVerifCount = ChangeRequest::whereIn('status', ['diajukan', 'analisa', 'dianalisis'])->count();
-        $notifDevCount = ChangeRequest::whereIn('status', ['development', 'dikerjakan', 'uat', 'sit'])->count();
+        $notifDevCount = ChangeRequest::whereIn('status', ['development', 'dikerjakan', 'uat', 'sit', 'training'])->count();
 
         $latestReviews = ChangeRequest::with(['client', 'solutionPaper'])
             ->latest()
@@ -93,7 +93,7 @@ class PresalesController extends Controller
         if ($activeTab === 'aktif') {
             $query->whereIn('status', ['awaiting_pmh', 'diajukan', 'dianalisis', 'validated', 'disetujui', 'analisa', 'development', 'dikerjakan', 'sit', 'uat', 'training']);
         } elseif ($activeTab === 'selesai') {
-            $query->whereIn('status', ['golive', 'selesai', 'invoicing', 'ditolak', 'revision_needed']);
+            $query->whereIn('status', ['golive', 'selesai', 'invoicing', 'ditolak', 'revision_needed', 'awaiting_golive_validation']);
         }
 
         if ($request->filled('status') && $request->status !== 'all') {
@@ -103,9 +103,15 @@ class PresalesController extends Controller
             } elseif (in_array($statusVal, ['analisa', 'analysis', 'dianalisis'])) {
                 $query->whereIn('status', ['analisa', 'dianalisis']);
             } elseif (in_array($statusVal, ['development', 'develop', 'dikerjakan'])) {
-                $query->whereIn('status', ['development', 'dikerjakan']);
-            } elseif (in_array($statusVal, ['golive', 'go-live', 'go_live'])) {
-                $query->whereIn('status', ['golive', 'selesai']);
+                $query->whereIn('status', ['development', 'dikerjakan', 'sit', 'uat', 'training']);
+            } elseif ($statusVal === 'sit') {
+                $query->where('status', 'sit');
+            } elseif ($statusVal === 'uat') {
+                $query->where('status', 'uat');
+            } elseif ($statusVal === 'training') {
+                $query->where('status', 'training');
+            } elseif (in_array($statusVal, ['golive', 'go-live', 'go_live', 'selesai'])) {
+                $query->whereIn('status', ['golive', 'selesai', 'invoicing', 'awaiting_golive_validation']);
             } else {
                 $query->where('status', $statusVal);
             }
@@ -175,7 +181,7 @@ class PresalesController extends Controller
     public function development(Request $request)
     {
         $perPage = (int) $request->query('per_page', 10);
-        $query = $this->buildCrQuery($request, ['development', 'dikerjakan']);
+        $query = $this->buildCrQuery($request, ['development', 'dikerjakan', 'sit', 'uat', 'training']);
         $changeRequests = $query->latest()->paginate($perPage)->withQueryString();
 
         return view('presales.table_page', [

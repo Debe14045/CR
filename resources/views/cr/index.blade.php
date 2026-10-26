@@ -913,27 +913,68 @@
                                 $compInitials = $cleanName ? strtoupper(substr($cleanName, 0, min(2, strlen($cleanName)))) : 'CR';
                             }
 
-                            // Status mapping
+                            // Comprehensive status mapping
+                            $stLower = strtolower($cr->status ?? '');
                             $statusText = 'Diajukan';
                             $statusBg = '#FEF3C7';
                             $statusColor = '#D97706';
 
-                            if (in_array(strtolower($cr->status ?? ''), ['analisa', 'dianalisis', 'analysis'])) {
+                            if (in_array($stLower, ['awaiting_pm', 'diajukan'])) {
+                                $statusText = 'Diajukan';
+                                $statusBg = '#FEF3C7';
+                                $statusColor = '#D97706';
+                            } elseif (in_array($stLower, ['awaiting_pmh', 'dianalisis'])) {
+                                $statusText = 'Awaiting PMH';
+                                $statusBg = '#EFF6FF';
+                                $statusColor = '#2563EB';
+                            } elseif ($stLower === 'revision_needed') {
+                                $statusText = 'Perlu Revisi';
+                                $statusBg = '#FEF2F2';
+                                $statusColor = '#DC2626';
+                            } elseif (in_array($stLower, ['validated', 'disetujui'])) {
+                                $statusText = 'Disetujui';
+                                $statusBg = '#ECFDF5';
+                                $statusColor = '#059669';
+                            } elseif (in_array($stLower, ['analisa', 'analysis'])) {
                                 $statusText = 'Analysis';
                                 $statusBg = '#DBEAFE';
                                 $statusColor = '#2563EB';
-                            } elseif (in_array(strtolower($cr->status ?? ''), ['development', 'dikerjakan', 'develop'])) {
+                            } elseif (in_array($stLower, ['development', 'dikerjakan', 'develop'])) {
                                 $statusText = 'Develop';
                                 $statusBg = '#EDE9FE';
                                 $statusColor = '#7C3AED';
-                            } elseif (in_array(strtolower($cr->status ?? ''), ['uat', 'sit'])) {
+                            } elseif ($stLower === 'sit') {
+                                $statusText = 'SIT';
+                                $statusBg = '#F3E8FF';
+                                $statusColor = '#9333EA';
+                            } elseif ($stLower === 'uat') {
                                 $statusText = 'UAT';
                                 $statusBg = '#FCE7F3';
                                 $statusColor = '#DB2777';
-                            } elseif (in_array(strtolower($cr->status ?? ''), ['golive', 'selesai', 'invoicing', 'go-live'])) {
+                            } elseif ($stLower === 'training') {
+                                $statusText = 'Training';
+                                $statusBg = '#E0F2FE';
+                                $statusColor = '#0284C7';
+                            } elseif ($stLower === 'awaiting_golive_validation') {
+                                $statusText = 'Validasi Go-Live';
+                                $statusBg = '#FEF9C3';
+                                $statusColor = '#CA8A04';
+                            } elseif (in_array($stLower, ['golive', 'selesai', 'go-live'])) {
                                 $statusText = 'Go-Live';
                                 $statusBg = '#D1FAE5';
                                 $statusColor = '#059669';
+                            } elseif ($stLower === 'invoicing') {
+                                $statusText = 'Invoicing';
+                                $statusBg = '#CCFBF1';
+                                $statusColor = '#0D9488';
+                            } elseif (in_array($stLower, ['ditolak', 'rejected'])) {
+                                $statusText = 'Ditolak';
+                                $statusBg = '#FEE2E2';
+                                $statusColor = '#DC2626';
+                            } else {
+                                $statusText = ucfirst($cr->status ?? 'Diajukan');
+                                $statusBg = '#F1F5F9';
+                                $statusColor = '#475569';
                             }
 
                             // Priority mapping: URGENT vs NORMAL

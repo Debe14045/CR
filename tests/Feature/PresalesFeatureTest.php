@@ -157,4 +157,191 @@ class PresalesFeatureTest extends TestCase
         $res->assertSee('Change Request');
         $res->assertSee('Pantau seluruh permintaan perubahan Anda');
     }
+
+    public function test_landing_page_displays_masuk_akun_and_buat_akun(): void
+    {
+        $response = $this->get('/');
+        $response->assertOk();
+        $response->assertSee('Masuk Akun');
+        $response->assertSee('Buat Akun');
+    }
+
+    public function test_presales_review_top_defaults_to_empty_and_omits_total_harga_input(): void
+    {
+        $presales = User::factory()->create([
+            'role' => User::ROLE_PRESALES,
+        ]);
+
+        $cr = ChangeRequest::create([
+            'kode_cr' => 'CR-2026-099',
+            'judul' => 'Review Quotation Test',
+            'klien' => 'PT Test',
+            'proyek_terkait' => 'Core App',
+            'deskripsi' => 'Testing quotation',
+            'status' => 'awaiting_quotation',
+            'pm_head_approved_at' => now(),
+            'solution_paper' => 'dummy.pdf',
+            'tanggal_pengajuan' => now(),
+        ]);
+
+        $response = $this->actingAs($presales)->get(route('presales.review', $cr));
+        $response->assertOk();
+        $response->assertSee('Belum ada Termin Pembayaran (TOP)');
+        $response->assertDontSee('id="totalHargaField"', false);
+    }
+
+    public function test_presales_can_save_quotation_with_custom_termin_milestones(): void
+    {
+        $presales = User::factory()->create([
+            'role' => User::ROLE_PRESALES,
+        ]);
+
+        $cr = ChangeRequest::create([
+            'kode_cr' => 'CR-2026-100',
+            'judul' => 'Save Quotation Test',
+            'klien' => 'PT Test',
+            'proyek_terkait' => 'Core App',
+            'deskripsi' => 'Testing save quotation',
+            'status' => 'awaiting_quotation',
+            'pm_head_approved_at' => now(),
+            'solution_paper' => 'dummy.pdf',
+            'tanggal_pengajuan' => now(),
+        ]);
+
+        $terminJson = json_encode([
+            [
+                'name' => 'Termin 1 (DP)',
+                'badge' => 'DP 30%',
+                'deliverable' => 'Kickoff & Spesifikasi Teknis',
+                'nominal' => 15000000,
+            ],
+            [
+                'name' => 'Termin 2 (Pelunasan)',
+                'badge' => 'Pelunasan 70%',
+                'deliverable' => 'UAT & Go-Live sign-off',
+                'nominal' => 35000000,
+            ],
+        ]);
+
+        $response = $this->actingAs($presales)->post(route('change-requests.quotation.save', $cr), [
+            'harga_penawaran' => 50000000,
+            'biaya_pengerjaan' => 45045045,
+            'termin_data' => $terminJson,
+        ]);
+
+        $response->assertRedirect();
+        $cr->refresh();
+
+        $this->assertEquals(50000000, (int) $cr->harga_penawaran);
+        $this->assertCount(2, $cr->invoices);
+        $this->assertEquals(15000000, (int) $cr->invoices[0]->nominal);
+        $this->assertEquals(35000000, (int) $cr->invoices[1]->nominal);
+    }
+
+    public function test_pm_stepper_track_is_constrained_between_nodes(): void
+    {
+        $pm = User::factory()->create([
+            'role' => User::ROLE_PM,
+        ]);
+
+        $cr = ChangeRequest::create([
+            'kode_cr' => 'CR-2026-101',
+            'judul' => 'Stepper Test',
+            'klien' => 'PT Test',
+            'proyek_terkait' => 'Core App',
+            'deskripsi' => 'Testing stepper track',
+            'status' => 'golive',
+            'tanggal_pengajuan' => now(),
+        ]);
+
+        $response = $this->actingAs($pm)->get(route('change-requests.show', $cr));
+        $response->assertOk();
+        $response->assertSee('left: 30px; right: 30px; height: 3px;', false);
+        $response->assertSee('100% — Go Live');
+    }
+
+    public function test_presales_detail_cr_shows_development_status_stepper(): void
+    {
+        $presales = User::factory()->create([
+            'role' => User::ROLE_PRESALES,
+        ]);
+
+        $cr = ChangeRequest::create([
+            'kode_cr' => 'CR-2026-102',
+            'judul' => 'Presales Stepper Test',
+            'klien' => 'PT Test',
+            'proyek_terkait' => 'Core App',
+            'deskripsi' => 'Testing presales status development',
+            'status' => 'development',
+            'tanggal_pengajuan' => now(),
+        ]);
+
+        $response = $this->actingAs($presales)->get(route('presales.review', $cr));
+        $response->assertOk();
+        $response->assertSee('PROGRESS PENGERJAAN TEKNIS (STATUS DEVELOPMENT)');
+        $response->assertSee('modalUpdateStatusDev');
+        $response->assertSee('33% — Develop');
+    }
+
+    public function test_updating_status_updates_all_dashboards(): void
+    {
+        $presales = User::factory()->create([
+            'role' => User::ROLE_PRESALES,
+        ]);
+        $pm = User::factory()->create([
+            'role' => User::ROLE_PM,
+        ]);
+        $pmh = User::factory()->create([
+            'role' => User::ROLE_PMH,
+        ]);
+
+        $cr = ChangeRequest::create([
+            'kode_cr' => 'CR-2026-103',
+            'judul' => 'Dashboard Status Sync Test',
+            'klien' => 'PT Sync',
+            'proyek_terkait' => 'Core App',
+            'deskripsi' => 'Testing dashboard update sync',
+            'status' => 'development',
+            'tanggal_pengajuan' => now(),
+        ]);
+
+        // 1. Check Presales Dashboard initially sees it in Development
+        $resPresalesDash = $this->actingAs($presales)->get(route('presales.dashboard'));
+        $resPresalesDash->assertOk();
+        $this->assertEquals(1, $resPresalesDash->viewData('figmaDevCr'));
+
+        // 2. Presales updates status to 'sit'
+        $response = $this->actingAs($presales)->put(route('change-requests.update', $cr), [
+            'from_tab' => 'presales_status',
+            'status' => 'sit',
+        ]);
+        $response->assertRedirect(route('presales.review', [$cr, 'tab' => 'detail']));
+
+        $cr->refresh();
+        $this->assertEquals('sit', $cr->status);
+
+        // 3. Verify all dashboards reflect the updated status
+        // A. Presales Dashboard Development count still includes SIT
+        $resPresalesDashAfter = $this->actingAs($presales)->get(route('presales.dashboard'));
+        $resPresalesDashAfter->assertOk();
+        $this->assertEquals(1, $resPresalesDashAfter->viewData('figmaDevCr'));
+
+        // B. Presales Development Table shows this CR
+        $resPresalesDev = $this->actingAs($presales)->get(route('presales.development'));
+        $resPresalesDev->assertOk();
+        $resPresalesDev->assertSee('CR-2026-103');
+        $resPresalesDev->assertSee('SIT');
+
+        // C. PM Dashboard Development View includes this CR
+        $resPmDev = $this->actingAs($pm)->get(route('change-requests.index', ['view' => 'development']));
+        $resPmDev->assertOk();
+        $this->assertEquals(1, $resPmDev->viewData('figmaDevCr'));
+        $resPmDev->assertSee('CR-2026-103');
+
+        // D. PM Head Development page includes this CR
+        $resPmhDev = $this->actingAs($pmh)->get(route('pmh.development'));
+        $resPmhDev->assertOk();
+        $resPmhDev->assertSee('CR-2026-103');
+    }
 }
+

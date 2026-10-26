@@ -23,9 +23,9 @@ class PMHeadController extends Controller
             'total' => ChangeRequest::count(),
             'pending_pmh' => ChangeRequest::whereIn('status', ['awaiting_pmh', 'diajukan', 'dianalisis', 'analisa'])->count(),
             'pending_golive' => ChangeRequest::whereIn('status', ['awaiting_golive_validation', 'training', 'uat', 'sit'])->count(),
-            'approved' => ChangeRequest::whereIn('status', ['validated', 'disetujui', 'development', 'dikerjakan', 'golive', 'selesai'])->count(),
+            'approved' => ChangeRequest::whereIn('status', ['validated', 'disetujui', 'development', 'dikerjakan', 'sit', 'uat', 'training', 'golive', 'selesai', 'invoicing', 'awaiting_golive_validation'])->count(),
             'rejected' => ChangeRequest::whereIn('status', ['ditolak', 'revision_needed'])->count(),
-            'in_dev' => ChangeRequest::whereIn('status', ['development', 'dikerjakan'])->count(),
+            'in_dev' => ChangeRequest::whereIn('status', ['development', 'dikerjakan', 'sit', 'uat', 'training'])->count(),
         ];
 
         $latestReviews = ChangeRequest::with(['client', 'solutionPaper'])
@@ -65,9 +65,15 @@ class PMHeadController extends Controller
             } elseif (in_array($statusVal, ['analisa', 'analysis', 'dianalisis'])) {
                 $query->whereIn('status', ['analisa', 'dianalisis']);
             } elseif (in_array($statusVal, ['development', 'develop', 'dikerjakan'])) {
-                $query->whereIn('status', ['development', 'dikerjakan']);
+                $query->whereIn('status', ['development', 'dikerjakan', 'sit', 'uat', 'training']);
+            } elseif ($statusVal === 'sit') {
+                $query->where('status', 'sit');
+            } elseif ($statusVal === 'uat') {
+                $query->where('status', 'uat');
+            } elseif ($statusVal === 'training') {
+                $query->where('status', 'training');
             } elseif (in_array($statusVal, ['golive', 'go-live', 'go_live'])) {
-                $query->whereIn('status', ['golive', 'selesai']);
+                $query->whereIn('status', ['golive', 'selesai', 'invoicing', 'awaiting_golive_validation']);
             } else {
                 $query->where('status', $statusVal);
             }
@@ -335,6 +341,13 @@ class PMHeadController extends Controller
         }
 
         if ($action === 'reject') {
+            $notes = trim((string) $notes);
+            if (empty($notes) || strlen($notes) < 5) {
+                return back()->withErrors([
+                    'catatan_approval' => 'Alasan penolakan / catatan revisi wajib diisi jika PM Head menolak CR (minimal 5 karakter).',
+                ])->withInput();
+            }
+
             $changeRequest->update([
                 'status' => 'revision_needed',
                 'reject_reason' => $notes,

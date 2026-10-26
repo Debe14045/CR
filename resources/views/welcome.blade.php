@@ -848,18 +848,12 @@
                     <li><a href="#faq" class="nav-link-item">FAQ</a></li>
                 </ul>
 
-                <!-- Right Actions: Masuk & Buat Akun or Dashboard -->
-                <div class="nav-auth-actions">
-                    @auth
-                        <a href="{{ url('/dashboard') }}" class="btn-nav-register">
-                            Buka Dashboard <i class="bi bi-speedometer2"></i>
-                        </a>
-                    @else
-                        <a href="{{ route('login') }}" class="btn-nav-login">Masuk</a>
-                        <a href="{{ route('register') }}" class="btn-nav-register">
-                            Buat Akun <i class="bi bi-arrow-right"></i>
-                        </a>
-                    @endauth
+                <!-- Right Actions: Masuk Akun & Buat Akun -->
+                <div class="nav-auth-actions d-flex align-items-center gap-3">
+                    <a href="{{ route('login') }}" class="btn-nav-login">Masuk Akun</a>
+                    <a href="{{ route('register') }}" class="btn-nav-register">
+                        Buat Akun <i class="bi bi-arrow-right"></i>
+                    </a>
                 </div>
             </div>
         </div>

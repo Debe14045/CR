@@ -23,6 +23,8 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        \Carbon\Carbon::setLocale('id');
+
         Paginator::useBootstrapFive();
 
         View::composer(['components.top-navbar', 'components.sidebar', 'layouts.app', 'notifications.*', 'cr.*', 'pmhead.*', 'presales.*'], function ($view) {

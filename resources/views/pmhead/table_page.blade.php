@@ -272,6 +272,26 @@
                                 $statusBg = '#EDE9FE';
                                 $statusColor = '#7C3AED';
                                 $dotColor = '#7C3AED';
+                            } elseif ($st === 'sit') {
+                                $statusText = 'SIT';
+                                $statusBg = '#E0E7FF';
+                                $statusColor = '#4338CA';
+                                $dotColor = '#4338CA';
+                            } elseif ($st === 'uat') {
+                                $statusText = 'UAT';
+                                $statusBg = '#FEF3C7';
+                                $statusColor = '#B45309';
+                                $dotColor = '#B45309';
+                            } elseif ($st === 'training') {
+                                $statusText = 'Training';
+                                $statusBg = '#F3E8FF';
+                                $statusColor = '#7E22CE';
+                                $dotColor = '#7E22CE';
+                            } elseif ($st === 'awaiting_golive_validation') {
+                                $statusText = 'Validasi Go Live';
+                                $statusBg = '#FEF3C7';
+                                $statusColor = '#D97706';
+                                $dotColor = '#D97706';
                             } elseif (in_array($st, ['golive', 'selesai', 'go-live', 'go_live', 'validated'])) {
                                 $statusText = 'Go-Live';
                                 $statusBg = '#DCFCE7';
@@ -320,7 +340,7 @@
                                         {{ $cr->judul }}
                                     </div>
                                     <div class="text-muted" style="font-size: 0.74rem; margin-top: 2px;">
-                                        {{ $cr->proyek_terkait ?: ($cr->main_desk ?: ($cr->kode_cr ?: 'System Enhancement')) }}
+                                        {{ $cr->kode_cr ? $cr->kode_cr . ' • ' : '' }}{{ $cr->proyek_terkait ?: ($cr->main_desk ?: 'System Enhancement') }}
                                     </div>
                                 </div>
                             </td>

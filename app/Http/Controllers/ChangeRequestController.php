@@ -61,11 +61,11 @@ class ChangeRequestController extends Controller
 
         // Apply view-specific filters
         if ($viewMode === 'development') {
-            $query->whereIn('status', ['development', 'dikerjakan']);
+            $query->whereIn('status', ['development', 'dikerjakan', 'sit', 'uat', 'training']);
         } elseif ($viewMode === 'uat') {
             $query->whereIn('status', ['uat', 'sit']);
         } elseif ($viewMode === 'golive') {
-            $query->whereIn('status', ['golive', 'selesai', 'invoicing']);
+            $query->whereIn('status', ['golive', 'selesai', 'invoicing', 'awaiting_golive_validation']);
         } elseif ($viewMode === 'draft') {
             $query->where('status', 'draft');
         } elseif ($viewMode === 'total') {
@@ -81,11 +81,13 @@ class ChangeRequestController extends Controller
             } elseif (in_array($statusVal, ['analisa', 'analysis', 'dianalisis'])) {
                 $query->whereIn('status', ['analisa', 'analysis', 'dianalisis']);
             } elseif (in_array($statusVal, ['development', 'develop', 'dikerjakan'])) {
-                $query->whereIn('status', ['development', 'develop', 'dikerjakan']);
+                $query->whereIn('status', ['development', 'develop', 'dikerjakan', 'sit', 'uat', 'training']);
             } elseif (in_array($statusVal, ['uat', 'sit'])) {
                 $query->whereIn('status', ['uat', 'sit']);
+            } elseif ($statusVal === 'training') {
+                $query->where('status', 'training');
             } elseif (in_array($statusVal, ['golive', 'go-live', 'go_live'])) {
-                $query->whereIn('status', ['golive', 'selesai', 'invoicing']);
+                $query->whereIn('status', ['golive', 'selesai', 'invoicing', 'awaiting_golive_validation']);
             } else {
                 $query->where('status', $request->status);
             }
@@ -129,10 +131,10 @@ class ChangeRequestController extends Controller
             $cardQuery->where('user_id', $user->id);
         }
         $figmaTotalCr = (clone $cardQuery)->count();
-        $figmaNeedApprovalCr = (clone $cardQuery)->whereIn('status', ['awaiting_pm', 'diajukan', 'awaiting_pmh'])->count();
-        $figmaDevCr = (clone $cardQuery)->whereIn('status', ['development', 'dikerjakan'])->count();
+        $figmaNeedApprovalCr = (clone $cardQuery)->whereIn('status', ['awaiting_pm', 'diajukan', 'awaiting_pmh', 'dianalisis', 'analisa', 'persetujuan'])->count();
+        $figmaDevCr = (clone $cardQuery)->whereIn('status', ['development', 'dikerjakan', 'sit', 'uat', 'training'])->count();
         $figmaUatCr = (clone $cardQuery)->whereIn('status', ['uat', 'sit'])->count();
-        $figmaGoLiveCr = (clone $cardQuery)->whereIn('status', ['golive', 'selesai', 'invoicing'])->count();
+        $figmaGoLiveCr = (clone $cardQuery)->whereIn('status', ['golive', 'selesai', 'invoicing', 'awaiting_golive_validation'])->count();
         $figmaDraftCr = (clone $cardQuery)->where('status', 'draft')->count();
 
         // Status breakdown counts for Donut Chart & Progress bars
@@ -214,8 +216,8 @@ class ChangeRequestController extends Controller
         // Notifikasi Terkini Dinamis dari Database untuk Dashboard
         $notifPendingCount = ChangeRequest::whereIn('status', ['awaiting_pmh', 'diajukan', 'analisa', 'dianalisis'])->count();
         $notifNeedVerifCount = ChangeRequest::whereIn('status', ['diajukan', 'analisa', 'dianalisis'])->count();
-        $notifDevCount = ChangeRequest::whereIn('status', ['development', 'dikerjakan', 'uat', 'sit'])->count();
-        $notifGoLiveCount = ChangeRequest::whereIn('status', ['golive', 'selesai', 'validated'])->count();
+        $notifDevCount = ChangeRequest::whereIn('status', ['development', 'dikerjakan', 'uat', 'sit', 'training'])->count();
+        $notifGoLiveCount = ChangeRequest::whereIn('status', ['golive', 'selesai', 'invoicing', 'awaiting_golive_validation'])->count();
 
         // Monthly trend dataset for PM Dashboard (Diagram Batang)
         $defaultMonthlyTrend = [
@@ -449,9 +451,13 @@ class ChangeRequestController extends Controller
         }
         if ($request->filled('cr_notes') && ! $request->filled('catatan_pengajuan')) {
             $input['catatan_pengajuan'] = $request->input('cr_notes');
+            $input['catatan_analisis'] = $request->input('cr_notes');
         }
         if ($request->filled('nama_perusahaan') && ! $request->filled('klien')) {
             $input['klien'] = $request->input('nama_perusahaan');
+        }
+        if ($request->has('solution_paper_required')) {
+            $input['solution_paper_required'] = $request->boolean('solution_paper_required');
         }
         if (! isset($input['tanggal_pengajuan'])) {
             $input['tanggal_pengajuan'] = now()->toDateString();
@@ -465,8 +471,10 @@ class ChangeRequestController extends Controller
             'deskripsi'           => 'required|string',
             'alasan'              => 'nullable|string',
             'catatan_pengajuan'   => 'nullable|string|max:5000',
+            'catatan_analisis'    => 'nullable|string',
             'lampiran_pengajuan'  => 'nullable|file|mimes:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,zip|max:20480',
             'dokumen_fsd'         => 'nullable|file|mimes:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,zip|max:20480',
+            'dokumen_lainnya'     => 'nullable|file|mimes:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,zip|max:20480',
             'tanggal_pengajuan'   => 'nullable|date',
             'bap_date'            => 'nullable|date',
             'prioritas'           => 'nullable|string|max:50',
@@ -477,6 +485,11 @@ class ChangeRequestController extends Controller
             'client_id'           => 'nullable',
             'klien'               => 'nullable|string|max:255',
             'owner_cr'            => 'nullable|string|max:255',
+            'mindesk_analisis'    => 'nullable|numeric|min:0',
+            'mindesk_development' => 'nullable|numeric|min:0',
+            'mindesk_testing'     => 'nullable|numeric|min:0',
+            'solution_paper_required' => 'nullable|boolean',
+            'solution_paper_file' => 'nullable|file|mimes:pdf,doc,docx,zip|max:20480',
         ];
 
         $validated = $request->validate($rules);
@@ -490,7 +503,7 @@ class ChangeRequestController extends Controller
         }
 
         // File upload handling
-        $file = $request->file('lampiran_pengajuan') ?? $request->file('dokumen_fsd');
+        $file = $request->file('lampiran_pengajuan') ?? $request->file('dokumen_fsd') ?? $request->file('dokumen_lainnya');
         if ($file) {
             $validated['lampiran_pengajuan'] = $file->store('change-request-submissions', 'public');
         }
@@ -515,16 +528,49 @@ class ChangeRequestController extends Controller
         }
 
         $isDraft = ($request->input('action') === 'draft' || $request->input('status') === 'draft');
-        $validated['status'] = $isDraft ? 'draft' : 'diajukan';
+        $hasPmMandays = $user->isPm() && (((float)($validated['mindesk_analisis'] ?? 0) + (float)($validated['mindesk_development'] ?? 0) + (float)($validated['mindesk_testing'] ?? 0)) > 0);
+
+        if ($isDraft) {
+            $validated['status'] = 'draft';
+        } elseif ($hasPmMandays) {
+            $validated['status'] = 'awaiting_pmh';
+        } else {
+            $validated['status'] = 'diajukan';
+        }
 
         $changeRequest = ChangeRequest::create($validated);
+
+        if ($request->hasFile('solution_paper_file')) {
+            $spPath = $request->file('solution_paper_file')->store('solution-papers', 'public');
+            \App\Models\SolutionPaper::create([
+                'change_request_id' => $changeRequest->id,
+                'solution_paper_file' => $spPath,
+                'status' => 'Completed',
+                'actual_completion_date' => now(),
+            ]);
+        }
 
         if ($isDraft) {
             return redirect()->route('change-requests.index', ['view' => 'draft'])
                 ->with('success', 'Draft Change Request ' . $changeRequest->kode_cr . ' berhasil disimpan.');
         }
 
-        // Notify PM and Admin on real submission
+        if ($validated['status'] === 'awaiting_pmh') {
+            Notification::sendNotification([
+                'target_role'       => 'pmh',
+                'change_request_id' => $changeRequest->id,
+                'title'             => 'CR Baru Diajukan PM Menunggu Validasi',
+                'message'           => "PM {$user->name} telah mengajukan {$changeRequest->kode_cr} ({$changeRequest->judul}) dengan estimasi mandays lengkap. Menunggu validasi PM Head.",
+                'type'              => 'info',
+                'category'          => 'cr_submitted',
+                'action_url'        => route('change-requests.show', $changeRequest->id),
+            ]);
+
+            return redirect()->route('change-requests.index')
+                ->with('success', 'Change Request ' . $changeRequest->kode_cr . ' berhasil diajukan dan diteruskan ke PM Head untuk validasi.');
+        }
+
+        // Notify PM and Admin on real submission from Client
         Notification::sendNotification([
             'target_role'       => 'pm',
             'change_request_id' => $changeRequest->id,
@@ -667,19 +713,20 @@ class ChangeRequestController extends Controller
             }
 
             if ($action === 'reject') {
-                // Strict Validation Rule: PM Head MUST fill out Reject Reason (Mandatory)
-                $validated = $request->validate([
-                    'reject_reason' => 'required|string|min:5|max:2000',
-                ], [
-                    'reject_reason.required' => 'Alasan penolakan (Reject Reason) wajib diisi jika PM Head menolak CR.',
-                    'reject_reason.min' => 'Alasan penolakan minimal 5 karakter.',
-                ]);
+                // Strict Validation Rule: PM Head MUST fill out Reject Reason (Mandatory - "kalo gabisa gabole")
+                $reason = $request->input('reject_reason') ?: $request->input('catatan_approval') ?: $request->input('alasan_penolakan');
+                if (empty(trim($reason ?? '')) || strlen(trim($reason)) < 5) {
+                    return back()->withErrors([
+                        'reject_reason' => 'Alasan penolakan / revisi wajib diisi jika PM Head menolak CR (minimal 5 karakter).',
+                        'catatan_approval' => 'Alasan penolakan / revisi wajib diisi jika PM Head menolak CR (minimal 5 karakter).',
+                    ])->withInput();
+                }
 
                 // Routing Logic: Routed back to assigned PM for revision (Status: revision_needed)
                 $changeRequest->update([
                     'status' => 'revision_needed',
-                    'reject_reason' => $validated['reject_reason'],
-                    'catatan_revisi' => $validated['reject_reason'],
+                    'reject_reason' => trim($reason),
+                    'catatan_revisi' => trim($reason),
                     'direvisi_pada' => now(),
                     'pmh_approved_at' => null,
                 ]);
@@ -689,7 +736,7 @@ class ChangeRequestController extends Controller
                     'target_role'       => 'pm',
                     'change_request_id' => $changeRequest->id,
                     'title'             => 'CR Dikembalikan oleh PM Head',
-                    'message'           => "PM Head menolak {$changeRequest->kode_cr} dan meminta revisi. Alasan: {$validated['reject_reason']}",
+                    'message'           => "PM Head menolak {$changeRequest->kode_cr} dan meminta revisi. Alasan: " . trim($reason),
                     'type'              => 'warning',
                     'category'          => 'cr_rejection',
                     'action_url'        => route('change-requests.show', $changeRequest->id),
@@ -770,6 +817,13 @@ class ChangeRequestController extends Controller
         }
 
         // PM VERIFICATION & MONITORING UPDATE
+        // Guard: Jika presale sudah melakukan pembayaran/quotation, verifikasi CR di PM harus disable/dikunci
+        if ($user->isPm() && $changeRequest->isPresalesPaymentDone()) {
+            if ($request->input('action') === 'approve' || $request->input('action') === 'reject' || $request->input('from_tab') === 'verifikasi' || ($request->has('submit_to_pmh') && $request->boolean('submit_to_pmh'))) {
+                return back()->with('error', 'Form Verifikasi CR telah dikunci karena proses quotation dan pembayaran dari Presales telah selesai dilakukan.');
+            }
+        }
+
         $validated = $request->validate([
             'status' => 'nullable|string',
             'prioritas' => 'nullable|in:rendah,normal,tinggi,kritis',
@@ -805,6 +859,8 @@ class ChangeRequestController extends Controller
         }
 
         if ($role === 'presales') {
+            unset($validated['mindesk_analisis'], $validated['mindesk_development'], $validated['mindesk_testing']);
+
             if (isset($validated['harga_penawaran']) && $validated['harga_penawaran'] !== null && $validated['harga_penawaran'] !== '') {
                 if (! $changeRequest->canBeQuoted()) {
                     return back()->withErrors([
@@ -840,7 +896,7 @@ class ChangeRequestController extends Controller
         $newStatus = $request->input('status', $changeRequest->status);
 
         // Enforce requirement 5: Tab Status CR belum bisa diisi jika belum melakukan pembayaran/quotation
-        if ($request->input('from_tab') === 'status') {
+        if ($request->input('from_tab') === 'status' || $request->input('from_tab') === 'presales_status') {
             $isUnlocked = in_array($changeRequest->status, ['development', 'dikerjakan', 'sit', 'uat', 'training', 'awaiting_golive_validation', 'golive', 'invoicing', 'selesai'])
                 || ($changeRequest->harga_penawaran !== null && $changeRequest->isPmhApproved());
             if (!$isUnlocked) {
@@ -877,10 +933,16 @@ class ChangeRequestController extends Controller
         // Handle submission / verification to PM Head or rejection
         $successMessage = 'Change Request berhasil diperbarui.';
         if ($request->input('action') === 'reject') {
-            $reason = $request->input('reject_reason') ?: $request->input('alasan_penolakan', 'Perlu revisi sesuai catatan PM');
+            $reason = $request->input('reject_reason') ?: $request->input('alasan_penolakan');
+            if (empty(trim($reason ?? '')) || strlen(trim($reason)) < 5) {
+                return back()->withErrors([
+                    'reject_reason' => 'Alasan penolakan / revisi wajib diisi jika PM menolak CR (minimal 5 karakter).',
+                ])->withInput();
+            }
+            $cleanReason = trim($reason);
             $validated['status'] = 'revision_needed';
-            $validated['reject_reason'] = $reason;
-            $validated['catatan_revisi'] = $reason;
+            $validated['reject_reason'] = $cleanReason;
+            $validated['catatan_revisi'] = $cleanReason;
             $validated['direvisi_pada'] = now();
             $successMessage = 'Change Request berhasil ditolak dan dikembalikan ke pemohon untuk revisi.';
 
@@ -889,8 +951,8 @@ class ChangeRequestController extends Controller
                 'user_id'           => $changeRequest->user_id,
                 'target_role'       => 'client',
                 'change_request_id' => $changeRequest->id,
-                'title'             => 'Pengajuan CR Ditolak oleh PM',
-                'message'           => "Change Request {$changeRequest->kode_cr} ({$changeRequest->judul}) ditolak oleh PM. Alasan: {$reason}. Silakan periksa catatan dan ajukan perbaikan.",
+                'title'             => 'Pengajuan CR Perlu Revisi dari PM',
+                'message'           => "Change Request {$changeRequest->kode_cr} ({$changeRequest->judul}) memerlukan revisi dari PM. Alasan: {$cleanReason}. Silakan periksa catatan dan ajukan perbaikan.",
                 'type'              => 'danger',
                 'category'          => 'cr_rejection',
                 'action_url'        => route('change-requests.show', $changeRequest->id),
@@ -934,7 +996,46 @@ class ChangeRequestController extends Controller
             $sp->save();
         }
 
-        if ($request->input('from_tab') === 'status') {
+        if ($request->input('from_tab') === 'status' || $request->input('from_tab') === 'presales_status') {
+            // Real-time notification to Client about status update
+            Notification::sendNotification([
+                'user_id'           => $changeRequest->user_id,
+                'target_role'       => 'client',
+                'change_request_id' => $changeRequest->id,
+                'title'             => 'Status Pengerjaan CR Diperbarui',
+                'message'           => "Status pengerjaan Change Request {$changeRequest->kode_cr} telah diperbarui menjadi: {$changeRequest->statusLabel()}.",
+                'type'              => 'info',
+                'category'          => 'cr_status_update',
+                'action_url'        => route('change-requests.show', $changeRequest->id),
+            ]);
+
+            // Notify Presales
+            Notification::sendNotification([
+                'target_role'       => 'presales',
+                'change_request_id' => $changeRequest->id,
+                'title'             => 'Status Development CR Diperbarui',
+                'message'           => "Status pengerjaan Change Request {$changeRequest->kode_cr} telah diperbarui menjadi: {$changeRequest->statusLabel()}.",
+                'type'              => 'info',
+                'category'          => 'cr_status_update',
+                'action_url'        => route('presales.review', $changeRequest->id),
+            ]);
+
+            // Notify PM
+            Notification::sendNotification([
+                'target_role'       => 'pm',
+                'change_request_id' => $changeRequest->id,
+                'title'             => 'Status Development CR Diperbarui',
+                'message'           => "Status pengerjaan Change Request {$changeRequest->kode_cr} telah diperbarui menjadi: {$changeRequest->statusLabel()}.",
+                'type'              => 'info',
+                'category'          => 'cr_status_update',
+                'action_url'        => route('change-requests.show', $changeRequest->id),
+            ]);
+
+            if ($request->input('from_tab') === 'presales_status' || $user?->isPresales()) {
+                return redirect()->route('presales.review', [$changeRequest, 'tab' => 'detail'])
+                    ->with('success', 'Status Development CR berhasil diperbarui menjadi ' . $changeRequest->statusLabel() . '.');
+            }
+
             return redirect()->route('change-requests.show', [$changeRequest, 'tab' => 'status'])
                 ->with('success', 'Status CR berhasil diperbarui menjadi ' . $changeRequest->statusLabel() . '.');
         }
@@ -1114,7 +1215,7 @@ class ChangeRequestController extends Controller
     public function saveQuotation(Request $request, ChangeRequest $changeRequest)
     {
         $user = auth()->user();
-        abort_unless($user?->isPresales() || $user?->isAdmin(), 403, 'Akses ditolak. Modul ini adalah pencatatan internal Presales / Marketing.');
+        abort_unless($user?->isPresales() || $user?->isAdmin() || $user?->isPm(), 403, 'Akses ditolak. Modul ini adalah pencatatan internal Presales / Marketing.');
 
         // Clean numeric values if formatted as string currency
         $rawHarga = $request->input('harga_penawaran');
@@ -1158,30 +1259,58 @@ class ChangeRequestController extends Controller
 
         $changeRequest->update($updateData);
 
-        // Store into CrInvoice or update first invoice quotation
-        $invoice = $changeRequest->invoices()->first() ?: new CrInvoice(['change_request_id' => $changeRequest->id]);
-        $invNum = $request->input('invoice_number', $request->input('nomor_invoice'));
-        if ($invNum) {
-            $invoice->invoice_number = $invNum;
-        } elseif (!$invoice->invoice_number) {
-            $invoice->invoice_number = 'INV-' . date('Ymd') . '-' . str_pad($changeRequest->id, 3, '0', STR_PAD_LEFT);
-        }
-        $invStatus = $request->input('payment_status', $request->input('status_invoice'));
-        if ($invStatus && in_array(strtolower($invStatus), ['pending', 'paid'], true)) {
-            $invoice->payment_status = strtolower($invStatus);
-        } elseif (!$invoice->payment_status) {
-            $invoice->payment_status = 'pending';
-        }
+        // Store into CrInvoice or update invoices from custom Presales TOP milestones
+        $terminJson = $request->input('termin_data');
+        $parsedTermin = !empty($terminJson) ? json_decode($terminJson, true) : null;
 
-        if ($request->hasFile('quotation_file')) {
-            $invoice->quotation_file = $request->file('quotation_file')->store('quotations', 'public');
+        if (is_array($parsedTermin) && count($parsedTermin) > 0) {
+            $uploadedQuotation = $request->hasFile('quotation_file')
+                ? $request->file('quotation_file')->store('quotations', 'public')
+                : ($changeRequest->invoices()->whereNotNull('quotation_file')->first()?->quotation_file);
+
+            // Delete pending invoices to replace with fresh defined termin
+            $changeRequest->invoices()->where(function ($q) {
+                $q->whereNull('payment_status')->orWhere('payment_status', 'pending');
+            })->delete();
+
+            foreach ($parsedTermin as $tIdx => $tItem) {
+                CrInvoice::create([
+                    'change_request_id' => $changeRequest->id,
+                    'invoice_number'    => 'INV-' . date('Ymd') . '-' . str_pad($changeRequest->id, 3, '0', STR_PAD_LEFT) . '-T' . ($tIdx + 1),
+                    'term_name'         => $tItem['name'] ?? ('Termin ' . ($tIdx + 1)),
+                    'job_description'   => $tItem['deliverable'] ?? null,
+                    'percentage'        => preg_replace('/[^0-9]/', '', $tItem['badge'] ?? '') ?: null,
+                    'nominal'           => (int) ($tItem['nominal'] ?? 0),
+                    'payment_status'    => 'pending',
+                    'quotation_file'    => $uploadedQuotation,
+                    'created_by'        => auth()->id(),
+                ]);
+            }
+        } else {
+            $invoice = $changeRequest->invoices()->first() ?: new CrInvoice(['change_request_id' => $changeRequest->id]);
+            $invNum = $request->input('invoice_number', $request->input('nomor_invoice'));
+            if ($invNum) {
+                $invoice->invoice_number = $invNum;
+            } elseif (!$invoice->invoice_number) {
+                $invoice->invoice_number = 'INV-' . date('Ymd') . '-' . str_pad($changeRequest->id, 3, '0', STR_PAD_LEFT);
+            }
+            $invStatus = $request->input('payment_status', $request->input('status_invoice'));
+            if ($invStatus && in_array(strtolower($invStatus), ['pending', 'paid'], true)) {
+                $invoice->payment_status = strtolower($invStatus);
+            } elseif (!$invoice->payment_status) {
+                $invoice->payment_status = 'pending';
+            }
+
+            if ($request->hasFile('quotation_file')) {
+                $invoice->quotation_file = $request->file('quotation_file')->store('quotations', 'public');
+            }
+            if ($request->hasFile('signed_quotation_file')) {
+                $invoice->signed_quotation_file = $request->file('signed_quotation_file')->store('quotations', 'public');
+            }
+            $invoice->nominal = $invoice->nominal ?: $validated['harga_penawaran'];
+            $invoice->created_by = auth()->id();
+            $invoice->save();
         }
-        if ($request->hasFile('signed_quotation_file')) {
-            $invoice->signed_quotation_file = $request->file('signed_quotation_file')->store('quotations', 'public');
-        }
-        $invoice->nominal = $invoice->nominal ?: $validated['harga_penawaran'];
-        $invoice->created_by = auth()->id();
-        $invoice->save();
 
         Notification::sendNotification([
             'target_role'       => 'pm',
@@ -1208,7 +1337,92 @@ class ChangeRequestController extends Controller
             return redirect($request->input('redirect_to'))->with('success', 'Data Quotation berhasil disimpan. Status CR kini aktif dalam tahap Development dan pengerjaan dapat dimulai.');
         }
 
+        if ($user?->isPm()) {
+            return redirect()->route('change-requests.show', [$changeRequest, 'tab' => 'status'])
+                ->with('success', 'Data Quotation berhasil disimpan. Status CR kini aktif dalam tahap Development dan pengerjaan dapat dimulai.');
+        }
+
         return redirect()->route('presales.persetujuan')->with('success', 'Data Quotation berhasil disimpan. Status CR kini aktif dalam tahap Development dan pengerjaan dapat dimulai.');
+    }
+
+    /**
+     * Konfirmasi Quotation langsung untuk membuka tahap Development
+     */
+    public function confirmQuotation(Request $request, ChangeRequest $changeRequest)
+    {
+        $user = auth()->user();
+        if (!$changeRequest->isPmhApproved()) {
+            return back()->with('error', 'Change Request belum disetujui oleh PM Head.');
+        }
+
+        $harga = $request->input('harga_penawaran')
+            ? (float) preg_replace('/[^0-9]/', '', (string)$request->input('harga_penawaran'))
+            : ($changeRequest->harga_penawaran ?: ($changeRequest->saranHargaPenawaran() ?: 40500000));
+        $biaya = $request->input('biaya_pengerjaan')
+            ? (float) preg_replace('/[^0-9]/', '', (string)$request->input('biaya_pengerjaan'))
+            : ($changeRequest->biaya_pengerjaan ?: round($harga / 1.11));
+
+        $changeRequest->update([
+            'harga_penawaran' => $harga,
+            'biaya_pengerjaan' => $biaya,
+            'estimasi_waktu' => $changeRequest->estimasi_waktu ?: '30 Hari',
+            'estimasi_resource' => $changeRequest->estimasi_resource ?: 'Frontend & Backend Developer',
+            'status' => 'development',
+            'mulai_dikerjakan_pada' => $changeRequest->mulai_dikerjakan_pada ?: now(),
+            'quotation_approved_tp_at' => $changeRequest->quotation_approved_tp_at ?: now(),
+            'quotation_approved_client_at' => $changeRequest->quotation_approved_client_at ?: now(),
+        ]);
+
+        if ($changeRequest->invoices()->count() === 0) {
+            CrInvoice::create([
+                'change_request_id' => $changeRequest->id,
+                'invoice_number'    => 'INV-' . date('Ymd') . '-' . str_pad($changeRequest->id, 3, '0', STR_PAD_LEFT) . '-T1',
+                'term_name'         => 'Termin 1 (Pelunasan 100%)',
+                'job_description'   => 'Penyelesaian seluruh pengerjaan teknis CR hingga Go-Live',
+                'percentage'        => '100',
+                'nominal'           => (int) $harga,
+                'payment_status'    => 'pending',
+                'created_by'        => auth()->id(),
+            ]);
+        }
+
+        Notification::sendNotification([
+            'target_role'       => 'pm',
+            'change_request_id' => $changeRequest->id,
+            'title'             => 'Tahap Development Terbuka',
+            'message'           => "Quotation Change Request {$changeRequest->kode_cr} telah dikonfirmasi (Rp " . number_format($harga, 0, ',', '.') . "). Status CR kini aktif dalam tahap Development dan progress pengerjaan dapat diupdate.",
+            'type'              => 'success',
+            'category'          => 'cr_approval',
+            'action_url'        => route('change-requests.show', [$changeRequest, 'tab' => 'status']),
+        ]);
+
+        Notification::sendNotification([
+            'user_id'           => $changeRequest->user_id,
+            'target_role'       => 'client',
+            'change_request_id' => $changeRequest->id,
+            'title'             => 'Quotation CR Selesai - Masuk Development',
+            'message'           => "Quotation untuk Change Request {$changeRequest->kode_cr} telah dikonfirmasi. Proyek kini memasuki tahap Development.",
+            'type'              => 'info',
+            'category'          => 'cr_approval',
+            'action_url'        => route('change-requests.show', $changeRequest->id),
+        ]);
+
+        Notification::sendNotification([
+            'target_role'       => 'presales',
+            'change_request_id' => $changeRequest->id,
+            'title'             => 'Quotation CR Dikonfirmasi - Tahap Development Aktif',
+            'message'           => "Quotation untuk Change Request {$changeRequest->kode_cr} telah dikonfirmasi (Rp " . number_format($harga, 0, ',', '.') . "). Status CR kini aktif dalam tahap Development.",
+            'type'              => 'info',
+            'category'          => 'cr_approval',
+            'action_url'        => route('presales.review', $changeRequest->id),
+        ]);
+
+        if ($request->filled('redirect_to')) {
+            return redirect($request->input('redirect_to'))->with('success', 'Data Quotation berhasil dikonfirmasi (Rp ' . number_format($harga, 0, ',', '.') . '). Status CR kini aktif dalam tahap Development dan progress pengerjaan dapat diupdate.');
+        }
+
+        return redirect()->route('change-requests.show', [$changeRequest, 'tab' => 'status'])
+            ->with('success', 'Data Quotation berhasil dikonfirmasi (Rp ' . number_format($harga, 0, ',', '.') . '). Status CR kini aktif dalam tahap Development dan progress pengerjaan dapat diupdate.');
     }
 
     public function storeInvoice(Request $request, ChangeRequest $changeRequest)
