@@ -494,6 +494,17 @@
                 </div>
 
                 {{-- ── ROW 6: Estimasi Mandays (Analisis*, Development*, Testing*, Total Mandays) ── --}}
+                @php
+                    $initA = old('mindesk_analisis', !empty($changeRequest) && $changeRequest->mindesk_analisis !== null ? $changeRequest->mindesk_analisis : '');
+                    $initD = old('mindesk_development', !empty($changeRequest) && $changeRequest->mindesk_development !== null ? $changeRequest->mindesk_development : '');
+                    $initT = old('mindesk_testing', !empty($changeRequest) && $changeRequest->mindesk_testing !== null ? $changeRequest->mindesk_testing : '');
+                    $hasAllThree = ($initA !== '' && $initA !== null && $initD !== '' && $initD !== null && $initT !== '' && $initT !== null);
+                    $initTotal = '';
+                    if ($hasAllThree) {
+                        $calcVal = (float)$initA + (float)$initD + (float)$initT;
+                        $initTotal = ($calcVal == (int)$calcVal) ? (int)$calcVal : $calcVal;
+                    }
+                @endphp
                 <div class="mb-3">
                     <div class="fw-bold mb-2" style="font-size: 0.8rem; color: #0F172A;">Estimasi Mandays</div>
                     <div class="row g-3">
@@ -502,8 +513,10 @@
                                 Analisis (hari) <span style="color: #EF4444;">*</span>
                             </label>
                             <input type="number" step="0.5" min="0" name="mindesk_analisis" id="pm_mindesk_analisis"
-                                   value="{{ old('mindesk_analisis', !empty($changeRequest) && $changeRequest->mindesk_analisis !== null ? $changeRequest->mindesk_analisis : 0) }}"
-                                   oninput="this.dataset.touched = '1'; calcPmTotalMandays();"
+                                   value="{{ $initA }}"
+                                   placeholder="0"
+                                   oninput="calcPmTotalMandays();"
+                                   onchange="calcPmTotalMandays();"
                                    class="form-control"
                                    style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; font-size: 0.84rem; padding: 0 14px; color: #1E293B;">
                         </div>
@@ -512,8 +525,10 @@
                                 Development (hari) <span style="color: #EF4444;">*</span>
                             </label>
                             <input type="number" step="0.5" min="0" name="mindesk_development" id="pm_mindesk_development"
-                                   value="{{ old('mindesk_development', !empty($changeRequest) && $changeRequest->mindesk_development !== null ? $changeRequest->mindesk_development : 0) }}"
-                                   oninput="this.dataset.touched = '1'; calcPmTotalMandays();"
+                                   value="{{ $initD }}"
+                                   placeholder="0"
+                                   oninput="calcPmTotalMandays();"
+                                   onchange="calcPmTotalMandays();"
                                    class="form-control"
                                    style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; font-size: 0.84rem; padding: 0 14px; color: #1E293B;">
                         </div>
@@ -522,8 +537,10 @@
                                 Testing (hari) <span style="color: #EF4444;">*</span>
                             </label>
                             <input type="number" step="0.5" min="0" name="mindesk_testing" id="pm_mindesk_testing"
-                                   value="{{ old('mindesk_testing', !empty($changeRequest) && $changeRequest->mindesk_testing !== null ? $changeRequest->mindesk_testing : 0) }}"
-                                   oninput="this.dataset.touched = '1'; calcPmTotalMandays();"
+                                   value="{{ $initT }}"
+                                   placeholder="0"
+                                   oninput="calcPmTotalMandays();"
+                                   onchange="calcPmTotalMandays();"
                                    class="form-control"
                                    style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; font-size: 0.84rem; padding: 0 14px; color: #1E293B;">
                         </div>
@@ -532,7 +549,8 @@
                                 Total Mandays
                             </label>
                             <input type="text" id="pm_total_mandays" readonly
-                                   value="10"
+                                   value="{{ $initTotal }}"
+                                   placeholder="0"
                                    class="form-control fw-bold"
                                    style="background: #CBD5E1; color: #1E293B; border: none; border-radius: 8px; height: 42px; font-size: 0.84rem; padding: 0 14px;">
                         </div>
@@ -1651,25 +1669,29 @@
         }
     }
 
-    // Mandays Calculation
+    // Mandays Calculation: baru terisi setelah analisis, development, dan testing diinput
     function calcPmTotalMandays() {
         const aInput = document.getElementById('pm_mindesk_analisis');
         const dInput = document.getElementById('pm_mindesk_development');
         const tInput = document.getElementById('pm_mindesk_testing');
-        if (!aInput || !dInput || !tInput) return;
-
-        const a = parseFloat(aInput.value || 0) || 0;
-        const d = parseFloat(dInput.value || 0) || 0;
-        const t = parseFloat(tInput.value || 0) || 0;
-        const total = a + d + t;
         const totalBox = document.getElementById('pm_total_mandays');
-        if (totalBox) {
-            if (total === 0 && !aInput.dataset.touched && !dInput.dataset.touched && !tInput.dataset.touched) {
-                totalBox.value = '10';
-            } else {
-                totalBox.value = total % 1 === 0 ? total.toFixed(0) : total.toFixed(1);
-            }
+        if (!aInput || !dInput || !tInput || !totalBox) return;
+
+        const aVal = aInput.value.trim();
+        const dVal = dInput.value.trim();
+        const tVal = tInput.value.trim();
+
+        // Hanya isi total mandays jika ketiga input telah diisi
+        if (aVal === '' || dVal === '' || tVal === '') {
+            totalBox.value = '';
+            return;
         }
+
+        const a = parseFloat(aVal) || 0;
+        const d = parseFloat(dVal) || 0;
+        const t = parseFloat(tVal) || 0;
+        const total = a + d + t;
+        totalBox.value = total % 1 === 0 ? total.toFixed(0) : total.toFixed(1);
     }
 
     function preparePmDraftSubmit() {

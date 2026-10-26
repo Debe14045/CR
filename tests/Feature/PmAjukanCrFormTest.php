@@ -97,6 +97,8 @@ class PmAjukanCrFormTest extends TestCase
         $response->assertSee('Development (hari)');
         $response->assertSee('Testing (hari)');
         $response->assertSee('Total Mandays');
+        $response->assertDontSee('id="pm_total_mandays" readonly' . "\n" . '                                   value="10"', false);
+        $response->assertSee('id="pm_total_mandays" readonly' . "\n" . '                                   value=""', false);
 
         // 8. Row 7: CR Notes
         $response->assertSee('CR Notes');
