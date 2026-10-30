@@ -184,4 +184,39 @@ class PmAjukanCrFormTest extends TestCase
         $this->assertNotNull($cr);
         $this->assertEquals('draft', $cr->status);
     }
+
+    /**
+     * Test PM submits CR with solution_paper_required set to 0 (Tidak)
+     */
+    public function test_pm_submits_cr_without_solution_paper_successfully(): void
+    {
+        $payload = [
+            'nama_perusahaan' => 'PT Maju Bersama',
+            'nama_project' => 'Eprocurement PT eagle Hight plantanions TBK',
+            'cr_owner' => 'Andik Vermansyah',
+            'nama_pic' => 'Totok Antok',
+            'cr_name' => 'Integrasi API Tanpa Solution Paper',
+            'detail_cr' => '<p>Kebutuhan CR kecil tanpa solution paper.</p>',
+            'date' => '04 Sep 2026',
+            'request_date' => '04 Sep 2026',
+            'prioritas' => 'normal',
+            'mindesk_analisis' => 1,
+            'mindesk_development' => 2,
+            'mindesk_testing' => 1,
+            'cr_notes' => 'CR kecil.',
+            'solution_paper_required' => 0,
+            'action' => 'submit',
+        ];
+
+        $response = $this->actingAs($this->pm)->post('/change-requests', $payload);
+        $response->assertRedirect('/change-requests');
+
+        $cr = ChangeRequest::where('judul', 'Integrasi API Tanpa Solution Paper')->first();
+        $this->assertNotNull($cr);
+        $this->assertFalse((bool) $cr->solution_paper_required);
+
+        // Verify SolutionPaper not created
+        $sp = SolutionPaper::where('change_request_id', $cr->id)->first();
+        $this->assertNull($sp);
+    }
 }

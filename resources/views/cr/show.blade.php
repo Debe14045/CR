@@ -4,7 +4,7 @@
 
 @section('content')
 @php
-    $isClientUser = (auth()->check() && auth()->user()->isClient()) && request('role') !== 'pm';
+    $isClientUser = (!empty($isClient) || (auth()->check() && auth()->user()->isClient()) || in_array(request('role'), ['client', 'klien']) || in_array(request('view'), ['client', 'klien'])) && request('role') !== 'pm';
     $statusKey = $changeRequest->status;
 
     // ══ Workflow & Stepper Mapping – baca status aktual untuk semua role termasuk client ══
@@ -90,34 +90,34 @@
 
     // Stepper mapping for Status CR (Figma PM Update: 6 Steps: Analisa -> Develop -> SIT -> UAT -> Training -> Go Live)
     $pmStatusStep = 1;
-    $pmStatusPct = '17%';
+    $pmStatusPct = '0%';
     $pmStatusLabel = 'Analisa';
     $pmStatusLineWidth = '0%';
 
-    if ($statusKey === 'diajukan' || in_array($statusKey, ['awaiting_pm', 'dianalisis', 'analisa', 'draft', 'revision_needed'])) {
+    if ($statusKey === 'diajukan' || in_array($statusKey, ['awaiting_pm', 'dianalisis', 'analisa', 'draft', 'revision_needed', 'awaiting_pmh', 'validated', 'disetujui'])) {
         $pmStatusStep = 1;
-        $pmStatusPct = '17%';
+        $pmStatusPct = '0%';
         $pmStatusLabel = 'Analisa';
         $pmStatusLineWidth = '0%';
-    } elseif (in_array($statusKey, ['awaiting_pmh', 'validated', 'disetujui', 'development', 'dikerjakan'])) {
+    } elseif (in_array($statusKey, ['development', 'dikerjakan'])) {
         $pmStatusStep = 2;
-        $pmStatusPct = '33%';
+        $pmStatusPct = '20%';
         $pmStatusLabel = 'Develop';
         $pmStatusLineWidth = '20%';
     } elseif ($statusKey === 'sit') {
         $pmStatusStep = 3;
-        $pmStatusPct = '50%';
+        $pmStatusPct = '40%';
         $pmStatusLabel = 'SIT';
         $pmStatusLineWidth = '40%';
     } elseif ($statusKey === 'uat') {
         $pmStatusStep = 4;
-        $pmStatusPct = '67%';
+        $pmStatusPct = '60%';
         $pmStatusLabel = 'UAT';
         $pmStatusLineWidth = '60%';
     } elseif ($statusKey === 'training') {
         $pmStatusStep = 5;
-        $pmStatusPct = '83%';
-        $pmStatusLabel = 'Training';
+        $pmStatusPct = '80%';
+        $pmStatusLabel = 'Pelatihan';
         $pmStatusLineWidth = '80%';
     } elseif (in_array($statusKey, ['awaiting_golive_validation', 'golive', 'selesai', 'invoicing'])) {
         $pmStatusStep = 6;
@@ -269,15 +269,15 @@
                         $stKeyLower = strtolower($changeRequest->status ?? '');
                         $stageBadge = match($stKeyLower) {
                             'diajukan', 'awaiting_pm', 'analisa', 'dianalisis', 'awaiting_pmh' => '• Analisa',
-                            'validated', 'disetujui' => '• Validated',
+                            'validated', 'disetujui' => '• Disetujui',
                             'development', 'dikerjakan' => '• Develop',
                             'sit' => '• SIT',
                             'uat' => '• UAT',
-                            'training' => '• Training',
+                            'training' => '• Pelatihan',
                             'golive', 'selesai' => '• Go-Live',
-                            'invoicing' => '• Invoicing',
+                            'invoicing' => '• Tagihan',
                             'ditolak' => '• Ditolak',
-                            default => '• ' . $changeRequest->statusLabel(),
+                            default => '• ' . $statusDisplay,
                         };
                     @endphp
                     <span style="background: #0098EA; color: #FFFFFF; font-size: 0.72rem; font-weight: 700; padding: 3px 12px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;">
@@ -376,7 +376,11 @@
                 </div>
             </div>
 
-            {{-- ── 3b. PROGRESS PENGERJAAN TEKNIS (PM) – Visible for Client & All Roles ── --}}
+            {{-- ── 3b. PROGRESS PENGERJAAN TEKNIS (PM) – Visible for Client only when CR reaches Development (Stage 5+) ── --}}
+            @php
+                $showTechnicalProgress = !$isClientUser || $mainStageNum >= 5;
+            @endphp
+            @if($showTechnicalProgress)
             <div style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 12px; padding: 18px 20px; margin-bottom: 18px; width: 100%; box-sizing: border-box;">
                 <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px;">
                     <div style="display: flex; align-items: center; gap: 8px;">
@@ -388,7 +392,7 @@
                         </span>
                     </div>
                     <span style="font-size: 0.72rem; color: #64748B; font-weight: 500;">
-                        Status Eksekusi Saat Ini: <strong style="color: #0F172A;">{{ $changeRequest->statusLabel() }}</strong>
+                        Status Eksekusi Saat Ini: <strong style="color: #0F172A;">{{ $statusDisplay }}</strong>
                     </span>
                 </div>
 
@@ -409,7 +413,7 @@
                                 2 => 'Develop',
                                 3 => 'SIT',
                                 4 => 'UAT',
-                                5 => 'Training',
+                                5 => 'Pelatihan',
                                 6 => 'Go Live',
                             ];
                         @endphp
@@ -441,6 +445,7 @@
                     </div>
                 @endif
             </div>
+            @endif
 
             {{-- ── 4. ROW: INFORMASI CR (Left) & DOKUMEN (Right) ── --}}
             <div class="cr-grid-info-doc">
@@ -552,44 +557,25 @@
                     </span>
                 </div>
 
-                <div>
-                    {{-- 1. LATAR BELAKANG & TUJUAN --}}
-                    <div style="font-size: 0.82rem; font-weight: 800; color: #0F172A; margin-bottom: 6px; letter-spacing: -0.01em;" data-i18n="h3_background_purpose">
-                        1. LATAR BELAKANG &amp; TUJUAN
-                    </div>
-                    @if($changeRequest->alasan || $changeRequest->deskripsi)
-                    <p style="font-size: 0.80rem; color: #334155; line-height: 1.6; margin-bottom: 14px;">
-                        {!! nl2br(e($changeRequest->alasan ?: $changeRequest->deskripsi)) !!}
-                    </p>
-                    @else
-                    <p class="text-muted small mb-3" style="font-size: 0.80rem;">Belum ada latar belakang &amp; tujuan yang diisi.</p>
-                    @endif
+                @php
+                    $rawDesc = $changeRequest->deskripsi ?: ($changeRequest->alasan ?: '');
+                    // Bersihkan jika ada teks template lama
+                    $cleanedDesc = preg_replace('/(1\.\s*LATAR BELAKANG & TUJUAN|2\.\s*RUANG LINGKUP PERUBAHAN \(SCOPE OF WORK\)|3\.\s*DAMPAK TEKNIS & DEPENDENCIES)\s*/i', '', $rawDesc);
+                    $cleanedDesc = trim($cleanedDesc);
+                    $hasHtml = strip_tags($cleanedDesc) !== $cleanedDesc;
+                @endphp
 
-                    {{-- 2. RUANG LINGKUP PERUBAHAN (SCOPE OF WORK) --}}
-                    <div style="font-size: 0.82rem; font-weight: 800; color: #0F172A; margin-bottom: 6px; letter-spacing: -0.01em;" data-i18n="h3_scope_of_work">
-                        2. RUANG LINGKUP PERUBAHAN (SCOPE OF WORK)
-                    </div>
-                    @if($changeRequest->kebutuhan_spesifik || ($changeRequest->deskripsi && $changeRequest->deskripsi !== $changeRequest->alasan))
-                    <div style="margin-bottom: 14px; font-size: 0.80rem; color: #334155; line-height: 1.65;">
-                        {!! nl2br(e($changeRequest->kebutuhan_spesifik ?: $changeRequest->deskripsi)) !!}
-                    </div>
+                <div style="font-size: 0.84rem; color: #334155; line-height: 1.65;">
+                    @if(!empty($cleanedDesc))
+                        @if($hasHtml)
+                            {!! $cleanedDesc !!}
+                        @else
+                            {!! nl2br(e($cleanedDesc)) !!}
+                        @endif
                     @else
-                    <p class="text-muted small mb-3" style="font-size: 0.80rem;">Belum ada rincian ruang lingkup perubahan.</p>
-                    @endif
-
-                    {{-- 3. DAMPAK TEKNIS & DEPENDENCIES --}}
-                    <div style="font-size: 0.82rem; font-weight: 800; color: #0F172A; margin-bottom: 6px; letter-spacing: -0.01em;" data-i18n="h3_technical_impact">
-                        3. DAMPAK TEKNIS &amp; DEPENDENCIES
-                    </div>
-                    @if($changeRequest->dampak || $changeRequest->solution_paper_note)
-                    <div style="background: #FFFDF0; border: 1px solid #FDE68A; border-left: 3.5px solid #EAB308; border-radius: 6px; padding: 10px 14px; color: #854D0E; font-size: 0.76rem; line-height: 1.55;">
-                        <strong data-i18n="callout_dependency_title">Catatan Dependensi:</strong>
-                        <span style="font-weight: 700;">{{ $changeRequest->dampak ?: $changeRequest->solution_paper_note }}</span>
-                    </div>
-                    @else
-                    <div style="background: #F8FAFC; border: 1px solid #E2E8F0; border-radius: 6px; padding: 8px 14px; color: #64748B; font-size: 0.76rem;">
-                        Tidak ada dampak teknis khusus atau dependensi.
-                    </div>
+                        <p class="text-muted small mb-0" style="font-size: 0.82rem; font-style: italic;">
+                            Belum ada detail deskripsi yang diisi.
+                        </p>
                     @endif
                 </div>
             </div>
@@ -680,7 +666,7 @@
                         {{ $crJudul }}
                     </h2>
                     <span style="background: #0098EA; color: #FFFFFF; font-size: 0.72rem; font-weight: 700; padding: 3px 12px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;">
-                        • {{ $changeRequest->statusLabel() }}
+                        • {{ $statusDisplay }}
                     </span>
                     @if($isVerifikasiCrDisabled)
                     <span style="background: #E2E8F0; color: #475569; font-size: 0.72rem; font-weight: 700; padding: 3px 12px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;">
@@ -805,37 +791,42 @@
                 </div>
 
                 {{-- Section 3: Butuh Solution Paper? & Upload Solution Paper (PDF) --}}
+                @php
+                    $isSpRequired = (bool) ($changeRequest->solution_paper_required ?? true);
+                @endphp
                 <div style="display: grid; grid-template-columns: auto 1fr; gap: 32px; align-items: start; margin-bottom: 40px;">
                     {{-- Left: Butuh Solution Paper?* --}}
                     <div>
                         <label style="font-size: 0.74rem; font-weight: 700; color: #0F172A; margin-bottom: 8px; display: block;" data-i18n="lbl_need_sp">
                             Butuh Solution Paper?<span style="color: #EF4444; font-weight: 700; margin-left: 2px;">*</span>
                         </label>
-                        <input type="hidden" id="input_sp_required" name="solution_paper_required" value="{{ $changeRequest->solution_paper_required ?? 1 }}">
+                        <input type="hidden" id="input_sp_required" name="solution_paper_required" value="{{ $isSpRequired ? 1 : 0 }}">
                         <div style="display: flex; align-items: center; gap: 10px;">
                             {{-- Option Ya --}}
-                            <button type="button" id="btn_sp_ya" @if($isVerifikasiCrDisabled) disabled style="background: #E0F2FE; border: 1.5px solid #0098EA; border-radius: 8px; padding: 7px 18px; display: inline-flex; align-items: center; gap: 8px; cursor: not-allowed; color: #0284C7; font-weight: 700; font-size: 0.82rem; opacity: 0.65; pointer-events: none;" @else onclick="toggleSolutionPaper(1)" style="background: #E0F2FE; border: 1.5px solid #0098EA; border-radius: 8px; padding: 7px 18px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: #0284C7; font-weight: 700; font-size: 0.82rem; transition: all 0.15s ease;" @endif>
-                                <span id="dot_sp_ya" style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #0098EA; display: inline-flex; align-items: center; justify-content: center;">
-                                    <span style="width: 8px; height: 8px; border-radius: 50%; background: #0098EA;"></span>
+                            <button type="button" id="btn_sp_ya" @if($isVerifikasiCrDisabled) disabled style="background: {{ $isSpRequired ? '#E0F2FE' : '#FFFFFF' }}; border: 1.5px solid {{ $isSpRequired ? '#0098EA' : '#CBD5E1' }}; border-radius: 8px; padding: 7px 18px; display: inline-flex; align-items: center; gap: 8px; cursor: not-allowed; color: {{ $isSpRequired ? '#0284C7' : '#64748B' }}; font-weight: {{ $isSpRequired ? '700' : '600' }}; font-size: 0.82rem; opacity: 0.65; pointer-events: none;" @else onclick="toggleSolutionPaper(1)" style="background: {{ $isSpRequired ? '#E0F2FE' : '#FFFFFF' }}; border: 1.5px solid {{ $isSpRequired ? '#0098EA' : '#CBD5E1' }}; border-radius: 8px; padding: 7px 18px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: {{ $isSpRequired ? '#0284C7' : '#64748B' }}; font-weight: {{ $isSpRequired ? '700' : '600' }}; font-size: 0.82rem; transition: all 0.15s ease;" @endif>
+                                <span id="dot_sp_ya" style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid {{ $isSpRequired ? '#0098EA' : '#CBD5E1' }}; display: inline-flex; align-items: center; justify-content: center;">
+                                    @if($isSpRequired)<span style="width: 8px; height: 8px; border-radius: 50%; background: #0098EA;"></span>@endif
                                 </span>
                                 Ya
                             </button>
 
                             {{-- Option Tidak --}}
-                            <button type="button" id="btn_sp_tidak" @if($isVerifikasiCrDisabled) disabled style="background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 7px 18px; display: inline-flex; align-items: center; gap: 8px; cursor: not-allowed; color: #64748B; font-weight: 600; font-size: 0.82rem; opacity: 0.65; pointer-events: none;" @else onclick="toggleSolutionPaper(0)" style="background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 8px; padding: 7px 18px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: #64748B; font-weight: 600; font-size: 0.82rem; transition: all 0.15s ease;" @endif>
-                                <span id="dot_sp_tidak" style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid #CBD5E1; display: inline-block;"></span>
+                            <button type="button" id="btn_sp_tidak" @if($isVerifikasiCrDisabled) disabled style="background: {{ !$isSpRequired ? '#E0F2FE' : '#FFFFFF' }}; border: 1.5px solid {{ !$isSpRequired ? '#0098EA' : '#CBD5E1' }}; border-radius: 8px; padding: 7px 18px; display: inline-flex; align-items: center; gap: 8px; cursor: not-allowed; color: {{ !$isSpRequired ? '#0284C7' : '#64748B' }}; font-weight: {{ !$isSpRequired ? '700' : '600' }}; font-size: 0.82rem; opacity: 0.65; pointer-events: none;" @else onclick="toggleSolutionPaper(0)" style="background: {{ !$isSpRequired ? '#E0F2FE' : '#FFFFFF' }}; border: 1.5px solid {{ !$isSpRequired ? '#0098EA' : '#CBD5E1' }}; border-radius: 8px; padding: 7px 18px; display: inline-flex; align-items: center; gap: 8px; cursor: pointer; color: {{ !$isSpRequired ? '#0284C7' : '#64748B' }}; font-weight: {{ !$isSpRequired ? '700' : '600' }}; font-size: 0.82rem; transition: all 0.15s ease;" @endif>
+                                <span id="dot_sp_tidak" style="width: 16px; height: 16px; border-radius: 50%; border: 2px solid {{ !$isSpRequired ? '#0098EA' : '#CBD5E1' }}; display: inline-flex; align-items: center; justify-content: center;">
+                                    @if(!$isSpRequired)<span style="width: 8px; height: 8px; border-radius: 50%; background: #0098EA;"></span>@endif
+                                </span>
                                 Tidak
                             </button>
                         </div>
                     </div>
 
                     {{-- Right: Upload Solution Paper (PDF)* --}}
-                    <div>
+                    <div id="sp_upload_container" style="{{ $isSpRequired ? '' : 'display: none;' }}">
                         <label style="font-size: 0.74rem; font-weight: 700; color: #0F172A; margin-bottom: 8px; display: block;" data-i18n="lbl_upload_sp">
                             Upload Solution Paper (PDF)<span style="color: #EF4444; font-weight: 700; margin-left: 2px;">*</span>
                         </label>
                         <div style="display: flex; align-items: center; background: {{ $isVerifikasiCrDisabled ? '#EEF2F6' : '#FFFFFF' }}; border: 1.5px solid {{ $isVerifikasiCrDisabled ? '#CBD5E1' : '#38BDF8' }}; border-radius: 8px; height: 40px; overflow: hidden; width: 100%; max-width: 540px;">
-                            <input type="file" id="sp_file_input" name="solution_paper_file" accept=".pdf,.doc,.docx" style="display: none;" @if(!$isVerifikasiCrDisabled) onchange="handleSolutionPaperFile(this)" @endif {{ $isVerifikasiCrDisabled ? 'disabled' : '' }}>
+                            <input type="file" id="sp_file_input" name="solution_paper_file" accept=".pdf,application/pdf" style="display: none;" @if(!$isVerifikasiCrDisabled) onchange="handleSolutionPaperFile(this)" @endif {{ $isVerifikasiCrDisabled ? 'disabled' : '' }}>
                             @if($isVerifikasiCrDisabled)
                             <button type="button" disabled
                                     style="background: #94A3B8; color: #FFFFFF; font-size: 0.78rem; font-weight: 700; height: 100%; padding: 0 16px; display: inline-flex; align-items: center; gap: 8px; border: none; cursor: not-allowed; flex-shrink: 0; opacity: 0.75;">
@@ -1072,7 +1063,7 @@
                         {{ $crJudul }}
                     </h2>
                     <span style="background: #0098EA; color: #FFFFFF; font-size: 0.72rem; font-weight: 700; padding: 3px 12px; border-radius: 9999px; display: inline-flex; align-items: center; gap: 4px;">
-                        • {{ $changeRequest->statusLabel() }}
+                        • {{ $statusDisplay }}
                     </span>
                 </div>
             </div>
@@ -1102,10 +1093,10 @@
                     <div style="display: flex; justify-content: space-between; position: relative; z-index: 3;">
                         {{-- Step 1: Analisa --}}
                         <div id="step_node_1" style="display: flex; flex-direction: column; align-items: center; width: 60px;">
-                            <div id="step_circle_1" style="width: 30px; height: 30px; border-radius: 50%; {{ $pmStatusStep >= 1 && $pmStatusPct !== '0%' ? 'background: #0098EA; color: #FFFFFF; box-shadow: 0 0 0 4px #E0F2FE;' : 'background: #FFFFFF; border: 2px solid #BAE6FD; color: #7DD3FC;' }} font-weight: 700; font-size: 0.80rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
+                            <div id="step_circle_1" style="width: 30px; height: 30px; border-radius: 50%; {{ $pmStatusStep >= 1 && $statusKey !== 'ditolak' ? 'background: #0098EA; color: #FFFFFF; box-shadow: 0 0 0 4px #E0F2FE;' : 'background: #FFFFFF; border: 2px solid #BAE6FD; color: #7DD3FC;' }} font-weight: 700; font-size: 0.80rem; display: flex; align-items: center; justify-content: center; transition: all 0.2s ease;">
                                 1
                             </div>
-                            <span id="step_label_1" style="margin-top: 8px; font-size: 0.72rem; font-weight: {{ $pmStatusStep >= 1 && $pmStatusPct !== '0%' ? '700' : '600' }}; color: {{ $pmStatusStep >= 1 && $pmStatusPct !== '0%' ? '#0098EA' : '#94A3B8' }}; text-align: center;">
+                            <span id="step_label_1" style="margin-top: 8px; font-size: 0.72rem; font-weight: {{ $pmStatusStep >= 1 && $statusKey !== 'ditolak' ? '700' : '600' }}; color: {{ $pmStatusStep >= 1 && $statusKey !== 'ditolak' ? '#0098EA' : '#94A3B8' }}; text-align: center;">
                                 Analisa
                             </span>
                         </div>
@@ -1222,7 +1213,7 @@
                         </div>
 
                         {{-- Upload Dropzone --}}
-                        <input type="file" id="ba_file_input" name="berita_acara_file" accept=".pdf,.doc,.docx" style="display: none;" onchange="handleBaStatusFile(this)" {{ !$isStatusCrUnlocked ? 'disabled' : '' }}>
+                        <input type="file" id="ba_file_input" name="berita_acara_file" accept=".pdf,application/pdf" style="display: none;" onchange="handleBaStatusFile(this)" {{ !$isStatusCrUnlocked ? 'disabled' : '' }}>
                         <div @if($isStatusCrUnlocked) onclick="document.getElementById('ba_file_input').click()" @endif
                              style="border: 1.5px dashed {{ !$isStatusCrUnlocked ? '#CBD5E1' : '#93C5FD' }}; background: {{ !$isStatusCrUnlocked ? '#F8FAFC' : '#FFFFFF' }}; border-radius: 10px; height: 172px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: {{ !$isStatusCrUnlocked ? 'not-allowed' : 'pointer' }}; opacity: {{ !$isStatusCrUnlocked ? '0.7' : '1' }}; transition: all 0.15s ease;"
                              @if($isStatusCrUnlocked)
@@ -1330,6 +1321,8 @@
         var btnTidak = document.getElementById('btn_sp_tidak');
         var dotYa = document.getElementById('dot_sp_ya');
         var dotTidak = document.getElementById('dot_sp_tidak');
+        var uploadContainer = document.getElementById('sp_upload_container');
+        var fileInput = document.getElementById('sp_file_input');
 
         if (input) input.value = val;
 
@@ -1354,6 +1347,9 @@
                 dotTidak.innerHTML = '';
                 dotTidak.style.borderColor = '#CBD5E1';
             }
+            if (uploadContainer) {
+                uploadContainer.style.display = '';
+            }
         } else {
             if (btnYa) {
                 btnYa.style.background = '#FFFFFF';
@@ -1375,14 +1371,32 @@
                 dotTidak.innerHTML = '<span style="width: 8px; height: 8px; border-radius: 50%; background: #0098EA;"></span>';
                 dotTidak.style.borderColor = '#0098EA';
             }
+            if (uploadContainer) {
+                uploadContainer.style.display = 'none';
+            }
+            if (fileInput) {
+                fileInput.value = '';
+            }
         }
     }
 
     function handleSolutionPaperFile(input) {
         var fileNameSpan = document.getElementById('sp_file_name');
         if (input.files && input.files[0]) {
+            var file = input.files[0];
+            var isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+            if (!isPdf) {
+                alert('Format file tidak didukung! Hanya file berformat PDF (.pdf) yang diperbolehkan.');
+                input.value = '';
+                if (fileNameSpan) {
+                    fileNameSpan.textContent = 'Tidak ada file yang dipilih';
+                    fileNameSpan.style.color = '#94A3B8';
+                    fileNameSpan.style.fontWeight = '500';
+                }
+                return;
+            }
             if (fileNameSpan) {
-                fileNameSpan.textContent = input.files[0].name;
+                fileNameSpan.textContent = file.name;
                 fileNameSpan.style.color = '#0F172A';
                 fileNameSpan.style.fontWeight = '600';
             }
@@ -1398,8 +1412,20 @@
     function handleBaStatusFile(input) {
         var label = document.getElementById('ba_file_status_label');
         if (input.files && input.files[0]) {
+            var file = input.files[0];
+            var isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+            if (!isPdf) {
+                alert('Format file tidak didukung! Hanya file berformat PDF (.pdf) yang diperbolehkan.');
+                input.value = '';
+                if (label) {
+                    label.textContent = 'Klik untuk upload PDF';
+                    label.style.color = '#64748B';
+                    label.style.fontWeight = '500';
+                }
+                return;
+            }
             if (label) {
-                label.textContent = input.files[0].name;
+                label.textContent = file.name;
                 label.style.color = '#0098EA';
                 label.style.fontWeight = '700';
             }
@@ -1414,12 +1440,13 @@
 
     function updateStepperPreview(statusVal) {
         var stageMap = {
-            'diajukan': { num: 1, pct: '17%', label: 'Diajukan', lineWidth: '0%' },
-            'analisa': { num: 1, pct: '17%', label: 'Analisa', lineWidth: '0%' },
-            'development': { num: 2, pct: '33%', label: 'Develop', lineWidth: '20%' },
-            'sit': { num: 3, pct: '50%', label: 'SIT', lineWidth: '40%' },
-            'uat': { num: 4, pct: '67%', label: 'UAT', lineWidth: '60%' },
-            'training': { num: 5, pct: '83%', label: 'Training', lineWidth: '80%' },
+            'diajukan': { num: 1, pct: '0%', label: 'Diajukan', lineWidth: '0%' },
+            'analisa': { num: 1, pct: '0%', label: 'Analisa', lineWidth: '0%' },
+            'development': { num: 2, pct: '20%', label: 'Develop', lineWidth: '20%' },
+            'dikerjakan': { num: 2, pct: '20%', label: 'Develop', lineWidth: '20%' },
+            'sit': { num: 3, pct: '40%', label: 'SIT', lineWidth: '40%' },
+            'uat': { num: 4, pct: '60%', label: 'UAT', lineWidth: '60%' },
+            'training': { num: 5, pct: '80%', label: 'Training', lineWidth: '80%' },
             'golive': { num: 6, pct: '100%', label: 'Go Live', lineWidth: '100%' },
             'ditolak': { num: 1, pct: '0%', label: 'Ditolak', lineWidth: '0%' }
         };
@@ -1440,7 +1467,7 @@
             var lbl = document.getElementById('step_label_' + i);
             if (!circle || !lbl) continue;
 
-            if (i <= stage.num && stage.pct !== '0%') {
+            if (i <= stage.num && statusVal !== 'ditolak') {
                 circle.style.background = '#0098EA';
                 circle.style.color = '#FFFFFF';
                 circle.style.border = 'none';

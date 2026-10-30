@@ -263,7 +263,7 @@ class AllRolesEndToEndAuditTest extends TestCase
             'email' => 'pmh@itpi.test',
             'password' => 'password',
         ]);
-        $loginRes->assertRedirect(route('pmh.change-requests'));
+        $loginRes->assertRedirect(route('pmh.dashboard'));
         $this->assertAuthenticatedAs($this->pmhUser);
 
         // Dashboard / Semua CR

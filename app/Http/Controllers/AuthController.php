@@ -539,7 +539,13 @@ class AuthController extends Controller
         if ($user->isPresales()) {
             $redirectUrl = route('presales.dashboard');
         } elseif ($user->isPmh()) {
-            $redirectUrl = route('pmh.change-requests');
+            $redirectUrl = route('pmh.dashboard');
+        }
+
+        // If intended URL is generic / or /dashboard, prioritize dedicated role dashboard
+        $intended = session()->get('url.intended');
+        if ($intended && (str_ends_with(rtrim($intended, '/'), '/dashboard') || rtrim($intended, '/') === url('/'))) {
+            session()->forget('url.intended');
         }
 
         $redirect = redirect()->intended($redirectUrl);

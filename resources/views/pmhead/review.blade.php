@@ -536,34 +536,24 @@
                 <span class="text-muted small" style="font-size: 0.72rem; color: #94A3B8;">Data Aktual CR</span>
             </div>
 
-            <div class="text-dark" style="font-size: 0.83rem; line-height: 1.65;">
-                <div class="fw-bold mb-1" style="color: #0F172A; font-weight: 800;">1. LATAR BELAKANG &amp; TUJUAN</div>
-                @if($changeRequest->alasan || $changeRequest->deskripsi)
-                    <p class="text-secondary mb-3" style="color: #475569 !important;">
-                        {!! nl2br(e($changeRequest->alasan ?: $changeRequest->deskripsi)) !!}
+            @php
+                $rawDesc = $changeRequest->deskripsi ?: ($changeRequest->alasan ?: '');
+                $cleanedDesc = preg_replace('/(1\.\s*LATAR BELAKANG & TUJUAN|2\.\s*RUANG LINGKUP PERUBAHAN \(SCOPE OF WORK\)|3\.\s*DAMPAK TEKNIS & DEPENDENCIES)\s*/i', '', $rawDesc);
+                $cleanedDesc = trim($cleanedDesc);
+                $hasHtml = strip_tags($cleanedDesc) !== $cleanedDesc;
+            @endphp
+
+            <div class="text-dark" style="font-size: 0.84rem; line-height: 1.65; color: #334155;">
+                @if(!empty($cleanedDesc))
+                    @if($hasHtml)
+                        {!! $cleanedDesc !!}
+                    @else
+                        {!! nl2br(e($cleanedDesc)) !!}
+                    @endif
+                @else
+                    <p class="text-muted mb-0 small" style="font-size: 0.82rem; font-style: italic;">
+                        Belum ada detail deskripsi yang diisi.
                     </p>
-                @else
-                    <p class="text-muted mb-3 small" style="font-size: 0.82rem;">Belum ada latar belakang &amp; tujuan yang diisi.</p>
-                @endif
-
-                <div class="fw-bold mb-1" style="color: #0F172A; font-weight: 800;">2. RUANG LINGKUP PERUBAHAN (SCOPE OF WORK)</div>
-                @if($changeRequest->kebutuhan_spesifik || ($changeRequest->deskripsi && $changeRequest->deskripsi !== $changeRequest->alasan))
-                    <div class="text-secondary mb-3" style="color: #475569 !important;">
-                        {!! nl2br(e($changeRequest->kebutuhan_spesifik ?: $changeRequest->deskripsi)) !!}
-                    </div>
-                @else
-                    <p class="text-muted mb-3 small" style="font-size: 0.82rem;">Belum ada rincian ruang lingkup perubahan.</p>
-                @endif
-
-                <div class="fw-bold mb-2" style="color: #0F172A; font-weight: 800;">3. DAMPAK TEKNIS &amp; DEPENDENCIES</div>
-                @if($changeRequest->dampak || $changeRequest->solution_paper_note || $changeRequest->pesan_client)
-                    <div class="p-3" style="background: #FFFBEB; border-left: 3.5px solid #F59E0B; border-radius: 6px;">
-                        <div style="font-size: 0.8rem; color: #92400E; font-weight: 600; line-height: 1.5;">
-                            <strong style="color: #78350F; font-weight: 800;">Catatan Dependensi:</strong> {{ $changeRequest->dampak ?: ($changeRequest->solution_paper_note ?: $changeRequest->pesan_client) }}
-                        </div>
-                    </div>
-                @else
-                    <p class="text-muted mb-0 small" style="font-size: 0.82rem;">Tidak ada dampak teknis khusus atau dependensi.</p>
                 @endif
             </div>
         </div>

@@ -68,7 +68,7 @@ class ChangeRequestFeatureTest extends TestCase
 
             $expectedRedirect = match ($role) {
                 User::ROLE_PRESALES => route('presales.dashboard'),
-                User::ROLE_PMH => route('pmh.change-requests'),
+                User::ROLE_PMH => route('pmh.dashboard'),
                 default => '/change-requests',
             };
 
@@ -302,7 +302,6 @@ class ChangeRequestFeatureTest extends TestCase
         $response->assertSee('INFORMASI CR');
         $response->assertSee('DOKUMEN');
         $response->assertSee('Detail Deskripsi CR');
-        $response->assertSee('Rendered WYSIWYG Content');
         $response->assertSee('ESTIMASI MANDAYS');
         $response->assertSee('CR Notes / Catatan');
         $response->assertSee('data-i18n="detail_cr_title"', false);

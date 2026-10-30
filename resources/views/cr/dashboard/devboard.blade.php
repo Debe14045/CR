@@ -15,9 +15,15 @@
             <a href="{{ route('change-requests.index') }}" class="btn btn-outline-secondary btn-sm px-3" style="border-radius: 8px;">
                 <i class="bi bi-table me-1"></i> Tabel Utama CR
             </a>
+            @php
+                $isPmhDev = (auth()->check() && auth()->user()->isPmh()) || request('role') === 'pmh';
+                $isPresalesDev = (auth()->check() && auth()->user()->isPresales()) || request('role') === 'presales';
+            @endphp
+            @if(!$isPmhDev && !$isPresalesDev)
             <a href="{{ route('change-requests.create') }}" class="btn btn-sm text-white px-3" style="background: #10B981; border-radius: 8px;">
                 <i class="bi bi-plus-lg me-1"></i> Ajukan CR Baru
             </a>
+            @endif
         </div>
     </div>
 
@@ -233,8 +239,8 @@
 
                                             <div class="row g-3">
                                                 <div class="col-md-6">
-                                                    <label class="form-label small fw-semibold text-dark mb-1">Upload Berita Acara (PDF/DOC)</label>
-                                                    <input type="file" name="berita_acara_file" id="baFile{{ $cr->id }}" class="form-control form-control-sm" accept=".pdf,.doc,.docx,.zip">
+                                                    <label class="form-label small fw-semibold text-dark mb-1">Upload Berita Acara (PDF)</label>
+                                                    <input type="file" name="berita_acara_file" id="baFile{{ $cr->id }}" class="form-control form-control-sm" accept=".pdf,application/pdf" onchange="validateDevboardPdf(this)">
                                                     @if($cr->berita_acara_file)
                                                         <div class="small text-success mt-1"><i class="bi bi-check-circle me-1"></i> File BA telah terunggah</div>
                                                     @endif
@@ -306,6 +312,17 @@
             baSec.style.display = 'none';
             if (baFile) baFile.required = false;
             if (baDate) baDate.required = false;
+        }
+    }
+
+    function validateDevboardPdf(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+            if (!isPdf) {
+                alert('Format file tidak didukung! Hanya file berformat PDF (.pdf) yang diperbolehkan.');
+                input.value = '';
+            }
         }
     }
 </script>

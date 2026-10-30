@@ -42,6 +42,41 @@ class CrInvoice extends Model
         'percentage' => 'decimal:2',
     ];
 
+    /**
+     * Mutator to safely clamp and format percentage values,
+     * preventing decimal(5,2) numeric field overflow in PostgreSQL.
+     */
+    public function setPercentageAttribute($value)
+    {
+        if ($value === null || $value === '') {
+            $this->attributes['percentage'] = null;
+            return;
+        }
+
+        if (is_string($value)) {
+            if (preg_match('/(\d+(?:[\.,]\d+)?)\s*%/i', $value, $matches)) {
+                $val = (float) str_replace(',', '.', $matches[1]);
+            } elseif (preg_match('/(\d+(?:[\.,]\d+)?)/', $value, $matches)) {
+                $val = (float) str_replace(',', '.', $matches[1]);
+            } else {
+                $val = (float) $value;
+            }
+        } else {
+            $val = (float) $value;
+        }
+
+        if ($val > 100) {
+            // Guard against legacy/multiplier artifacts e.g. 10000 -> 100
+            if ($val == 10000 || $val == 1000) {
+                $val = 100.0;
+            } else {
+                $val = min(100.0, $val);
+            }
+        }
+
+        $this->attributes['percentage'] = max(0, round($val, 2));
+    }
+
     public function changeRequest()
     {
         return $this->belongsTo(ChangeRequest::class);

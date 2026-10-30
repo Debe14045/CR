@@ -111,9 +111,10 @@
         ];
         foreach ($invoices as $idx => $inv) {
             $color = $colors[$idx % count($colors)];
+            $pctDisplay = $inv->percentage !== null ? (float) $inv->percentage : null;
             $terminData[] = [
                 'name' => $inv->term_name ?: ('Termin Of Payment ' . ($idx + 1)),
-                'badge' => $inv->percentage ? ($inv->percentage . '%') : ('Tahap ' . ($idx + 1)),
+                'badge' => $pctDisplay !== null ? ($pctDisplay . '%') : ('Tahap ' . ($idx + 1)),
                 'badgeColor' => $color['bg'],
                 'badgeTextColor' => $color['text'],
                 'sublabel' => 'Termin Ke-' . ($idx + 1),
@@ -133,33 +134,33 @@
 
     // Technical Execution (Development) Stepper Variables
     $pmStatusStep = 1;
-    $pmStatusPct = '17%';
+    $pmStatusPct = '0%';
     $pmStatusLabel = 'Analisa';
     $pmStatusLineWidth = '0%';
 
-    if ($statusKey === 'diajukan' || in_array($statusKey, ['awaiting_pm', 'dianalisis', 'analisa', 'draft', 'revision_needed'])) {
+    if (in_array($statusKey, ['diajukan', 'awaiting_pm', 'dianalisis', 'analisa', 'draft', 'revision_needed', 'awaiting_pmh', 'validated', 'disetujui'])) {
         $pmStatusStep = 1;
-        $pmStatusPct = '17%';
+        $pmStatusPct = '0%';
         $pmStatusLabel = 'Analisa';
         $pmStatusLineWidth = '0%';
-    } elseif (in_array($statusKey, ['awaiting_pmh', 'validated', 'disetujui', 'development', 'dikerjakan'])) {
+    } elseif (in_array($statusKey, ['development', 'dikerjakan'])) {
         $pmStatusStep = 2;
-        $pmStatusPct = '33%';
+        $pmStatusPct = '20%';
         $pmStatusLabel = 'Develop';
         $pmStatusLineWidth = '20%';
     } elseif ($statusKey === 'sit') {
         $pmStatusStep = 3;
-        $pmStatusPct = '50%';
+        $pmStatusPct = '40%';
         $pmStatusLabel = 'SIT';
         $pmStatusLineWidth = '40%';
     } elseif ($statusKey === 'uat') {
         $pmStatusStep = 4;
-        $pmStatusPct = '67%';
+        $pmStatusPct = '60%';
         $pmStatusLabel = 'UAT';
         $pmStatusLineWidth = '60%';
     } elseif ($statusKey === 'training') {
         $pmStatusStep = 5;
-        $pmStatusPct = '83%';
+        $pmStatusPct = '80%';
         $pmStatusLabel = 'Training';
         $pmStatusLineWidth = '80%';
     } elseif (in_array($statusKey, ['awaiting_golive_validation', 'golive', 'selesai', 'invoicing'])) {
@@ -387,6 +388,10 @@
         </div>
 
         {{-- ================= PROGRESS PENGERJAAN TEKNIS (STATUS DEVELOPMENT) ================= --}}
+        @php
+            $isInDevPhase = in_array($statusKey, ['development', 'dikerjakan', 'sit', 'uat', 'training', 'awaiting_golive_validation', 'golive', 'selesai', 'invoicing']) || $currentStep >= 5;
+        @endphp
+        @if ($isInDevPhase)
         <div class="mb-4 p-4" style="background: #FFFFFF; border: 1.5px solid #CBD5E1; border-radius: 16px; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
             <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3">
                 <div class="d-flex align-items-center gap-2">
@@ -401,11 +406,13 @@
                     <span class="text-muted small" style="font-size: 0.78rem;">
                         Status Saat Ini: <strong style="color: #0F172A;">{{ $changeRequest->statusLabel() }}</strong>
                     </span>
+                    @if (!auth()->user()?->isPresales() && (auth()->user()?->isPm() || auth()->user()?->isAdmin()))
                     <button type="button" class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1.5 px-3 py-1.5 shadow-sm"
                             style="background: #0284C7; border-radius: 8px; font-size: 0.78rem; border: none;"
                             data-bs-toggle="modal" data-bs-target="#modalUpdateStatusDev">
                         <i class="bi bi-pencil-square"></i> Update Status
                     </button>
+                    @endif
                 </div>
             </div>
 
@@ -449,6 +456,7 @@
                 </div>
             </div>
         </div>
+        @endif
 
         <div class="row g-4 mb-4">
             <div class="col-lg-6 col-12">
@@ -559,32 +567,25 @@
                 </div>
                 <span class="text-muted small" style="font-size: 0.72rem; color: #94A3B8;">Data aktual CR</span>
             </div>
-            <div class="text-dark" style="font-size: 0.84rem; line-height: 1.65;">
-                <div class="fw-bold mb-1" style="color: #0F172A; font-weight: 800;">1. LATAR BELAKANG &amp; TUJUAN</div>
-                @if($alasanBg)
-                    <p class="text-secondary mb-3" style="color: #475569 !important;">{!! nl2br(e($alasanBg)) !!}</p>
-                @elseif($deskripsiFull)
-                    <p class="text-secondary mb-3" style="color: #475569 !important;">{!! nl2br(e($deskripsiFull)) !!}</p>
-                @else
-                    <p class="text-muted mb-3" style="font-size: 0.83rem;">Belum ada latar belakang &amp; tujuan yang diisi untuk CR ini.</p>
-                @endif
 
-                <div class="fw-bold mb-1" style="color: #0F172A; font-weight: 800;">2. RUANG LINGKUP PERUBAHAN (SCOPE OF WORK)</div>
-                @if($deskripsiFull && $deskripsiFull !== $alasanBg)
-                    <div class="text-secondary mb-3" style="color: #475569 !important;">{!! nl2br(e($deskripsiFull)) !!}</div>
-                @else
-                    <p class="text-muted mb-3" style="font-size: 0.83rem;">Belum ada rincian scope of work untuk CR ini.</p>
-                @endif
+            @php
+                $rawDesc = $deskripsiFull ?: ($alasanBg ?: '');
+                $cleanedDesc = preg_replace('/(1\.\s*LATAR BELAKANG & TUJUAN|2\.\s*RUANG LINGKUP PERUBAHAN \(SCOPE OF WORK\)|3\.\s*DAMPAK TEKNIS & DEPENDENCIES)\s*/i', '', $rawDesc);
+                $cleanedDesc = trim($cleanedDesc);
+                $hasHtml = strip_tags($cleanedDesc) !== $cleanedDesc;
+            @endphp
 
-                <div class="fw-bold mb-2" style="color: #0F172A; font-weight: 800;">3. DAMPAK TEKNIS &amp; DEPENDENCIES</div>
-                @if($dependensiNote)
-                    <div class="p-3" style="background: #FFFBEB; border-left: 3px solid #F59E0B; border-radius: 6px;">
-                        <div style="font-size: 0.82rem; color: #92400E; font-weight: 600; line-height: 1.5;">
-                            <strong style="color: #78350F; font-weight: 800;">Catatan Dependensi:</strong> {{ $dependensiNote }}
-                        </div>
-                    </div>
+            <div class="text-dark" style="font-size: 0.84rem; line-height: 1.65; color: #334155;">
+                @if(!empty($cleanedDesc))
+                    @if($hasHtml)
+                        {!! $cleanedDesc !!}
+                    @else
+                        {!! nl2br(e($cleanedDesc)) !!}
+                    @endif
                 @else
-                    <p class="text-muted mb-0" style="font-size: 0.83rem;">Belum ada catatan dampak teknis untuk CR ini.</p>
+                    <p class="text-muted mb-0 small" style="font-size: 0.83rem; font-style: italic;">
+                        Belum ada detail deskripsi yang diisi untuk CR ini.
+                    </p>
                 @endif
             </div>
         </div>
@@ -936,14 +937,14 @@
         <div class="row g-4 align-items-start mb-4">
             <div class="col-lg-6 col-12">
                 <div>
-                    <label class="field-label-sm">Dokumen Penawaran / Quotation<span class="text-danger">*</span></label>
+                    <label class="field-label-sm">Dokumen Penawaran / Quotation (PDF)<span class="text-danger">*</span></label>
                     <div class="d-flex align-items-center gap-2 p-1.5" style="border: 1.5px solid #CBD5E1; border-radius: 8px; background: #FFFFFF;">
                         <button type="button" class="btn text-white d-flex align-items-center gap-1.5 px-3 py-1.5"
                                 style="background: #0B2545; border-radius: 6px; font-size: 0.8rem; font-weight: 700; border: none;"
                                 onclick="document.getElementById('dokumenFileInput').click();">
                             <i class="bi bi-upload"></i> Pilih File
                         </button>
-                        <input type="file" id="dokumenFileInput" name="quotation_file" style="display: none;" onchange="onFileSelected(this)">
+                        <input type="file" id="dokumenFileInput" name="quotation_file" accept=".pdf,application/pdf" style="display: none;" onchange="onFileSelected(this)">
                         <span id="dokumenFileName" class="text-muted small ms-1" style="font-size: 0.82rem;">Tidak ada file yang dipilih</span>
                     </div>
                 </div>
@@ -1154,28 +1155,28 @@
                             </select>
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small text-dark mb-1">File GR</label>
-                            <input type="file" name="gr_file" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg,.zip">
+                            <label class="form-label small text-dark mb-1">File GR (PDF)</label>
+                            <input type="file" name="gr_file" class="form-control form-control-sm" accept=".pdf,application/pdf" onchange="validateGeneralPdfInput(this)">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small text-dark mb-1">Nomor GR</label>
                             <input type="text" name="gr_number" class="form-control form-control-sm" placeholder="Nomor GR dari Klien">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small text-dark mb-1">File Jurnal</label>
-                            <input type="file" name="journal_file" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg,.zip">
+                            <label class="form-label small text-dark mb-1">File Jurnal (PDF)</label>
+                            <input type="file" name="journal_file" class="form-control form-control-sm" accept=".pdf,application/pdf" onchange="validateGeneralPdfInput(this)">
                         </div>
                         <div class="col-md-6">
                             <label class="form-label small text-dark mb-1">Nomor Jurnal</label>
                             <input type="text" name="journal_number" class="form-control form-control-sm" placeholder="Nomor Bukti Jurnal">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small text-dark mb-1">File BA</label>
-                            <input type="file" name="ba_file" class="form-control form-control-sm" accept=".pdf,.png,.jpg,.jpeg,.zip">
+                            <label class="form-label small text-dark mb-1">File BA (PDF)</label>
+                            <input type="file" name="ba_file" class="form-control form-control-sm" accept=".pdf,application/pdf" onchange="validateGeneralPdfInput(this)">
                         </div>
                         <div class="col-md-6">
-                            <label class="form-label small text-dark mb-1">File Quotation</label>
-                            <input type="file" name="quotation_file" class="form-control form-control-sm" accept=".pdf,.doc,.docx,.zip">
+                            <label class="form-label small text-dark mb-1">File Quotation (PDF)</label>
+                            <input type="file" name="quotation_file" class="form-control form-control-sm" accept=".pdf,application/pdf" onchange="validateGeneralPdfInput(this)">
                         </div>
                     </div>
                 </div>
@@ -1335,6 +1336,11 @@
 
         // Recalc summary card
         syncSummary(total);
+
+        // Apply translations to dynamically generated table elements
+        if (window.setAppLanguage) {
+            window.setAppLanguage(localStorage.getItem('itpi_lang') || 'id');
+        }
     }
 
     function syncSummary(total) {
@@ -1456,13 +1462,34 @@
         const nameEl = document.getElementById('dokumenFileName');
         if (!nameEl) return;
         if (input.files && input.files[0]) {
-            nameEl.innerText = input.files[0].name;
+            const file = input.files[0];
+            const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+            if (!isPdf) {
+                alert('Format file tidak didukung! Hanya file berformat PDF (.pdf) yang diperbolehkan.');
+                input.value = '';
+                nameEl.innerText = 'Tidak ada file yang dipilih';
+                nameEl.style.color = '#64748B';
+                nameEl.style.fontWeight = 'normal';
+                return;
+            }
+            nameEl.innerText = file.name;
             nameEl.style.color = '#0F172A';
             nameEl.style.fontWeight = '600';
         } else {
             nameEl.innerText = 'Tidak ada file yang dipilih';
             nameEl.style.color = '#64748B';
             nameEl.style.fontWeight = 'normal';
+        }
+    }
+
+    function validateGeneralPdfInput(input) {
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+            if (!isPdf) {
+                alert('Format file tidak didukung! Hanya file berformat PDF (.pdf) yang diperbolehkan.');
+                input.value = '';
+            }
         }
     }
 
@@ -1526,16 +1553,17 @@
     }
 
     function switchCrTab(tab) {
+        const curLang = (localStorage.getItem('itpi_lang') || 'id').toLowerCase();
         const tabConfigs = {
-            detail: { title: 'Detail Change Request', btnId: 'tabBtnDetail', contentId: 'tabContentDetail' },
-            quotation: { title: 'Quotation', btnId: 'tabBtnQuotation', contentId: 'tabContentQuotation' },
-            payment: { title: 'Data Pembayaran & GR', btnId: 'tabBtnPayment', contentId: 'tabContentPayment' }
+            detail: { titleId: 'Detail Permintaan Perubahan', titleEn: 'Change Request Detail', btnId: 'tabBtnDetail', contentId: 'tabContentDetail' },
+            quotation: { titleId: 'Penawaran', titleEn: 'Quotation', btnId: 'tabBtnQuotation', contentId: 'tabContentQuotation' },
+            payment: { titleId: 'Data Pembayaran & GR', titleEn: 'Payment Data & GR', btnId: 'tabBtnPayment', contentId: 'tabContentPayment' }
         };
 
         const activeKey = tabConfigs[tab] ? tab : 'quotation';
         const pageHeader = document.getElementById('pageHeaderTitle');
         if (pageHeader) {
-            pageHeader.innerText = tabConfigs[activeKey].title;
+            pageHeader.innerText = curLang === 'en' ? tabConfigs[activeKey].titleEn : tabConfigs[activeKey].titleId;
         }
 
         Object.keys(tabConfigs).forEach(k => {
@@ -1553,6 +1581,10 @@
             }
         });
 
+        if (window.setAppLanguage) {
+            window.setAppLanguage(curLang);
+        }
+
         try {
             const url = new URL(window.location.href);
             url.searchParams.set('tab', activeKey);
@@ -1560,6 +1592,22 @@
             localStorage.setItem('presales_cr_tab_{{ $changeRequest->id }}', activeKey);
         } catch (e) {}
     }
+
+    window.addEventListener('appLanguageChanged', function (e) {
+        const curLang = e.detail?.lang || localStorage.getItem('itpi_lang') || 'id';
+        const activeTab = localStorage.getItem('presales_cr_tab_{{ $changeRequest->id }}') || 'quotation';
+        const pageHeader = document.getElementById('pageHeaderTitle');
+        if (pageHeader) {
+            const titles = {
+                detail: curLang === 'en' ? 'Change Request Detail' : 'Detail Permintaan Perubahan',
+                quotation: curLang === 'en' ? 'Quotation' : 'Penawaran',
+                payment: curLang === 'en' ? 'Payment Data & GR' : 'Data Pembayaran & GR'
+            };
+            if (titles[activeTab]) {
+                pageHeader.innerText = titles[activeTab];
+            }
+        }
+    });
 
     function toggleBaPresales(val) {
         const baDiv = document.getElementById('baUploadPresales');
@@ -1586,6 +1634,7 @@
 </script>
 
 {{-- MODAL UPDATE STATUS DEVELOPMENT (PRESALES) --}}
+@if (!auth()->user()?->isPresales() && (auth()->user()?->isPm() || auth()->user()?->isAdmin()))
 <div class="modal fade" id="modalUpdateStatusDev" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog modal-dialog-centered">
         <div class="modal-content" style="border-radius: 16px; border: none; overflow: hidden; box-shadow: 0 20px 40px rgba(0,0,0,0.15);">
@@ -1638,10 +1687,10 @@
                     <div id="baUploadPresales" style="display: {{ in_array($changeRequest->status, ['golive', 'awaiting_golive_validation']) ? 'block' : 'none' }};">
                         <div class="mb-3 p-3 rounded-3" style="background: #FFFBEB; border: 1px solid #FDE68A;">
                             <label class="form-label fw-bold small text-warning-emphasis d-flex align-items-center gap-1.5" style="font-size: 0.78rem;">
-                                <i class="bi bi-file-earmark-pdf-fill text-warning"></i> Unggah Berita Acara (BA) <span class="text-danger">*</span>
+                                <i class="bi bi-file-earmark-pdf-fill text-warning"></i> Unggah Berita Acara (BA) (PDF) <span class="text-danger">*</span>
                             </label>
-                            <input type="file" name="berita_acara_file" class="form-control" accept=".pdf,.doc,.docx" style="font-size: 0.82rem;">
-                            <div class="form-text text-muted" style="font-size: 0.72rem;">Wajib diunggah saat mengubah status menjadi Go-Live.</div>
+                            <input type="file" name="berita_acara_file" class="form-control" accept=".pdf,application/pdf" style="font-size: 0.82rem;" onchange="validateGeneralPdfInput(this)">
+                            <div class="form-text text-muted" style="font-size: 0.72rem;">Wajib diunggah saat mengubah status menjadi Go-Live (Format PDF).</div>
                         </div>
                     </div>
 
@@ -1661,4 +1710,5 @@
         </div>
     </div>
 </div>
+@endif
 @endsection

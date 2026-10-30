@@ -198,7 +198,7 @@
                         </label>
                         <div class="position-relative" id="pm_date_input_wrap">
                             <input type="text" name="date" id="pm_date_input"
-                                   value="{{ old('date', !empty($changeRequest) && $changeRequest->tanggal_pengajuan ? date('d M Y', strtotime($changeRequest->tanggal_pengajuan)) : '04 Sep 2026') }}"
+                                   value="{{ old('date', !empty($changeRequest) && $changeRequest->tanggal_pengajuan ? date('d M Y', strtotime($changeRequest->tanggal_pengajuan)) : now()->format('d M Y')) }}"
                                    readonly onclick="openDatePicker('pm_date_input', event)"
                                    class="form-control"
                                    style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; font-size: 0.84rem; padding: 0 38px 0 14px; cursor: pointer; color: #1E293B; font-weight: 500;">
@@ -215,7 +215,7 @@
                         </label>
                         <div class="position-relative" id="pm_request_date_input_wrap">
                             <input type="text" name="request_date" id="pm_request_date_input"
-                                   value="{{ old('request_date', !empty($changeRequest) && $changeRequest->target_selesai ? date('d M Y', strtotime($changeRequest->target_selesai)) : '04 Sep 2026') }}"
+                                   value="{{ old('request_date', !empty($changeRequest) && $changeRequest->target_selesai ? date('d M Y', strtotime($changeRequest->target_selesai)) : now()->format('d M Y')) }}"
                                    readonly onclick="openDatePicker('pm_request_date_input', event)"
                                    class="form-control"
                                    style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; font-size: 0.84rem; padding: 0 38px 0 14px; cursor: pointer; color: #1E293B; font-weight: 500;">
@@ -228,14 +228,19 @@
 
                 {{-- ── ROW 3: Nama CR* ── --}}
                 <div class="mb-3">
-                    <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
-                        Nama CR <span style="color: #EF4444;">*</span>
-                    </label>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label fw-bold mb-0" style="font-size: 0.78rem; color: #0F172A;">
+                            Nama CR <span style="color: #EF4444;">*</span>
+                        </label>
+                        <span id="pm_cr_name_counter" class="text-muted" style="font-size: 0.70rem;">0/255</span>
+                    </div>
                     <input type="text" name="cr_name" id="pm_cr_name" class="form-control"
                            placeholder="Contoh: Integrasi API Pembayaran OVO"
+                           maxlength="255"
                            value="{{ old('cr_name', old('judul', !empty($changeRequest) ? $changeRequest->judul : '')) }}"
                            required
                            style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; font-size: 0.84rem; padding: 0 14px; color: #1E293B;">
+                    <div class="form-text text-muted" style="font-size: 0.70rem;">Maksimal 255 kata/karakter.</div>
                 </div>
 
                 {{-- ── ROW 4: Detail CR* (TinyMCE WYSIWYG Editor) ── --}}
@@ -421,7 +426,7 @@
                         <div class="px-3 py-1 border-top d-flex justify-content-between align-items-center text-muted"
                              style="background: #F8FAFC; font-size: 0.72rem; user-select: none; border-color: #F1F5F9 !important;">
                             <span style="color: #64748B;">p</span>
-                            <span style="color: #94A3B8; cursor: pointer;" onclick="openHelpModal()" title="Klik untuk bantuan shortcut">Press ⌥0 for help</span>
+                            <span id="pm_detail_cr_counter" style="color: #64748B; font-weight: 500;">0/5000 karakter</span>
                             <div class="d-flex align-items-center gap-1" style="color: #64748B;">
                                 <span>Build with</span>
                                 <span class="fw-bold" style="color: #1E293B;">tinyMCE</span>
@@ -431,6 +436,7 @@
                             </div>
                         </div>
                     </div>
+                    <div class="form-text text-muted mt-1" style="font-size: 0.70rem;">Maksimal 5000 kata/karakter.</div>
                 </div>
 
                 {{-- ── ROW 5: Dokumen Lainnya* (50%) & Prioritas CR* (50%) ── --}}
@@ -438,7 +444,7 @@
                     {{-- Dokumen Lainnya* --}}
                     <div class="col-lg-6 col-12">
                         <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
-                            Dokumen Lainnya <span style="color: #EF4444;">*</span>
+                            Dokumen Lainnya <span class="text-muted fw-normal" style="font-size: 0.72rem;">(Hanya format .pdf)</span> <span style="color: #EF4444;">*</span>
                         </label>
                         <div class="d-flex align-items-center" style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; overflow: hidden;">
                             <button type="button" class="btn text-white d-flex align-items-center justify-content-center gap-2 px-3 h-100 flex-shrink-0"
@@ -454,7 +460,7 @@
                             <span id="pm_dokumen_lainnya_label" class="px-3 text-truncate flex-grow-1" style="font-size: 0.82rem; color: #64748B;">
                                 Tidak ada file yang dipilih
                             </span>
-                            <input type="file" name="dokumen_lainnya" id="pm_dokumen_lainnya" class="d-none" onchange="handlePmFileInput(this, 'pm_dokumen_lainnya_label')">
+                            <input type="file" name="dokumen_lainnya" id="pm_dokumen_lainnya" accept=".pdf,application/pdf" class="d-none" onchange="handlePmFileInput(this, 'pm_dokumen_lainnya_label')">
                         </div>
                     </div>
 
@@ -559,15 +565,25 @@
 
                 {{-- ── ROW 7: CR Notes ── --}}
                 <div class="mb-3">
-                    <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
-                        CR Notes
-                    </label>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label fw-bold mb-0" style="font-size: 0.78rem; color: #0F172A;">
+                            CR Notes
+                        </label>
+                        <span id="pm_cr_notes_counter" class="text-muted" style="font-size: 0.70rem;">0/5000</span>
+                    </div>
                     <textarea name="cr_notes" id="pm_cr_notes" rows="3" class="form-control"
+                              maxlength="5000"
                               style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 0.84rem; padding: 12px 14px; width: 100%; height: 90px; outline: none; color: #1E293B;"
                               placeholder="Catatan tambahan atau konteks...">{{ old('cr_notes', !empty($changeRequest) ? ($changeRequest->catatan_pengajuan ?: $changeRequest->catatan_analisis) : '') }}</textarea>
+                    <div class="form-text text-muted" style="font-size: 0.70rem;">Maksimal 5000 kata/karakter.</div>
                 </div>
 
                 {{-- ── ROW 8: Butuh Solution Paper?* & Upload Solution Paper (PDF)* ── --}}
+                @php
+                    $initSpRequired = old('solution_paper_required', !empty($changeRequest) && isset($changeRequest->solution_paper_required) ? ($changeRequest->solution_paper_required ? '1' : '0') : '1');
+                    $existingSpFile = !empty($changeRequest) && $changeRequest->solutionPaper ? $changeRequest->solutionPaper->solution_paper_file : null;
+                    $existingSpFileName = $existingSpFile ? basename($existingSpFile) : 'Tidak ada file yang dipilih';
+                @endphp
                 <div class="row g-3 align-items-end">
                     {{-- Butuh Solution Paper?* --}}
                     <div class="col-lg-4 col-12">
@@ -578,28 +594,36 @@
                             {{-- Ya Pill --}}
                             <div id="pmSpYaCard" class="d-flex align-items-center gap-2 px-3 cursor-pointer"
                                  onclick="selectPmSolutionPaper(1)"
-                                 style="background: #FFFFFF; border: 1.5px solid #0098EA; border-radius: 8px; height: 42px; min-width: 95px; transition: all 0.15s ease;">
+                                 style="background: #FFFFFF; border: {{ $initSpRequired == '1' ? '1.5px solid #0098EA' : '1px solid #CBD5E1' }}; border-radius: 8px; height: 42px; min-width: 95px; transition: all 0.15s ease;">
                                 <span id="pmSpYaRadio">
-                                    <span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #0098EA; display: inline-flex; align-items: center; justify-content: center;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #0098EA;"></span></span>
+                                    @if($initSpRequired == '1')
+                                        <span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #0098EA; display: inline-flex; align-items: center; justify-content: center;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #0098EA;"></span></span>
+                                    @else
+                                        <span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #CBD5E1; display: inline-block;"></span>
+                                    @endif
                                 </span>
-                                <span id="pmSpYaLabel" class="fw-semibold" style="font-size: 0.84rem; color: #0284C7;">Ya</span>
+                                <span id="pmSpYaLabel" class="fw-semibold" style="font-size: 0.84rem; color: {{ $initSpRequired == '1' ? '#0284C7' : '#64748B' }};">Ya</span>
                             </div>
 
                             {{-- Tidak Pill --}}
                             <div id="pmSpTidakCard" class="d-flex align-items-center gap-2 px-3 cursor-pointer"
                                  onclick="selectPmSolutionPaper(0)"
-                                 style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; min-width: 95px; transition: all 0.15s ease;">
+                                 style="background: #FFFFFF; border: {{ $initSpRequired == '0' ? '1.5px solid #0098EA' : '1px solid #CBD5E1' }}; border-radius: 8px; height: 42px; min-width: 95px; transition: all 0.15s ease;">
                                 <span id="pmSpTidakRadio">
-                                    <span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #CBD5E1; display: inline-block;"></span>
+                                    @if($initSpRequired == '0')
+                                        <span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #0098EA; display: inline-flex; align-items: center; justify-content: center;"><span style="width: 8px; height: 8px; border-radius: 50%; background: #0098EA;"></span></span>
+                                    @else
+                                        <span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #CBD5E1; display: inline-block;"></span>
+                                    @endif
                                 </span>
-                                <span id="pmSpTidakLabel" class="fw-semibold" style="font-size: 0.84rem; color: #64748B;">Tidak</span>
+                                <span id="pmSpTidakLabel" class="fw-semibold" style="font-size: 0.84rem; color: {{ $initSpRequired == '0' ? '#0284C7' : '#64748B' }};">Tidak</span>
                             </div>
                         </div>
-                        <input type="hidden" name="solution_paper_required" id="pm_solution_paper_required" value="1">
+                        <input type="hidden" name="solution_paper_required" id="pm_solution_paper_required" value="{{ $initSpRequired }}">
                     </div>
 
                     {{-- Upload Solution Paper (PDF)* --}}
-                    <div class="col-lg-8 col-12">
+                    <div class="col-lg-8 col-12" id="pm_solution_paper_upload_col" style="{{ $initSpRequired == '0' ? 'display: none;' : '' }}">
                         <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
                             Upload Solution Paper (PDF) <span style="color: #EF4444;">*</span>
                         </label>
@@ -614,10 +638,10 @@
                                 </svg>
                                 <span>Pilih File</span>
                             </button>
-                            <span id="pm_solution_paper_label" class="px-3 text-truncate flex-grow-1" style="font-size: 0.82rem; color: #64748B;">
-                                Tidak ada file yang dipilih
+                            <span id="pm_solution_paper_label" class="px-3 text-truncate flex-grow-1" style="font-size: 0.82rem; color: {{ $existingSpFile ? '#1E293B' : '#64748B' }}; font-weight: {{ $existingSpFile ? '600' : 'normal' }};">
+                                {{ $existingSpFileName }}
                             </span>
-                            <input type="file" name="solution_paper_file" id="pm_solution_paper_file" accept=".pdf,.doc,.docx" class="d-none" onchange="handlePmFileInput(this, 'pm_solution_paper_label')">
+                            <input type="file" name="solution_paper_file" id="pm_solution_paper_file" accept=".pdf,application/pdf" class="d-none" onchange="handlePmFileInput(this, 'pm_solution_paper_label')">
                         </div>
                     </div>
                 </div>
@@ -651,7 +675,7 @@
                         style="background: #10B981; border-radius: 8px; font-size: 0.84rem; border: none; padding: 0.55rem 1.8rem; transition: all 0.15s ease;"
                         onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">
                     <i class="bi bi-check-lg" style="font-size: 1rem;"></i>
-                    <span>Submit CR</span>
+                    <span>Ajukan CR</span>
                 </button>
             </div>
 
@@ -799,7 +823,7 @@
             {{-- Card Body --}}
             <div class="p-4" style="background: #FFFFFF;">
                 
-                {{-- Row 1: Nama Project (Dropdown), Tanggal, Request Date --}}
+                {{-- Row 1: Nama Project (Dropdown), Request Date, Tanggal Go Live --}}
                 <div class="figma-grid-3col mb-3">
                     
                     {{-- Col 1: Nama Project (Dropdown) --}}
@@ -846,12 +870,12 @@
                         </div>
                     </div>
 
-                    {{-- Col 2: Tanggal (No asterisk in reference) --}}
+                    {{-- Col 2: Tanggal Pengajuan --}}
                     <div class="grid-col-2">
                         <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
-                            Tanggal
+                            Tanggal Pengajuan
                         </label>
-                        <div class="position-relative cursor-pointer" onclick="openDatePicker('date_input_1', event)">
+                        <div class="position-relative cursor-pointer" id="client_date_input_1_wrap" onclick="openDatePicker('date_input_1', event)">
                             <input type="text" name="date" id="date_input_1"
                                     value="{{ old('date', !empty($changeRequest?->tanggal_pengajuan) ? $changeRequest->tanggal_pengajuan->format('d M Y') : now()->format('d M Y')) }}" readonly
                                     onclick="openDatePicker('date_input_1', event)"
@@ -866,14 +890,14 @@
                         </div>
                     </div>
 
-                    {{-- Col 3: Request Date* (With asterisk in reference) --}}
+                    {{-- Col 3: Tanggal Go Live* --}}
                     <div class="grid-col-3">
                         <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
-                            Request Date <span style="color: #EF4444;">*</span>
+                            Tanggal Go Live <span style="color: #EF4444;">*</span>
                         </label>
-                        <div class="position-relative cursor-pointer" onclick="openDatePicker('date_input_2', event)">
+                        <div class="position-relative cursor-pointer" id="client_date_input_2_wrap" onclick="openDatePicker('date_input_2', event)">
                             <input type="text" name="request_date" id="date_input_2"
-                                    value="{{ old('request_date', old('target_golive', !empty($changeRequest?->target_selesai) ? $changeRequest->target_selesai->format('d M Y') : now()->addMonth()->format('d M Y'))) }}" readonly
+                                    value="{{ old('request_date', old('target_golive', !empty($changeRequest?->target_selesai) ? $changeRequest->target_selesai->format('d M Y') : now()->format('d M Y'))) }}" readonly
                                     onclick="openDatePicker('date_input_2', event)"
                                     style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 38px 0 14px; font-size: 0.84rem; color: #1E293B; width: 100%; cursor: pointer;">
                             <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"
@@ -890,13 +914,18 @@
 
                 {{-- Row 2: Nama CR* --}}
                 <div class="mb-3">
-                    <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
-                        Nama CR <span style="color: #EF4444;">*</span>
-                    </label>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label fw-bold mb-0" style="font-size: 0.78rem; color: #0F172A;">
+                            Nama CR <span style="color: #EF4444;">*</span>
+                        </label>
+                        <span id="cr_name_counter" class="text-muted" style="font-size: 0.70rem;">0/255</span>
+                    </div>
                     <input type="text" name="cr_name" id="cr_name"
                            placeholder="Contoh: Integrasi API Pembayaran OVO"
+                           maxlength="255"
                            value="{{ old('cr_name', !empty($changeRequest) ? $changeRequest->judul : '') }}" required
                            style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; color: #1E293B; width: 100%;">
+                    <div class="form-text text-muted" style="font-size: 0.70rem;">Maksimal 255 kata/karakter.</div>
                 </div>
 
                 {{-- Row 3: Detail CR* (Interactive TinyMCE Style Editor) --}}
@@ -1081,7 +1110,7 @@
                         <div class="px-3 py-1 border-top d-flex justify-content-between align-items-center text-muted"
                              style="background: #F8FAFC; font-size: 0.72rem; user-select: none; border-color: #F1F5F9 !important;">
                             <span style="color: #64748B;">p</span>
-                            <span style="color: #94A3B8; cursor: pointer;" onclick="openHelpModal()" title="Klik untuk bantuan shortcut">Press ⌥0 for help</span>
+                            <span id="detail_cr_counter" style="color: #64748B; font-weight: 500;">0/5000 karakter</span>
                             <div class="d-flex align-items-center gap-1" style="color: #64748B;">
                                 <span>Build with</span>
                                 <span class="fw-bold" style="color: #1E293B;">tinyMCE</span>
@@ -1092,6 +1121,7 @@
                         </div>
 
                     </div>
+                    <div class="form-text text-muted mt-1" style="font-size: 0.70rem;">Maksimal 5000 kata/karakter.</div>
                 </div>
 
             </div>
@@ -1125,7 +1155,7 @@
                     {{-- Left: Dokumen CR Upload Dropzone --}}
                     <div class="col-lg-6 col-12 d-flex flex-column">
                         <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
-                            Dokumen CR
+                            Dokumen CR <span class="text-muted fw-normal" style="font-size: 0.72rem;">(Hanya format .pdf)</span>
                         </label>
                         
                         <div id="dropzoneBox"
@@ -1145,6 +1175,9 @@
                                 </svg>
                                 <div id="dropzoneText" style="font-size: 0.82rem; color: #64748B; font-weight: 500;">
                                     Klik untuk upload PDF
+                                </div>
+                                <div style="font-size: 0.70rem; color: #94A3B8; margin-top: 2px;">
+                                    Format: .pdf (Maks. 20MB)
                                 </div>
                             </div>
 
@@ -1166,9 +1199,12 @@
                             </div>
 
                             <input type="file" name="dokumen_fsd" id="dokumen_fsd_file" class="d-none"
-                                   accept=".pdf,.doc,.docx,.zip"
+                                   accept=".pdf,application/pdf"
                                    onchange="handleFileChange(this)">
                         </div>
+                        @error('dokumen_fsd')
+                            <div class="text-danger small mt-1" style="font-size: 0.75rem;">{{ $message }}</div>
+                        @enderror
                     </div>
 
                     {{-- Right: Prioritas CR (Normal & Urgent Cards) --}}
@@ -1214,12 +1250,17 @@
 
                 {{-- Row 2: CR Notes --}}
                 <div>
-                    <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
-                        CR Notes
-                    </label>
+                    <div class="d-flex justify-content-between align-items-center mb-1">
+                        <label class="form-label fw-bold mb-0" style="font-size: 0.78rem; color: #0F172A;">
+                            CR Notes
+                        </label>
+                        <span id="cr_notes_counter" class="text-muted" style="font-size: 0.70rem;">0/5000</span>
+                    </div>
                     <textarea name="cr_notes" id="cr_notes" rows="3" class="form-control"
+                              maxlength="5000"
                               style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 0.84rem; padding: 12px 14px; width: 100%; height: 90px; outline: none;"
                               placeholder="Catatan tambahan, prioritas, atau informasi lain yang perlu diketahui PM...">{{ old('cr_notes', !empty($changeRequest) ? $changeRequest->catatan_pengajuan : '') }}</textarea>
+                    <div class="form-text text-muted" style="font-size: 0.70rem;">Maksimal 5000 kata/karakter.</div>
                 </div>
 
             </div>
@@ -1253,7 +1294,7 @@
                     style="background: #50CD89; border-radius: 8px; font-size: 0.84rem; border: none; padding: 0.55rem 1.7rem; transition: transform 0.15s ease, opacity 0.15s ease;"
                     onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">
                 <i class="bi bi-check-lg" style="font-size: 1rem; stroke-width: 1px;"></i>
-                <span>Submit CR</span>
+                <span>Ajukan CR</span>
             </button>
 
         </div>
@@ -1284,7 +1325,7 @@
                 &lsaquo;
             </button>
         </div>
-        <div class="fw-bold text-dark" id="calendarMonthYear" style="font-size: 0.85rem; color: #18181B;">September 2026</div>
+        <div class="fw-bold text-dark" id="calendarMonthYear" style="font-size: 0.85rem; color: #18181B;">{{ now()->format('F Y') }}</div>
         <div class="d-flex align-items-center gap-1">
             <button type="button" class="btn btn-sm p-0 text-muted border d-flex align-items-center justify-content-center"
                     onclick="nextMonth(event)" title="Bulan Berikutnya"
@@ -1628,6 +1669,9 @@
         const radioTidak = document.getElementById('pmSpTidakRadio');
         const labelYa = document.getElementById('pmSpYaLabel');
         const labelTidak = document.getElementById('pmSpTidakLabel');
+        const uploadCol = document.getElementById('pm_solution_paper_upload_col');
+        const fileInput = document.getElementById('pm_solution_paper_file');
+        const fileLabel = document.getElementById('pm_solution_paper_label');
 
         if (cardYa && cardTidak) {
             if (val === 1) {
@@ -1640,6 +1684,10 @@
                 cardTidak.style.borderWidth = '1px';
                 if (labelTidak) labelTidak.style.color = '#64748B';
                 if (radioTidak) radioTidak.innerHTML = '<span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #CBD5E1; display: inline-block;"></span>';
+
+                if (uploadCol) {
+                    uploadCol.style.display = '';
+                }
             } else {
                 cardTidak.style.borderColor = '#0098EA';
                 cardTidak.style.borderWidth = '1.5px';
@@ -1650,6 +1698,18 @@
                 cardYa.style.borderWidth = '1px';
                 if (labelYa) labelYa.style.color = '#64748B';
                 if (radioYa) radioYa.innerHTML = '<span style="width: 16px; height: 16px; border-radius: 50%; border: 1.5px solid #CBD5E1; display: inline-block;"></span>';
+
+                if (uploadCol) {
+                    uploadCol.style.display = 'none';
+                }
+                if (fileInput) {
+                    fileInput.value = '';
+                }
+                if (fileLabel) {
+                    fileLabel.innerText = 'Tidak ada file yang dipilih';
+                    fileLabel.style.color = '#64748B';
+                    fileLabel.style.fontWeight = 'normal';
+                }
             }
         }
     }
@@ -1659,7 +1719,17 @@
         const label = document.getElementById(labelId);
         if (!label) return;
         if (input.files && input.files[0]) {
-            label.innerText = input.files[0].name;
+            const file = input.files[0];
+            const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+            if (!isPdf) {
+                alert('Format file tidak didukung! Hanya file berformat PDF (.pdf) yang diperbolehkan.');
+                input.value = '';
+                label.innerText = 'Tidak ada file yang dipilih';
+                label.style.color = '#64748B';
+                label.style.fontWeight = 'normal';
+                return;
+            }
+            label.innerText = file.name;
             label.style.color = '#1E293B';
             label.style.fontWeight = '600';
         } else {
@@ -1719,17 +1789,48 @@
         syncEditor();
     }
 
+    let hasAlertedPmDetail = false;
+    let hasAlertedClientDetail = false;
+
     function syncEditor() {
         const pmBody = document.getElementById('pmEditorBody');
         const pmHidden = document.getElementById('pm_deskripsi_cr_hidden');
         if (pmBody && pmHidden) {
             pmHidden.value = pmBody.innerHTML;
+            const text = pmBody.innerText || '';
+            const chars = text.length;
+            const words = text.trim() ? text.trim().split(/\s+/).filter(Boolean).length : 0;
+            const counter = document.getElementById('pm_detail_cr_counter');
+            if (counter) {
+                counter.innerText = `${chars}/5000 karakter`;
+                counter.style.color = (chars > 5000 || words > 5000) ? '#EF4444' : '#64748B';
+            }
+            if ((chars > 5000 || words > 5000) && !hasAlertedPmDetail) {
+                alert('Detail CR maksimal 5000 kata/karakter!');
+                hasAlertedPmDetail = true;
+            } else if (chars <= 5000 && words <= 5000) {
+                hasAlertedPmDetail = false;
+            }
         }
 
         const clientBody = document.getElementById('editorBody');
         const clientHidden = document.getElementById('deskripsi_cr_hidden');
         if (clientBody && clientHidden) {
             clientHidden.value = clientBody.innerHTML;
+            const text = clientBody.innerText || '';
+            const chars = text.length;
+            const words = text.trim() ? text.trim().split(/\s+/).filter(Boolean).length : 0;
+            const counter = document.getElementById('detail_cr_counter');
+            if (counter) {
+                counter.innerText = `${chars}/5000 karakter`;
+                counter.style.color = (chars > 5000 || words > 5000) ? '#EF4444' : '#64748B';
+            }
+            if ((chars > 5000 || words > 5000) && !hasAlertedClientDetail) {
+                alert('Detail CR maksimal 5000 kata/karakter!');
+                hasAlertedClientDetail = true;
+            } else if (chars <= 5000 && words <= 5000) {
+                hasAlertedClientDetail = false;
+            }
         }
     }
 
@@ -1831,9 +1932,37 @@
         if (input) input.click();
     }
 
+    function validatePdfFile(file) {
+        if (!file) return false;
+        const fileName = (file.name || '').toLowerCase();
+        const fileType = (file.type || '').toLowerCase();
+        const isPdf = fileName.endsWith('.pdf') || fileType === 'application/pdf';
+        
+        if (!isPdf) {
+            if (typeof Swal !== 'undefined') {
+                Swal.fire({
+                    icon: 'warning',
+                    title: 'Format File Ditolak',
+                    text: 'Dokumen CR hanya dapat menerima file berformat PDF (.pdf). Format file selain PDF tidak diperbolehkan.',
+                    confirmButtonColor: '#0098EA',
+                    confirmButtonText: 'Mengerti'
+                });
+            } else {
+                alert('Dokumen CR hanya dapat menerima file berformat PDF (.pdf). Format file selain PDF tidak diperbolehkan.');
+            }
+            return false;
+        }
+        return true;
+    }
+
     function handleFileChange(input) {
         if (input.files && input.files[0]) {
-            displaySelectedFile(input.files[0]);
+            const file = input.files[0];
+            if (!validatePdfFile(file)) {
+                input.value = '';
+                return;
+            }
+            displaySelectedFile(file);
         }
     }
 
@@ -1898,13 +2027,26 @@
     function handleFileDrop(e) {
         e.preventDefault();
         e.stopPropagation();
+        const box = document.getElementById('dropzoneBox');
+        const input = document.getElementById('dokumen_fsd_file');
+        if (box) {
+            if (input && input.files && input.files.length > 0) {
+                box.style.borderColor = '#50CD89';
+                box.style.background = '#F0FDF4';
+            } else {
+                box.style.borderColor = '#93C5FD';
+                box.style.background = '#FFFFFF';
+            }
+        }
         if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             const file = e.dataTransfer.files[0];
-            const fileInput = document.getElementById('dokumen_fsd_file');
-            if (fileInput) {
+            if (!validatePdfFile(file)) {
+                return;
+            }
+            if (input) {
                 const dt = new DataTransfer();
                 dt.items.add(file);
-                fileInput.files = dt.files;
+                input.files = dt.files;
             }
             displaySelectedFile(file);
         }
@@ -1921,8 +2063,8 @@
 
     // 6. Custom Date Picker Logic matching Figma
     let currentActiveDateInputId = null;
-    let pickerDate = new Date(2026, 8, 4); // Default Sept 2026
-    let selectedDay = 4;
+    let pickerDate = new Date(); // Default today
+    let selectedDay = pickerDate.getDate();
 
     const monthNames = [
         "January", "February", "March", "April", "May", "June",
@@ -1932,6 +2074,42 @@
         "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
         "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
     ];
+    const monthLookup = {
+        'jan': 0, 'january': 0, 'januari': 0,
+        'feb': 1, 'february': 1, 'februari': 1,
+        'mar': 2, 'march': 2, 'maret': 2,
+        'apr': 3, 'april': 3,
+        'may': 4, 'mei': 4,
+        'jun': 5, 'june': 5, 'juni': 5,
+        'jul': 6, 'july': 6, 'juli': 6,
+        'aug': 7, 'agu': 7, 'august': 7, 'agustus': 7,
+        'sep': 8, 'september': 8,
+        'oct': 9, 'okt': 9, 'october': 9, 'oktober': 9,
+        'nov': 10, 'november': 10,
+        'dec': 11, 'des': 11, 'december': 11, 'desember': 11
+    };
+
+    function positionDatePicker(targetInput, modal) {
+        if (!targetInput || !modal) return;
+        const rect = targetInput.getBoundingClientRect();
+        const modalHeight = 310;
+        const modalWidth = 290;
+
+        // customDatePickerModal has position: fixed, so top & left must be relative to viewport (NO window.scrollY / window.scrollX)
+        let topPos = rect.bottom + 6;
+        if (topPos + modalHeight > window.innerHeight && rect.top > modalHeight + 10) {
+            topPos = rect.top - modalHeight - 6;
+        }
+
+        let leftPos = rect.right - modalWidth;
+        if (leftPos < 16) leftPos = rect.left;
+        if (leftPos + modalWidth > window.innerWidth) {
+            leftPos = window.innerWidth - modalWidth - 16;
+        }
+
+        modal.style.top = Math.max(10, Math.round(topPos)) + 'px';
+        modal.style.left = Math.max(10, Math.round(leftPos)) + 'px';
+    }
 
     function openDatePicker(inputId, event) {
         if (event) event.stopPropagation();
@@ -1941,23 +2119,27 @@
         if (!targetInput || !modal) return;
         
         // Parse current input date if available
+        let parsed = false;
         if (targetInput.value) {
-            const parts = targetInput.value.split(' ');
+            const parts = targetInput.value.trim().split(/\s+/);
             if (parts.length === 3) {
-                const day = parseInt(parts[0]);
-                const mIdx = monthShortNames.findIndex(m => m.toLowerCase() === parts[1].toLowerCase());
-                const yr = parseInt(parts[2]);
+                const day = parseInt(parts[0], 10);
+                const mStr = parts[1].toLowerCase();
+                const yr = parseInt(parts[2], 10);
+                const mIdx = monthLookup[mStr] !== undefined ? monthLookup[mStr] : monthShortNames.findIndex(m => m.toLowerCase() === mStr);
                 if (!isNaN(day) && mIdx !== -1 && !isNaN(yr)) {
                     pickerDate = new Date(yr, mIdx, day);
                     selectedDay = day;
+                    parsed = true;
                 }
             }
         }
+        if (!parsed) {
+            pickerDate = new Date();
+            selectedDay = pickerDate.getDate();
+        }
 
-        const rect = targetInput.getBoundingClientRect();
-        // Position right below the input box
-        modal.style.top = (rect.bottom + window.scrollY + 6) + 'px';
-        modal.style.left = Math.max(16, (rect.right + window.scrollX - 290)) + 'px';
+        positionDatePicker(targetInput, modal);
         modal.style.display = 'block';
 
         renderCalendar();
@@ -2088,6 +2270,8 @@
             if (!e.target.closest('#customDatePickerModal') &&
                 !e.target.closest('#date_input_1') &&
                 !e.target.closest('#date_input_2') &&
+                !e.target.closest('#client_date_input_1_wrap') &&
+                !e.target.closest('#client_date_input_2_wrap') &&
                 !e.target.closest('#pm_date_input_wrap') &&
                 !e.target.closest('#pm_request_date_input_wrap')) {
                 closeDatePicker();
@@ -2095,8 +2279,113 @@
         }
     });
 
+    // Keep datepicker positioned accurately on scroll & resize
+    window.addEventListener('scroll', function() {
+        const modal = document.getElementById('customDatePickerModal');
+        if (modal && modal.style.display === 'block' && currentActiveDateInputId) {
+            const targetInput = document.getElementById(currentActiveDateInputId);
+            if (targetInput) positionDatePicker(targetInput, modal);
+        }
+    }, { passive: true });
+
+    window.addEventListener('resize', function() {
+        const modal = document.getElementById('customDatePickerModal');
+        if (modal && modal.style.display === 'block' && currentActiveDateInputId) {
+            const targetInput = document.getElementById(currentActiveDateInputId);
+            if (targetInput) positionDatePicker(targetInput, modal);
+        }
+    });
+
+    function setupInputLimit(inputId, counterId, maxLimit, fieldLabel) {
+        const el = document.getElementById(inputId);
+        const counter = document.getElementById(counterId);
+        if (!el) return;
+
+        function check() {
+            const val = el.value || '';
+            const chars = val.length;
+            const words = val.trim() ? val.trim().split(/\s+/).filter(Boolean).length : 0;
+            if (counter) {
+                counter.innerText = `${chars}/${maxLimit}`;
+                counter.style.color = (chars > maxLimit || words > maxLimit) ? '#EF4444' : '#64748B';
+            }
+            if (chars > maxLimit || words > maxLimit) {
+                alert(`${fieldLabel} maksimal ${maxLimit} kata/karakter!`);
+                if (chars > maxLimit) {
+                    el.value = val.substring(0, maxLimit);
+                    if (counter) counter.innerText = `${el.value.length}/${maxLimit}`;
+                }
+            }
+        }
+
+        el.addEventListener('input', check);
+        el.addEventListener('paste', () => setTimeout(check, 10));
+        check();
+    }
+
     document.addEventListener('DOMContentLoaded', function() {
         calcPmTotalMandays();
+        syncEditor();
+
+        // 1. Nama CR (maksimal 255)
+        setupInputLimit('pm_cr_name', 'pm_cr_name_counter', 255, 'Nama CR');
+        setupInputLimit('cr_name', 'cr_name_counter', 255, 'Nama CR');
+
+        // 2. CR Notes (maksimal 5000)
+        setupInputLimit('pm_cr_notes', 'pm_cr_notes_counter', 5000, 'CR Notes');
+        setupInputLimit('cr_notes', 'cr_notes_counter', 5000, 'CR Notes');
+
+        // 3. Form submit validation (PM & Client)
+        const form = document.getElementById('figmaCrForm');
+        if (form) {
+            form.addEventListener('submit', function (e) {
+                syncEditor();
+
+                // Validate Nama CR
+                const crNameEl = document.getElementById('pm_cr_name') || document.getElementById('cr_name');
+                if (crNameEl) {
+                    const val = crNameEl.value || '';
+                    const chars = val.length;
+                    const words = val.trim() ? val.trim().split(/\s+/).filter(Boolean).length : 0;
+                    if (chars > 255 || words > 255) {
+                        e.preventDefault();
+                        alert('Nama CR maksimal 255 kata/karakter!');
+                        crNameEl.focus();
+                        return false;
+                    }
+                }
+
+                // Validate Detail CR
+                const pmBody = document.getElementById('pmEditorBody');
+                const clientBody = document.getElementById('editorBody');
+                const activeEditor = pmBody || clientBody;
+                if (activeEditor) {
+                    const text = activeEditor.innerText || '';
+                    const chars = text.length;
+                    const words = text.trim() ? text.trim().split(/\s+/).filter(Boolean).length : 0;
+                    if (chars > 5000 || words > 5000) {
+                        e.preventDefault();
+                        alert('Detail CR maksimal 5000 kata/karakter!');
+                        activeEditor.focus();
+                        return false;
+                    }
+                }
+
+                // Validate CR Notes
+                const notesEl = document.getElementById('pm_cr_notes') || document.getElementById('cr_notes');
+                if (notesEl) {
+                    const val = notesEl.value || '';
+                    const chars = val.length;
+                    const words = val.trim() ? val.trim().split(/\s+/).filter(Boolean).length : 0;
+                    if (chars > 5000 || words > 5000) {
+                        e.preventDefault();
+                        alert('CR Notes maksimal 5000 kata/karakter!');
+                        notesEl.focus();
+                        return false;
+                    }
+                }
+            });
+        }
     });
 </script>
 @endsection

@@ -5,11 +5,17 @@
 @php
     $currentRouteName = Route::currentRouteName() ?? '';
     $isNotificationsActive = request()->routeIs('notifications.*');
-    $isDashboardActive = !$isNotificationsActive && ((request()->routeIs('change-requests.index') && (!request()->has('view') || request('view') === 'dashboard')) || request()->is('dashboard'));
+    $isDashboardActive = !$isNotificationsActive && ((request()->routeIs('change-requests.index') && (!request()->has('view') || request('view') === 'dashboard')) || request()->is('dashboard') || request()->routeIs('pmh.dashboard'));
     $isDevelopmentActive = request('view') === 'development' || request('status') === 'development';
     $isNeedApprovalActive = request('status') === 'diajukan' || request('status') === 'awaiting_pm';
     $isSemuaActive = !$isDashboardActive && !$isNotificationsActive && !$isNeedApprovalActive && (request('view') === 'total' || request()->routeIs('change-requests.show') || (!request()->has('view') && !request()->has('status')) || $isDevelopmentActive);
     $isCrActive = request()->routeIs('change-requests.*') && !$isDashboardActive;
+    $sidebarDashboardUrl = route('change-requests.index');
+    if ($currentRole === 'pmh' || (auth()->check() && auth()->user()->isPmh()) || request('role') === 'pmh') {
+        $sidebarDashboardUrl = route('pmh.dashboard');
+    } elseif ($currentRole === 'presales' || (auth()->check() && auth()->user()->isPresales()) || request('role') === 'presales') {
+        $sidebarDashboardUrl = route('presales.dashboard');
+    }
 @endphp
 
 {{-- ══════════════════════════════════════════════════════════════
@@ -22,7 +28,7 @@
 
     {{-- Brand / Logo (PT. ITPI Technology) --}}
     <div class="sidebar-header" style="padding: 1.35rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.06);">
-        <a class="sidebar-brand d-flex align-items-center gap-2 text-decoration-none" href="{{ route('change-requests.index') }}">
+        <a class="sidebar-brand d-flex align-items-center gap-2 text-decoration-none" href="{{ $sidebarDashboardUrl }}">
             <img src="{{ asset('images/itpi_logo_white_tight.png') }}" alt="ITPI" style="height: 34px; width: auto; object-fit: contain;">
             <div style="color: #FFFFFF; font-weight: 800; font-size: 0.95rem; letter-spacing: -0.01em; white-space: nowrap;">
                 PT. ITPI Technology
@@ -39,7 +45,7 @@
         </span>
 
         {{-- 1. Dashboard (Active Blue Pill when active) --}}
-        <a href="{{ route('change-requests.index') }}"
+        <a href="{{ $sidebarDashboardUrl }}"
            class="sidebar-link"
            style="background: {{ $isDashboardActive ? '#0063D7 !important' : 'transparent !important' }}; border-radius: 9999px; padding: 0.62rem 1.15rem; font-size: 0.9rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.75rem;">
             <i class="bi bi-grid-fill nav-icon" style="font-size: 1.05rem; color: #FFFFFF;"></i>
@@ -61,48 +67,123 @@
         {{-- Submenu: Role-Aware (PM: Semua CR, Butuh Persetujuan, Development CR | Client: Semua CR, Ajukan CR, Draft CR) --}}
         <div class="nav-group-body sidebar-sub open" id="crGroupBody" style="display: flex; flex-direction: column; gap: 0.35rem; margin-top: 0.4rem; padding-left: 0;">
             @php
-                $isPmRole = in_array($currentRole, ['pm', 'pmh']) || request('role') === 'pm' || (auth()->check() && auth()->user()->isPm());
+                $isPmRole = in_array($currentRole, ['pm']) || request('role') === 'pm' || (auth()->check() && auth()->user()->isPm());
+                $isPmhRole = $currentRole === 'pmh' || request('role') === 'pmh' || (auth()->check() && auth()->user()->isPmh());
+                $isPresalesRole = $currentRole === 'presales' || request('role') === 'presales' || (auth()->check() && auth()->user()->isPresales());
+                $canSubmitCr = !$isPmhRole && !$isPresalesRole;
                 $isCreateActive = request()->routeIs('change-requests.create') || request()->routeIs('change-requests.edit');
                 $isDraftActive = request('view') === 'draft';
                 $isNeedApprovalActive = request('status') === 'diajukan' || request('status') === 'awaiting_pm';
                 $isDevActive = request('view') === 'development' || request('status') === 'development';
                 $isSemuaActiveSub = !$isDashboardActive && !$isCreateActive && !$isDraftActive && !$isNeedApprovalActive && !$isDevActive && !request()->routeIs('profile.index');
+
+                $isPmhSemuaCr = request()->routeIs('pmh.change-requests');
+                $isPmhPersetujuan = request()->routeIs('pmh.persetujuan');
+                $isPmhDev = request()->routeIs('pmh.development') || request()->routeIs('pmh.golive');
+                $isPmhPayment = request()->routeIs('pmh.outstanding-payment*');
             @endphp
 
-            {{-- Submenu matching Figma & screenshot: Semua CR, Ajukan CR, Draft CR --}}
-            {{-- 1. Semua CR --}}
-            <a href="{{ route('change-requests.index', ['view' => 'total']) }}"
-               class="sidebar-link"
-               style="background: transparent !important; padding: 0.48rem 1.15rem; font-size: 0.88rem; color: {{ $isSemuaActiveSub ? '#FFFFFF' : 'rgba(255,255,255,0.85)' }}; display: flex; align-items: center; position: relative;">
-                @if ($isSemuaActiveSub)
-                    <span style="position: absolute; left: 16px; width: 7.5px; height: 7.5px; border-radius: 50%; background: #00B4FF; box-shadow: 0 0 8px 1px #00B4FF; display: inline-block;"></span>
-                @endif
-                <i class="bi bi-file-earmark-text nav-icon" style="font-size: 1.05rem; color: #FFFFFF; margin-left: 18px; margin-right: 0.7rem;"></i>
-                <span class="{{ $isSemuaActiveSub ? 'fw-bold' : 'fw-normal' }}" data-i18n="nav_all_cr" style="color: #FFFFFF; letter-spacing: -0.01em;">Semua CR</span>
-            </a>
+            @if ($isPmhRole)
+                {{-- PM Head Submenus --}}
+                {{-- 1. Semua CR --}}
+                <a href="{{ route('pmh.change-requests') }}"
+                   class="sidebar-link"
+                   style="background: transparent !important; padding: 0.48rem 1.15rem; font-size: 0.88rem; color: {{ $isPmhSemuaCr ? '#FFFFFF' : 'rgba(255,255,255,0.85)' }}; display: flex; align-items: center; position: relative;">
+                    @if ($isPmhSemuaCr)
+                        <span style="position: absolute; left: 16px; width: 7.5px; height: 7.5px; border-radius: 50%; background: #00B4FF; box-shadow: 0 0 8px 1px #00B4FF; display: inline-block;"></span>
+                    @endif
+                    <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-left: 18px; margin-right: 0.7rem;">
+                        <path d="M15 2h-4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8" />
+                        <path d="M16.706 2.706A2.4 2.4 0 0 0 15 2v5a1 1 0 0 0 1 1h5a2.4 2.4 0 0 0-.706-1.706z" />
+                        <path d="M5 7a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8a2 2 0 0 0 1.732-1" />
+                    </svg>
+                    <span class="{{ $isPmhSemuaCr ? 'fw-bold' : 'fw-normal' }}" style="color: #FFFFFF; letter-spacing: -0.01em;">Semua CR</span>
+                </a>
 
-            {{-- 2. Ajukan CR --}}
-            <a href="{{ route('change-requests.create') }}"
-               class="sidebar-link"
-               style="background: transparent !important; padding: 0.48rem 1.15rem; font-size: 0.88rem; color: {{ $isCreateActive ? '#FFFFFF' : 'rgba(255,255,255,0.85)' }}; display: flex; align-items: center; position: relative;">
-                @if ($isCreateActive)
-                    <span style="position: absolute; left: 16px; width: 7.5px; height: 7.5px; border-radius: 50%; background: #00B4FF; box-shadow: 0 0 8px 1px #00B4FF; display: inline-block;"></span>
-                @endif
-                <i class="bi bi-file-earmark-diff nav-icon" style="font-size: 1rem; color: #FFFFFF; margin-left: 18px; margin-right: 0.7rem;"></i>
-                <span class="{{ $isCreateActive ? 'fw-bold' : 'fw-normal' }}" data-i18n="nav_submit_cr" style="color: #FFFFFF;">Ajukan CR</span>
-            </a>
+                {{-- 2. Butuh Persetujuan --}}
+                <a href="{{ route('pmh.persetujuan') }}"
+                   class="sidebar-link"
+                   style="background: transparent !important; padding: 0.48rem 1.15rem; font-size: 0.88rem; color: {{ $isPmhPersetujuan ? '#FFFFFF' : 'rgba(255,255,255,0.85)' }}; display: flex; align-items: center; position: relative;">
+                    @if ($isPmhPersetujuan)
+                        <span style="position: absolute; left: 16px; width: 7.5px; height: 7.5px; border-radius: 50%; background: #00B4FF; box-shadow: 0 0 8px 1px #00B4FF; display: inline-block;"></span>
+                    @endif
+                    <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-left: 18px; margin-right: 0.7rem;">
+                        <path d="M14.364 13.634a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506l4.013-4.009a1 1 0 0 0-3.004-3.004z" />
+                        <path d="M14.487 7.858A1 1 0 0 1 14 7V2" />
+                        <path d="M20 19.645V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l2.516 2.516" />
+                        <path d="M8 18h1" />
+                    </svg>
+                    <span class="{{ $isPmhPersetujuan ? 'fw-bold' : 'fw-normal' }}" style="color: #FFFFFF;">Butuh Persetujuan</span>
+                </a>
 
-            {{-- 3. Draft CR --}}
-            <a href="{{ route('change-requests.index', ['view' => 'draft']) }}"
-               class="sidebar-link"
-               style="background: transparent !important; padding: 0.48rem 1.15rem; font-size: 0.88rem; color: {{ $isDraftActive ? '#FFFFFF' : 'rgba(255,255,255,0.85)' }}; display: flex; align-items: center; position: relative;">
-                @if ($isDraftActive)
-                    <span style="position: absolute; left: 16px; width: 7.5px; height: 7.5px; border-radius: 50%; background: #00B4FF; box-shadow: 0 0 8px 1px #00B4FF; display: inline-block;"></span>
+                {{-- 3. Development --}}
+                <a href="{{ route('pmh.development') }}"
+                   class="sidebar-link"
+                   style="background: transparent !important; padding: 0.48rem 1.15rem; font-size: 0.88rem; color: {{ $isPmhDev ? '#FFFFFF' : 'rgba(255,255,255,0.85)' }}; display: flex; align-items: center; position: relative;">
+                    @if ($isPmhDev)
+                        <span style="position: absolute; left: 16px; width: 7.5px; height: 7.5px; border-radius: 50%; background: #00B4FF; box-shadow: 0 0 8px 1px #00B4FF; display: inline-block;"></span>
+                    @endif
+                    <svg class="nav-icon" width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0; margin-left: 18px; margin-right: 0.7rem;">
+                        <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+                        <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+                        <path d="M8 18v-1" />
+                        <path d="M12 18v-6" />
+                        <path d="M16 18v-3" />
+                    </svg>
+                    <span class="{{ $isPmhDev ? 'fw-bold' : 'fw-normal' }}" style="color: #FFFFFF;">Development</span>
+                </a>
+            @else
+                {{-- Submenu matching Figma & screenshot: Semua CR, Ajukan CR, Draft CR --}}
+                {{-- 1. Semua CR --}}
+                <a href="{{ route('change-requests.index', ['view' => 'total']) }}"
+                   class="sidebar-link"
+                   style="background: transparent !important; padding: 0.48rem 1.15rem; font-size: 0.88rem; color: {{ $isSemuaActiveSub ? '#FFFFFF' : 'rgba(255,255,255,0.85)' }}; display: flex; align-items: center; position: relative;">
+                    @if ($isSemuaActiveSub)
+                        <span style="position: absolute; left: 16px; width: 7.5px; height: 7.5px; border-radius: 50%; background: #00B4FF; box-shadow: 0 0 8px 1px #00B4FF; display: inline-block;"></span>
+                    @endif
+                    <i class="bi bi-file-earmark-text nav-icon" style="font-size: 1.05rem; color: #FFFFFF; margin-left: 18px; margin-right: 0.7rem;"></i>
+                    <span class="{{ $isSemuaActiveSub ? 'fw-bold' : 'fw-normal' }}" data-i18n="nav_all_cr" style="color: #FFFFFF; letter-spacing: -0.01em;">Semua CR</span>
+                </a>
+
+                {{-- 2. Ajukan CR --}}
+                @if ($canSubmitCr)
+                <a href="{{ route('change-requests.create') }}"
+                   class="sidebar-link"
+                   style="background: transparent !important; padding: 0.48rem 1.15rem; font-size: 0.88rem; color: {{ $isCreateActive ? '#FFFFFF' : 'rgba(255,255,255,0.85)' }}; display: flex; align-items: center; position: relative;">
+                    @if ($isCreateActive)
+                        <span style="position: absolute; left: 16px; width: 7.5px; height: 7.5px; border-radius: 50%; background: #00B4FF; box-shadow: 0 0 8px 1px #00B4FF; display: inline-block;"></span>
+                    @endif
+                    <i class="bi bi-file-earmark-diff nav-icon" style="font-size: 1rem; color: #FFFFFF; margin-left: 18px; margin-right: 0.7rem;"></i>
+                    <span class="{{ $isCreateActive ? 'fw-bold' : 'fw-normal' }}" data-i18n="nav_submit_cr" style="color: #FFFFFF;">Ajukan CR</span>
+                </a>
                 @endif
-                <i class="bi bi-file-earmark-bar-graph nav-icon" style="font-size: 1rem; color: #FFFFFF; margin-left: 18px; margin-right: 0.7rem;"></i>
-                <span class="{{ $isDraftActive ? 'fw-bold' : 'fw-normal' }}" data-i18n="nav_draft_cr" style="color: #FFFFFF;">Draft CR</span>
-            </a>
+
+                {{-- 3. Draft CR --}}
+                <a href="{{ route('change-requests.index', ['view' => 'draft']) }}"
+                   class="sidebar-link"
+                   style="background: transparent !important; padding: 0.48rem 1.15rem; font-size: 0.88rem; color: {{ $isDraftActive ? '#FFFFFF' : 'rgba(255,255,255,0.85)' }}; display: flex; align-items: center; position: relative;">
+                    @if ($isDraftActive)
+                        <span style="position: absolute; left: 16px; width: 7.5px; height: 7.5px; border-radius: 50%; background: #00B4FF; box-shadow: 0 0 8px 1px #00B4FF; display: inline-block;"></span>
+                    @endif
+                    <i class="bi bi-file-earmark-bar-graph nav-icon" style="font-size: 1rem; color: #FFFFFF; margin-left: 18px; margin-right: 0.7rem;"></i>
+                    <span class="{{ $isDraftActive ? 'fw-bold' : 'fw-normal' }}" data-i18n="nav_draft_cr" style="color: #FFFFFF;">Draft CR</span>
+                </a>
+            @endif
         </div>
+
+        {{-- Outstanding Payment (PM Head) --}}
+        @if ($isPmhRole)
+        <a href="{{ route('pmh.outstanding-payment') }}"
+           class="sidebar-link"
+           style="background: {{ $isPmhPayment ? '#0063D7 !important' : 'transparent !important' }}; border-radius: 9999px; padding: 0.62rem 1.15rem; font-size: 0.9rem; color: #FFFFFF; margin-top: 0.35rem; display: flex; align-items: center; gap: 0.75rem;">
+            <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                <path d="M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5" />
+                <path d="M17.774 10.31a1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.451 0 1.12 1.12 0 0 0-1.548 0 2.5 2.5 0 0 1-3.452 0 1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.77-3.248l2.889-4.184A2 2 0 0 1 7 2h10a2 2 0 0 1 1.653.873l2.895 4.192a2.5 2.5 0 0 1-3.774 3.244" />
+                <path d="M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05" />
+            </svg>
+            <span class="{{ $isPmhPayment ? 'fw-bold' : 'fw-semibold' }}" style="color: #FFFFFF;">Outstanding Payment</span>
+        </a>
+        @endif
 
         {{-- 3. Notifikasi --}}
         <a href="{{ route('notifications.index') }}"

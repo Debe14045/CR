@@ -144,8 +144,8 @@
                     <label class="form-label small fw-semibold text-dark">Dokumen PM (PDF)</label>
                     <div class="p-3 text-center rounded-3 position-relative" style="border: 2px dashed #CBD5E1; background: #F8FAFC;">
                         <i class="bi bi-cloud-arrow-up text-muted fs-3 d-block mb-1"></i>
-                        <span class="small text-muted d-block">Klik untuk upload PDF atau seret berkas ke sini</span>
-                        <input type="file" name="dokumen_pm" class="position-absolute top-0 start-0 w-100 h-100 opacity-0" accept=".pdf,.doc,.docx" style="cursor: pointer;">
+                        <span class="small text-muted d-block" id="dokumenPmLabel">Klik untuk upload PDF atau seret berkas ke sini</span>
+                        <input type="file" name="dokumen_pm" class="position-absolute top-0 start-0 w-100 h-100 opacity-0" accept=".pdf,application/pdf" style="cursor: pointer;" onchange="onDokumenPmChosen(this)">
                     </div>
                     @if ($changeRequest->lampiran_revisi)
                         <div class="mt-1 small text-success"><i class="bi bi-file-earmark-check me-1"></i> File terarsip: {{ $changeRequest->lampiran_revisi }}</div>
@@ -204,14 +204,14 @@
                 <div class="row g-3 pt-2 border-top">
                     <div class="col-12">
                         <label class="form-label small fw-semibold text-dark mb-1">
-                            Upload Solution Paper (PDF/DOC) <span class="text-danger">*</span>
+                            Upload Solution Paper (PDF) <span class="text-danger">*</span>
                         </label>
                         <div class="p-3 text-center rounded-3 position-relative" style="border: 2px dashed #CBD5E1; background: #F8FAFC;">
                             <i class="bi bi-cloud-arrow-up text-primary fs-3 d-block mb-1"></i>
                             <span class="small text-muted d-block" id="spFileLabel">Klik untuk upload berkas Solution Paper</span>
                             <input type="file" name="solution_paper_file" id="solution_paper_file"
                                    class="position-absolute top-0 start-0 w-100 h-100 opacity-0"
-                                   accept=".pdf,.doc,.docx,.zip" style="cursor: pointer;" onchange="onSpFileChosen(this)">
+                                   accept=".pdf,application/pdf" style="cursor: pointer;" onchange="onSpFileChosen(this)">
                         </div>
                         @if ($hasExistingSpFile)
                             <div class="mt-2 small text-success fw-semibold" id="existingSpNotice">
@@ -304,10 +304,34 @@
         evaluateMandaysLock();
     }
 
+    function onDokumenPmChosen(input) {
+        const fileLabel = document.getElementById('dokumenPmLabel');
+        if (input.files && input.files[0]) {
+            const file = input.files[0];
+            const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+            if (!isPdf) {
+                alert('Format file tidak didukung! Hanya file berformat PDF (.pdf) yang diperbolehkan.');
+                input.value = '';
+                if (fileLabel) fileLabel.innerHTML = 'Klik untuk upload PDF atau seret berkas ke sini';
+                return;
+            }
+            if (fileLabel) fileLabel.innerHTML = '<strong class="text-success"><i class="bi bi-file-earmark-check me-1"></i> ' + file.name + '</strong>';
+        }
+    }
+
     function onSpFileChosen(input) {
         const fileLabel = document.getElementById('spFileLabel');
         if (input.files && input.files[0]) {
-            fileLabel.innerHTML = '<strong class="text-success"><i class="bi bi-file-earmark-check me-1"></i> ' + input.files[0].name + '</strong>';
+            const file = input.files[0];
+            const isPdf = file.name.toLowerCase().endsWith('.pdf') || file.type === 'application/pdf';
+            if (!isPdf) {
+                alert('Format file tidak didukung! Hanya file berformat PDF (.pdf) yang diperbolehkan.');
+                input.value = '';
+                if (fileLabel) fileLabel.innerHTML = 'Klik untuk upload berkas Solution Paper (PDF)';
+                evaluateMandaysLock();
+                return;
+            }
+            fileLabel.innerHTML = '<strong class="text-success"><i class="bi bi-file-earmark-check me-1"></i> ' + file.name + '</strong>';
         }
         evaluateMandaysLock();
     }

@@ -10,6 +10,15 @@ use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
 Route::get('/', function () {
+    if (auth()->check()) {
+        if (auth()->user()->isPresales()) {
+            return redirect()->route('presales.dashboard');
+        }
+        if (auth()->user()->isPmh()) {
+            return redirect()->route('pmh.dashboard');
+        }
+        return redirect()->route('change-requests.index');
+    }
     return view('welcome');
 });
 
@@ -47,7 +56,7 @@ Route::middleware('auth')->group(function () {
             return redirect()->route('presales.dashboard');
         }
         if (auth()->user()?->isPmh()) {
-            return redirect()->route('pmh.change-requests');
+            return redirect()->route('pmh.dashboard');
         }
         return redirect()->route('change-requests.index');
     });

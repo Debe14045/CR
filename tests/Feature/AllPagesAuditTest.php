@@ -79,6 +79,7 @@ class AllPagesAuditTest extends TestCase
 
     public function test_pmh_pages_load_without_errors(): void
     {
+        $this->actingAs($this->pmh)->get('/pm-head/dashboard')->assertOk();
         $this->actingAs($this->pmh)->get('/pm-head/change-requests')->assertOk();
         $this->actingAs($this->pmh)->get('/pm-head/persetujuan')->assertOk();
         $this->actingAs($this->pmh)->get('/pm-head/development')->assertOk();

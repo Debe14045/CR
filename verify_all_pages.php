@@ -197,11 +197,6 @@ $tests = [
             'DOKUMEN CR',
             'SOLUTION PAPER',
             'Detail Deskripsi CR',
-            'Rendered WYSIWYG Content',
-            '1. LATAR BELAKANG & TUJUAN',
-            '2. RUANG LINGKUP PERUBAHAN (SCOPE OF WORK)',
-            '3. DAMPAK TEKNIS & DEPENDENCIES',
-            'Catatan Dependensi:',
             'ESTIMASI MANDAYS',
             'CR Notes / Catatan'
         ],

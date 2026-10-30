@@ -34,6 +34,11 @@ class ChangeRequestController extends Controller
             return redirect()->route('presales.dashboard');
         }
 
+        // PM Head dedicated dashboard redirect
+        if ($role === 'pmh' && ! $request->filled('view') && ! $request->filled('status') && ! $request->filled('search') && ! $request->filled('tab')) {
+            return redirect()->route('pmh.dashboard');
+        }
+
         // PM Head Queue Rule:
         if ($role === 'pmh') {
             if ($request->status === 'awaiting_pm' || $request->status === 'diajukan') {
@@ -69,7 +74,8 @@ class ChangeRequestController extends Controller
         } elseif ($viewMode === 'draft') {
             $query->where('status', 'draft');
         } elseif ($viewMode === 'total') {
-            // All CRs - no status restriction
+            // All CRs - exclude draft
+            $query->where('status', '!=', 'draft');
         } elseif ($viewMode === 'status') {
             // Ordered by pipeline stage
         }
@@ -95,13 +101,25 @@ class ChangeRequestController extends Controller
 
         // Category Tab Filter
         if ($request->filled('tab')) {
-            match ($request->tab) {
-                'pending' => $query->whereIn('status', ['diajukan', 'awaiting_pm', 'awaiting_pmh', 'revision_needed', 'dianalisis']),
-                'progress' => $query->whereIn('status', ['validated', 'disetujui', 'analisa', 'development', 'dikerjakan', 'sit', 'uat', 'training']),
-                'payment' => $query->whereIn('status', ['golive', 'awaiting_golive_validation', 'invoicing']),
-                'history' => $query->whereIn('status', ['golive', 'invoicing', 'selesai', 'ditolak', 'awaiting_golive_validation']),
-                default => null,
-            };
+            $tabVal = strtolower($request->tab);
+            if (in_array($tabVal, ['aktif', 'active'])) {
+                $query->whereIn('status', [
+                    'diajukan', 'awaiting_pm', 'dianalisis', 'analisa',
+                    'awaiting_pmh', 'revision_needed', 'validated', 'disetujui',
+                    'development', 'dikerjakan', 'sit', 'uat', 'training',
+                    'awaiting_golive_validation'
+                ]);
+            } elseif (in_array($tabVal, ['selesai', 'completed', 'done'])) {
+                $query->whereIn('status', ['golive', 'go-live', 'go_live', 'selesai', 'invoicing']);
+            } elseif ($tabVal === 'pending') {
+                $query->whereIn('status', ['diajukan', 'awaiting_pm', 'awaiting_pmh', 'revision_needed', 'dianalisis']);
+            } elseif ($tabVal === 'progress') {
+                $query->whereIn('status', ['validated', 'disetujui', 'analisa', 'development', 'dikerjakan', 'sit', 'uat', 'training']);
+            } elseif ($tabVal === 'payment') {
+                $query->whereIn('status', ['golive', 'awaiting_golive_validation', 'invoicing']);
+            } elseif ($tabVal === 'history') {
+                $query->whereIn('status', ['golive', 'invoicing', 'selesai', 'ditolak', 'awaiting_golive_validation']);
+            }
         }
 
         if ($request->filled('search')) {
@@ -396,6 +414,9 @@ class ChangeRequestController extends Controller
     public function create()
     {
         $user = auth()->user();
+        if ($user && $user->isPmh()) {
+            abort(403, 'Role PM Head tidak memiliki akses untuk mengajukan CR baru.');
+        }
         $isClient = $user->isClient();
         $isPm = $user->isPm() || $user->isAdmin();
 
@@ -415,6 +436,9 @@ class ChangeRequestController extends Controller
     public function store(Request $request)
     {
         $user = auth()->user();
+        if ($user && $user->isPmh()) {
+            abort(403, 'Role PM Head tidak memiliki akses untuk mengajukan CR baru.');
+        }
         $isClient = $user->isClient();
 
         // Harmonize field aliases from Figma form
@@ -454,6 +478,10 @@ class ChangeRequestController extends Controller
             $timestamp = strtotime($request->input('target_golive'));
             $input['target_selesai'] = $timestamp ? date('Y-m-d', $timestamp) : $request->input('target_golive');
         }
+        if ($request->filled('tanggal_golive') && ! $request->filled('target_selesai')) {
+            $timestamp = strtotime($request->input('tanggal_golive'));
+            $input['target_selesai'] = $timestamp ? date('Y-m-d', $timestamp) : $request->input('tanggal_golive');
+        }
         if ($request->filled('bap') && ! $request->filled('bap_date')) {
             $input['bap_date'] = $request->input('bap');
         }
@@ -485,13 +513,13 @@ class ChangeRequestController extends Controller
         $rules = [
             'judul'               => 'required|string|max:255',
             'proyek_terkait'      => 'required|string|max:255',
-            'deskripsi'           => 'required|string',
+            'deskripsi'           => 'required|string|max:5000',
             'alasan'              => 'nullable|string',
             'catatan_pengajuan'   => 'nullable|string|max:5000',
             'catatan_analisis'    => 'nullable|string',
-            'lampiran_pengajuan'  => 'nullable|file|mimes:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,zip|max:20480',
-            'dokumen_fsd'         => 'nullable|file|mimes:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,zip|max:20480',
-            'dokumen_lainnya'     => 'nullable|file|mimes:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,zip|max:20480',
+            'lampiran_pengajuan'  => 'nullable|file|mimes:pdf|max:20480',
+            'dokumen_fsd'         => 'nullable|file|mimes:pdf|max:20480',
+            'dokumen_lainnya'     => 'nullable|file|mimes:pdf|max:20480',
             'tanggal_pengajuan'   => 'nullable|date',
             'bap_date'            => 'nullable|date',
             'prioritas'           => 'nullable|string|max:50',
@@ -506,10 +534,29 @@ class ChangeRequestController extends Controller
             'mindesk_development' => 'nullable|numeric|min:0',
             'mindesk_testing'     => 'nullable|numeric|min:0',
             'solution_paper_required' => 'nullable|boolean',
-            'solution_paper_file' => 'nullable|file|mimes:pdf,doc,docx,zip|max:20480',
+            'solution_paper_file' => 'nullable|file|mimes:pdf|max:20480',
         ];
 
-        $validated = $request->validate($rules);
+        if ($isClient) {
+            $rules['dokumen_fsd'] = 'nullable|file|mimes:pdf|max:20480';
+            $rules['lampiran_pengajuan'] = 'nullable|file|mimes:pdf|max:20480';
+        }
+
+        $messages = [
+            'judul.max'                 => 'Nama CR maksimal 255 karakter/kata.',
+            'deskripsi.max'             => 'Detail CR maksimal 5.000 karakter/kata.',
+            'catatan_pengajuan.max'     => 'CR Notes maksimal 5.000 karakter/kata.',
+            'dokumen_fsd.mimes'         => 'Dokumen CR hanya dapat berupa file format PDF (.pdf). Selain PDF tidak diperbolehkan.',
+            'lampiran_pengajuan.mimes'  => 'Dokumen CR hanya dapat berupa file format PDF (.pdf). Selain PDF tidak diperbolehkan.',
+            'dokumen_lainnya.mimes'     => 'Dokumen Lainnya hanya dapat berupa file format PDF (.pdf). Selain PDF tidak diperbolehkan.',
+            'solution_paper_file.mimes' => 'Berkas Solution Paper hanya dapat berupa file format PDF (.pdf). Selain PDF tidak diperbolehkan.',
+            'dokumen_fsd.max'           => 'Ukuran file Dokumen CR maksimal 20 MB.',
+            'lampiran_pengajuan.max'    => 'Ukuran file Dokumen CR maksimal 20 MB.',
+            'dokumen_lainnya.max'       => 'Ukuran file Dokumen Lainnya maksimal 20 MB.',
+            'solution_paper_file.max'   => 'Ukuran file Berkas Solution Paper maksimal 20 MB.',
+        ];
+
+        $validated = $request->validate($rules, $messages);
 
         // Map prioritas
         $prioritasInput = strtolower($validated['prioritas'] ?? 'normal');
@@ -860,15 +907,18 @@ class ChangeRequestController extends Controller
             'action' => 'nullable|string',
             // Solution paper fields
             'solution_paper_status' => 'nullable|string',
-            'solution_paper_file' => 'nullable|file|mimes:pdf,doc,docx,zip|max:20480',
+            'solution_paper_file' => 'nullable|file|mimes:pdf|max:20480',
             'pegawai_id' => 'nullable|exists:pegawais,id',
             'sp_target_start' => 'nullable|date',
             'sp_target_end' => 'nullable|date',
             'solution_paper_notes' => 'nullable|string',
             // Go-Live Berita Acara (BA)
-            'berita_acara_file' => 'nullable|file|mimes:pdf,doc,docx,zip|max:20480',
+            'berita_acara_file' => 'nullable|file|mimes:pdf|max:20480',
             'berita_acara_date' => 'nullable|date',
             'berita_acara_no' => 'nullable|string|max:100',
+        ], [
+            'solution_paper_file.mimes' => 'Berkas Solution Paper hanya dapat berupa file format PDF (.pdf). Selain PDF tidak diperbolehkan.',
+            'berita_acara_file.mimes'   => 'Berkas Berita Acara hanya dapat berupa file format PDF (.pdf). Selain PDF tidak diperbolehkan.',
         ]);
 
         if ($role !== 'presales') {
@@ -914,6 +964,9 @@ class ChangeRequestController extends Controller
 
         // Enforce requirement 5: Tab Status CR belum bisa diisi jika belum melakukan pembayaran/quotation
         if ($request->input('from_tab') === 'status' || $request->input('from_tab') === 'presales_status') {
+            if ($user?->isPresales()) {
+                return back()->with('error', 'Role Presales tidak memiliki hak akses untuk mengubah status pengerjaan teknis / development.');
+            }
             $isUnlocked = in_array($changeRequest->status, ['development', 'dikerjakan', 'sit', 'uat', 'training', 'awaiting_golive_validation', 'golive', 'invoicing', 'selesai'])
                 || ($changeRequest->harga_penawaran !== null && $changeRequest->isPmhApproved());
             if (!$isUnlocked) {
@@ -1080,7 +1133,10 @@ class ChangeRequestController extends Controller
             'judul' => 'required|string|max:255',
             'deskripsi' => 'required|string|max:5000',
             'alasan' => 'nullable|string|max:2000',
-            'lampiran_pengajuan' => 'nullable|file|mimes:pdf,png,jpg,jpeg,doc,docx,xls,xlsx,zip|max:20480',
+            'lampiran_pengajuan' => 'nullable|file|mimes:pdf|max:20480',
+        ], [
+            'lampiran_pengajuan.mimes' => 'Dokumen CR hanya dapat berupa file format PDF (.pdf). Selain PDF tidak diperbolehkan.',
+            'lampiran_pengajuan.max'   => 'Ukuran file Dokumen CR maksimal 20 MB.',
         ]);
 
         if ($request->hasFile('lampiran_pengajuan')) {
@@ -1160,12 +1216,13 @@ class ChangeRequestController extends Controller
         $validated = $request->validate([
             'status' => 'required|in:analisa,development,sit,uat,training,golive',
             'catatan_status' => 'required|string|min:3|max:2000',
-            'berita_acara_file' => 'nullable|file|mimes:pdf,doc,docx,zip|max:20480',
+            'berita_acara_file' => 'nullable|file|mimes:pdf|max:20480',
             'berita_acara_date' => 'nullable|date',
             'berita_acara_no' => 'nullable|string|max:100',
         ], [
             'catatan_status.required' => 'Field catatan/notes wajib diisi untuk setiap pembaruan status pengerjaan.',
             'catatan_status.min' => 'Catatan status minimal terdiri dari 3 karakter.',
+            'berita_acara_file.mimes' => 'Berkas Berita Acara hanya dapat berupa file format PDF (.pdf). Selain PDF tidak diperbolehkan.',
         ]);
 
         $nextStatus = $validated['status'];
@@ -1251,8 +1308,11 @@ class ChangeRequestController extends Controller
             'biaya_pengerjaan' => 'nullable|numeric|min:0',
             'estimasi_waktu' => 'nullable|string|max:100',
             'estimasi_resource' => 'nullable|string|max:255',
-            'quotation_file' => 'nullable|file|mimes:pdf,doc,docx,zip|max:20480',
-            'signed_quotation_file' => 'nullable|file|mimes:pdf,doc,docx,zip|max:20480',
+            'quotation_file' => 'nullable|file|mimes:pdf|max:20480',
+            'signed_quotation_file' => 'nullable|file|mimes:pdf|max:20480',
+        ], [
+            'quotation_file.mimes' => 'Dokumen Quotation hanya dapat berupa file format PDF (.pdf). Selain PDF tidak diperbolehkan.',
+            'signed_quotation_file.mimes' => 'Dokumen Signed Quotation hanya dapat berupa file format PDF (.pdf). Selain PDF tidak diperbolehkan.',
         ]);
 
         $updateData = [
@@ -1291,12 +1351,28 @@ class ChangeRequestController extends Controller
             })->delete();
 
             foreach ($parsedTermin as $tIdx => $tItem) {
+                $rawBadge = $tItem['badge'] ?? ($tItem['percentage'] ?? '');
+                $pctVal = null;
+                if (preg_match('/(\d+(?:[\.,]\d+)?)\s*%/i', (string) $rawBadge, $matches)) {
+                    $pctVal = (float) str_replace(',', '.', $matches[1]);
+                } elseif (is_numeric(trim((string) $rawBadge))) {
+                    $pctVal = (float) trim((string) $rawBadge);
+                } elseif (isset($tItem['nominal']) && (int) $tItem['nominal'] > 0 && (int) $validated['harga_penawaran'] > 0) {
+                    $pctVal = round(((float) $tItem['nominal'] / (float) $validated['harga_penawaran']) * 100, 2);
+                }
+                if ($pctVal !== null) {
+                    if ($pctVal > 100) {
+                        $pctVal = 100.0;
+                    }
+                    $pctVal = max(0, round($pctVal, 2));
+                }
+
                 CrInvoice::create([
                     'change_request_id' => $changeRequest->id,
                     'invoice_number'    => 'INV-' . date('Ymd') . '-' . str_pad($changeRequest->id, 3, '0', STR_PAD_LEFT) . '-T' . ($tIdx + 1),
                     'term_name'         => $tItem['name'] ?? ('Termin ' . ($tIdx + 1)),
                     'job_description'   => $tItem['deliverable'] ?? null,
-                    'percentage'        => preg_replace('/[^0-9]/', '', $tItem['badge'] ?? '') ?: null,
+                    'percentage'        => $pctVal,
                     'nominal'           => (int) ($tItem['nominal'] ?? 0),
                     'payment_status'    => 'pending',
                     'quotation_file'    => $uploadedQuotation,
@@ -1468,13 +1544,18 @@ class ChangeRequestController extends Controller
             'percentage' => 'nullable|numeric|min:0|max:100',
             // 3-4 Uploads: GR, Jurnal, BA, Quotation
             'gr_number' => 'nullable|string|max:100',
-            'gr_file' => 'nullable|file|mimes:pdf,png,jpg,jpeg,zip|max:20480',
+            'gr_file' => 'nullable|file|mimes:pdf|max:20480',
             'journal_number' => 'nullable|string|max:100',
-            'journal_file' => 'nullable|file|mimes:pdf,png,jpg,jpeg,zip|max:20480',
-            'ba_file' => 'nullable|file|mimes:pdf,png,jpg,jpeg,zip|max:20480',
+            'journal_file' => 'nullable|file|mimes:pdf|max:20480',
+            'ba_file' => 'nullable|file|mimes:pdf|max:20480',
             'ba_date' => 'nullable|date',
-            'quotation_file' => 'nullable|file|mimes:pdf,png,jpg,jpeg,zip|max:20480',
+            'quotation_file' => 'nullable|file|mimes:pdf|max:20480',
             'payment_status' => 'required|in:pending,paid',
+        ], [
+            'gr_file.mimes'        => 'File GR hanya dapat berupa file format PDF (.pdf). Selain PDF tidak diperbolehkan.',
+            'journal_file.mimes'   => 'File Jurnal hanya dapat berupa file format PDF (.pdf). Selain PDF tidak diperbolehkan.',
+            'ba_file.mimes'        => 'File BA hanya dapat berupa file format PDF (.pdf). Selain PDF tidak diperbolehkan.',
+            'quotation_file.mimes' => 'File Quotation hanya dapat berupa file format PDF (.pdf). Selain PDF tidak diperbolehkan.',
         ]);
 
         if ($request->hasFile('gr_file')) {

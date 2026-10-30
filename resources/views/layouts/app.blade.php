@@ -1366,8 +1366,18 @@
     <aside class="app-sidebar" id="appSidebar" role="navigation" aria-label="Navigasi Utama" style="background: #02376A; border-right: 1px solid rgba(255,255,255,0.06); width: 235px;">
 
         {{-- Brand / Logo (Figma: ITPI PT. ITPI Technology) --}}
+        @php
+            $brandHomeUrl = route('change-requests.index');
+            if (auth()->check()) {
+                if (auth()->user()->isPresales()) {
+                    $brandHomeUrl = route('presales.dashboard');
+                } elseif (auth()->user()->isPmh()) {
+                    $brandHomeUrl = route('pmh.dashboard');
+                }
+            }
+        @endphp
         <div class="sidebar-header" style="padding: 1.35rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.06);">
-            <a class="sidebar-brand d-flex align-items-center gap-2 text-decoration-none" href="{{ route('change-requests.index') }}">
+            <a class="sidebar-brand d-flex align-items-center gap-2 text-decoration-none" href="{{ $brandHomeUrl }}">
                 <img src="{{ asset('images/itpi_logo_white_tight.png') }}" alt="ITPI" style="height: 34px; width: auto; object-fit: contain;">
                 <div style="color: #FFFFFF; font-weight: 800; font-size: 0.95rem; letter-spacing: -0.01em; white-space: nowrap;">
                     PT. ITPI Technology
@@ -1475,47 +1485,110 @@
                 </a>
 
             @elseif ($currentRole === 'pmh')
-                {{-- ══ PM HEAD DEDICATED SIDEBAR (ORIGINAL SINGLE MENU) ══ --}}
+                {{-- ══ PM HEAD DEDICATED SIDEBAR (SESUAI GAMBAR FIGMA) ══ --}}
                 @php
                     $isPmhDashboardActive = request()->routeIs('pmh.dashboard') || ($currentRouteName === 'change-requests.index' && (!request()->filled('view') || request('view') === 'dashboard') && !request()->filled('search') && !request()->filled('status'));
                     $isPmhCrActive = request()->routeIs('pmh.change-requests') || request()->routeIs('pmh.persetujuan') || request()->routeIs('pmh.development') || request()->routeIs('pmh.golive') || request()->routeIs('pmh.review');
+                    $isPmhSemuaCr = request()->routeIs('pmh.change-requests') || (request()->routeIs('pmh.review') && !request()->routeIs('pmh.persetujuan') && !request()->routeIs('pmh.development'));
+                    $isPmhPersetujuan = request()->routeIs('pmh.persetujuan');
+                    $isPmhDev = request()->routeIs('pmh.development') || request()->routeIs('pmh.golive');
+                    $isPmhPayment = request()->routeIs('pmh.outstanding-payment*');
+                    $isNotifActive = request()->routeIs('pmh.notifications');
+                    $isProfileActive = request()->routeIs('profile');
+                    $sidebarNotifCount = auth()->check() ? \App\Models\Notification::forUser(auth()->user())->unread()->count() : 0;
                 @endphp
 
-                {{-- 1. Dashboard --}}
-                <a href="{{ route('change-requests.index') }}"
+                {{-- 1. Dashboard (Active Blue Capsule) --}}
+                <a href="{{ route('pmh.dashboard') }}"
                    class="sidebar-link {{ $isPmhDashboardActive ? 'active' : '' }}"
-                   style="position: relative; border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; {{ $isPmhDashboardActive ? 'background: #0063D7 !important; color: #FFFFFF !important;' : '' }}">
-                    <i class="bi bi-grid-fill nav-icon" style="font-size: 1.05rem;"></i>
-                    <span class="fw-semibold">Dashboard</span>
+                   style="position: relative; border-radius: 9999px; padding: 0.65rem 1.15rem; font-size: 0.92rem; display: flex; align-items: center; gap: 0.75rem; color: #FFFFFF; {{ $isPmhDashboardActive ? 'background: #0063D7 !important; color: #FFFFFF !important;' : '' }}">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                        <rect width="7" height="7" x="3" y="3" rx="1" />
+                        <rect width="7" height="7" x="14" y="3" rx="1" />
+                        <rect width="7" height="7" x="14" y="14" rx="1" />
+                        <rect width="7" height="7" x="3" y="14" rx="1" />
+                    </svg>
+                    <span class="{{ $isPmhDashboardActive ? 'fw-bold' : 'fw-semibold' }}" style="font-size: 0.95rem;">Dashboard</span>
                 </a>
 
-                {{-- 2. Change Request (Single Direct Menu, No Dropdown, Sesuai Desain PM Head Asli) --}}
-                <a href="{{ route('pmh.change-requests') }}"
-                   class="sidebar-link {{ $isPmhCrActive ? 'active' : '' }}"
-                   style="position: relative; border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; margin-top: 0.35rem; {{ $isPmhCrActive ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'color: #FFFFFF;' }}">
-                    <i class="bi bi-file-earmark-text nav-icon" style="font-size: 1.05rem;"></i>
-                    <span class="fw-semibold">Change Request</span>
-                </a>
+                {{-- 2. Change Request (Accordion Group with Chevron Up) --}}
+                <div class="nav-group-toggle open"
+                     id="pmhCrGroupToggle"
+                     role="button"
+                     onclick="this.classList.toggle('open'); document.getElementById('pmhCrGroupBody').classList.toggle('open'); const c = this.querySelector('.toggle-chevron'); if(c){ c.classList.toggle('bi-chevron-up'); c.classList.toggle('bi-chevron-down'); }"
+                     aria-expanded="true"
+                     style="border-radius: 9999px; padding: 0.65rem 1.15rem; font-size: 0.92rem; display: flex; align-items: center; gap: 0.75rem; color: #FFFFFF; margin-top: 0.35rem; cursor: pointer; {{ $isPmhCrActive && !$isPmhDashboardActive ? 'background: #0063D7 !important;' : 'background: transparent;' }}">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                        <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+                        <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+                    </svg>
+                    <span class="fw-bold" style="font-size: 0.95rem; letter-spacing: -0.01em;">Change Request</span>
+                    <i class="bi bi-chevron-up toggle-chevron ms-auto" style="font-size: 0.8rem; font-weight: 700; opacity: 0.95;"></i>
+                </div>
+
+                <div class="nav-group-body sidebar-sub open" id="pmhCrGroupBody" style="padding-left: 0.75rem; display: flex; flex-direction: column; gap: 0.4rem; margin-top: 0.35rem;">
+                    {{-- 2a. Semua CR --}}
+                    <a href="{{ route('pmh.change-requests') }}"
+                       class="sidebar-link {{ $isPmhSemuaCr ? 'active' : '' }}"
+                       style="border-radius: 9999px; padding: 0.55rem 1.15rem; font-size: 0.92rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.75rem; {{ $isPmhSemuaCr ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent !important; color: rgba(255,255,255,0.9);' }}">
+                        <svg class="nav-icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                            <path d="M15 2h-4a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8a2 2 0 0 0 2-2V8" />
+                            <path d="M16.706 2.706A2.4 2.4 0 0 0 15 2v5a1 1 0 0 0 1 1h5a2.4 2.4 0 0 0-.706-1.706z" />
+                            <path d="M5 7a2 2 0 0 0-2 2v11a2 2 0 0 0 2 2h8a2 2 0 0 0 1.732-1" />
+                        </svg>
+                        <span class="{{ $isPmhSemuaCr ? 'fw-bold' : 'fw-semibold' }}" style="letter-spacing: -0.01em;">Semua CR</span>
+                    </a>
+
+                    {{-- 2b. Butuh Persetujuan --}}
+                    <a href="{{ route('pmh.persetujuan') }}"
+                       class="sidebar-link {{ $isPmhPersetujuan ? 'active' : '' }}"
+                       style="border-radius: 9999px; padding: 0.55rem 1.15rem; font-size: 0.92rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.75rem; {{ $isPmhPersetujuan ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent !important; color: rgba(255,255,255,0.9);' }}">
+                        <svg class="nav-icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                            <path d="M14.364 13.634a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506l4.013-4.009a1 1 0 0 0-3.004-3.004z" />
+                            <path d="M14.487 7.858A1 1 0 0 1 14 7V2" />
+                            <path d="M20 19.645V20a2 2 0 0 1-2 2H6a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l2.516 2.516" />
+                            <path d="M8 18h1" />
+                        </svg>
+                        <span class="{{ $isPmhPersetujuan ? 'fw-bold' : 'fw-semibold' }}" style="letter-spacing: -0.01em; line-height: 1.2;">Butuh Persetujuan</span>
+                    </a>
+
+                    {{-- 2c. Development --}}
+                    <a href="{{ route('pmh.development') }}"
+                       class="sidebar-link {{ $isPmhDev ? 'active' : '' }}"
+                       style="border-radius: 9999px; padding: 0.55rem 1.15rem; font-size: 0.92rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.75rem; {{ $isPmhDev ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'background: transparent !important; color: rgba(255,255,255,0.9);' }}">
+                        <svg class="nav-icon" width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                            <path d="M6 22a2 2 0 0 1-2-2V4a2 2 0 0 1 2-2h8a2.4 2.4 0 0 1 1.704.706l3.588 3.588A2.4 2.4 0 0 1 20 8v12a2 2 0 0 1-2 2z" />
+                            <path d="M14 2v5a1 1 0 0 0 1 1h5" />
+                            <path d="M8 18v-1" />
+                            <path d="M12 18v-6" />
+                            <path d="M16 18v-3" />
+                        </svg>
+                        <span class="{{ $isPmhDev ? 'fw-bold' : 'fw-semibold' }}" style="letter-spacing: -0.01em;">Development</span>
+                    </a>
+                </div>
 
                 {{-- 3. Outstanding Payment --}}
                 <a href="{{ route('pmh.outstanding-payment') }}"
-                   class="sidebar-link {{ request()->routeIs('pmh.outstanding-payment') ? 'active' : '' }}"
-                   style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; margin-top: 0.35rem; {{ request()->routeIs('pmh.outstanding-payment') ? 'background: #0063D7 !important; color: #FFFFFF !important;' : '' }}">
-                    <i class="bi bi-wallet2 nav-icon" style="font-size: 1.05rem;"></i>
-                    <span class="fw-semibold">Outstanding Payment</span>
+                   class="sidebar-link {{ $isPmhPayment ? 'active' : '' }}"
+                   style="border-radius: 9999px; padding: 0.65rem 1.15rem; font-size: 0.92rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.75rem; margin-top: 0.35rem; {{ $isPmhPayment ? 'background: #0063D7 !important; color: #FFFFFF !important;' : '' }}">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                        <path d="M15 21v-5a1 1 0 0 0-1-1h-4a1 1 0 0 0-1 1v5" />
+                        <path d="M17.774 10.31a1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.451 0 1.12 1.12 0 0 0-1.548 0 2.5 2.5 0 0 1-3.452 0 1.12 1.12 0 0 0-1.549 0 2.5 2.5 0 0 1-3.77-3.248l2.889-4.184A2 2 0 0 1 7 2h10a2 2 0 0 1 1.653.873l2.895 4.192a2.5 2.5 0 0 1-3.774 3.244" />
+                        <path d="M4 10.95V19a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-8.05" />
+                    </svg>
+                    <span class="{{ $isPmhPayment ? 'fw-bold' : 'fw-semibold' }}" style="font-size: 0.95rem;">Outstanding Payment</span>
                 </a>
 
                 {{-- 4. Notifikasi --}}
-                @php
-                    $isNotifActive = request()->routeIs('pmh.notifications');
-                    $sidebarNotifCount = auth()->check() ? \App\Models\Notification::forUser(auth()->user())->unread()->count() : 0;
-                @endphp
                 <a href="{{ route('pmh.notifications') }}"
                    class="sidebar-link d-flex align-items-center justify-content-between {{ $isNotifActive ? 'active' : '' }}"
-                   style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: #FFFFFF; margin-top: 0.35rem; {{ $isNotifActive ? 'background: #0063D7 !important;' : '' }}">
-                    <span class="d-flex align-items-center gap-2">
-                        <i class="bi bi-bell nav-icon" style="font-size: 1.05rem;"></i>
-                        <span class="fw-medium">Notifikasi</span>
+                   style="border-radius: 9999px; padding: 0.65rem 1.15rem; font-size: 0.92rem; color: #FFFFFF; margin-top: 0.35rem; {{ $isNotifActive ? 'background: #0063D7 !important;' : '' }}">
+                    <span class="d-flex align-items-center gap-3">
+                        <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                            <path d="M10.268 21a2 2 0 0 0 3.464 0" />
+                            <path d="M3.262 15.326A1 1 0 0 0 4 17h16a1 1 0 0 0 .74-1.673C19.41 13.956 18 12.499 18 8A6 6 0 0 0 6 8c0 4.499-1.411 5.956-2.738 7.326" />
+                        </svg>
+                        <span class="{{ $isNotifActive ? 'fw-bold' : 'fw-semibold' }}" style="font-size: 0.95rem;">Notifikasi</span>
                     </span>
                     @if ($sidebarNotifCount > 0)
                         <span class="badge bg-danger rounded-pill" style="font-size: 0.65rem;">{{ $sidebarNotifCount }}</span>
@@ -1524,10 +1597,13 @@
 
                 {{-- 5. Pengaturan --}}
                 <a href="{{ route('profile') }}"
-                   class="sidebar-link"
-                   style="border-radius: 10px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem;">
-                    <i class="bi bi-gear nav-icon" style="font-size: 1.05rem;"></i>
-                    <span class="fw-medium">Pengaturan</span>
+                   class="sidebar-link d-flex align-items-center gap-3 {{ $isProfileActive ? 'active' : '' }}"
+                   style="border-radius: 9999px; padding: 0.65rem 1.15rem; font-size: 0.92rem; color: #FFFFFF; margin-top: 0.35rem; {{ $isProfileActive ? 'background: #0063D7 !important;' : '' }}">
+                    <svg class="nav-icon" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" style="flex-shrink: 0;">
+                        <path d="M9.671 4.136a2.34 2.34 0 0 1 4.659 0 2.34 2.34 0 0 0 3.319 1.915 2.34 2.34 0 0 1 2.33 4.033 2.34 2.34 0 0 0 0 3.831 2.34 2.34 0 0 1-2.33 4.033 2.34 2.34 0 0 0-3.319 1.915 2.34 2.34 0 0 1-4.659 0 2.34 2.34 0 0 0-3.32-1.915 2.34 2.34 0 0 1-2.33-4.033 2.34 2.34 0 0 0 0-3.831A2.34 2.34 0 0 1 6.35 6.051a2.34 2.34 0 0 0 3.319-1.915" />
+                        <circle cx="12" cy="12" r="3" />
+                    </svg>
+                    <span class="{{ $isProfileActive ? 'fw-bold' : 'fw-semibold' }}" style="font-size: 0.95rem;">Pengaturan</span>
                 </a>
 
             @else
@@ -1541,6 +1617,9 @@
                     $isTotalCrActive = request('view') === 'total';
                     $isSemuaCrActive = !$isDraftActive && !$isCreateActive && ($isCrShow || $isTotalCrActive || ($currentRouteName === 'change-requests.index' && !$isDashboardActive && !request()->filled('status')));
                     $isCrGroupActive = $isCrShow || (request()->routeIs('change-requests.*') && !$isDashboardActive);
+                    $isUserPmh = (auth()->check() && auth()->user()->isPmh()) || $currentRole === 'pmh' || request('role') === 'pmh';
+                    $isUserPresales = (auth()->check() && auth()->user()->isPresales()) || $currentRole === 'presales' || request('role') === 'presales';
+                    $canSubmitCr = !$isUserPmh && !$isUserPresales;
                 @endphp
                 <a href="{{ route('change-requests.index') }}"
                    class="sidebar-link {{ $isDashboardActive ? 'active' : '' }}"
@@ -1574,6 +1653,7 @@
                     </a>
 
                     {{-- Ajukan CR --}}
+                    @if($canSubmitCr)
                     <a href="{{ route('change-requests.create') }}"
                        class="sidebar-link {{ $isCreateActive ? 'active' : '' }}"
                        style="border-radius: 9999px; padding: 0.55rem 1rem; font-size: 0.88rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; background: transparent !important;">
@@ -1583,6 +1663,7 @@
                         <i class="bi bi-file-earmark-diff nav-icon" style="font-size: 0.95rem; color: #FFFFFF; opacity: 1;"></i>
                         <span data-i18n="nav_submit_cr" style="color: #FFFFFF; font-weight: {{ $isCreateActive ? '700' : '500' }};">Ajukan CR</span>
                     </a>
+                    @endif
 
                     {{-- Draft CR --}}
                     <a href="{{ route('change-requests.index', ['view' => 'draft']) }}"
@@ -2220,6 +2301,10 @@
             'btn_bersihkan': 'Bersihkan',
             'tab_semua': 'Semua',
             'tab_belum_dibaca': 'Belum Dibaca',
+            'tab_all_cr': 'Semua CR',
+            'tab_active_cr': 'CR Aktif',
+            'tab_completed_cr': 'CR Selesai',
+            'all_status': 'Semua Status',
             'placeholder_search_notif': 'Cari notifikasi / kode CR...',
             'breadcrumb_dashboard': 'Dashboard',
             'breadcrumb_notifikasi': 'Notifikasi'
@@ -2251,6 +2336,10 @@
             'btn_bersihkan': 'Clear All',
             'tab_semua': 'All',
             'tab_belum_dibaca': 'Unread',
+            'tab_all_cr': 'All CR',
+            'tab_active_cr': 'Active CR',
+            'tab_completed_cr': 'Completed CR',
+            'all_status': 'All Status',
             'placeholder_search_notif': 'Search notification / CR code...',
             'breadcrumb_dashboard': 'Dashboard',
             'breadcrumb_notifikasi': 'Notifications',
@@ -2370,124 +2459,381 @@
     };
 
     const phraseReplacements = [
-        ['Detail Change Request', 'Detail Change Request'],
-        ['Melihat Data Lengkap CR', 'Viewing Complete CR Data'],
-        ['Pantau seluruh permintaan perubahan Anda', 'Monitor all your change requests'],
-        ['Ajukan CR Baru', 'Submit New CR'],
-        ['Semua CR', 'All CR'],
-        ['Aktif Bulan Ini', 'Active This Month'],
+        // Long sentences, notices & descriptions
         ['Monitoring pergerakan CR melalui 6 tahapan siklus proyek TI', 'Monitoring CR progression through 6 IT project lifecycle stages'],
         ['Pemberitahuan persetujuan penting, batas waktu tinjauan dokumen, dan tindak lanjut status tahapan proyek.', 'Important approval notices, document review deadlines, and project stage follow-ups.'],
         ['3 Perubahan Ruang Lingkup CR menunggu persetujuan > 14 hari', '3 CR Scope Changes awaiting approval > 14 days'],
-        ['Status : Menunggu Persetujuan PM', 'Status : Awaiting PM Approval'],
         ['8 CR Baru Menunggu Verifikasi Kebutuhan', '8 New CRs Awaiting Requirements Verification'],
-        ['Tahapan : 1. Analisis Kebutuhan', 'Stage : 1. Requirements Analysis'],
         ['5 Masukan Pengguna UAT butuh tindak lanjut', '5 UAT User Feedbacks need follow-up'],
-        ['Tahapan : 4. UAT & Pengujian', 'Stage : 4. UAT & Testing'],
+        ['Pantau seluruh permintaan perubahan Anda', 'Monitor all your change requests'],
+        ['Total permintaan CR dari PM: hari ini, kemarin, dan hari-hari sebelumnya', 'Total CR requests from PM: today, yesterday, and previous days'],
+        ['Lengkapi detail informasi perubahan yang akan diajukan', 'Complete the details of the proposed change'],
+        ['Data identitas pemohon dan perusahaan terkait pengajuan CR', 'Identity data of requester and company regarding CR submission'],
+        ['Belum ada catatan pengajuan dari pemohon CR.', 'No submission notes from CR requester.'],
+        ['Belum ada detail deskripsi yang diisi untuk CR ini.', 'No detailed description provided for this CR.'],
+        ['Belum ada detail deskripsi yang diisi.', 'No detailed description provided.'],
+        ['Belum ada solution paper yang diunggah.', 'No solution paper uploaded yet.'],
+        ['Belum ada dokumen solusi yang diunggah.', 'No solution paper uploaded yet.'],
+        ['Belum ada dokumen yang diunggah.', 'No document uploaded yet.'],
+        ['Belum ada dokumen CR terlampir.', 'No CR document attached yet.'],
+        ['Belum ada Solution Paper terlampir.', 'No Solution Paper attached yet.'],
+        ['Tidak ada data Change Request yang sesuai dengan kategori yang dipilih.', 'There are no Change Requests matching the selected category.'],
+        ['Informasi identitas instansi rekanan serta data 3 Person in Charge (PIC) penanggung jawab.', 'Information regarding partner agency identity and 3 official Persons in Charge (PICs).'],
+        ['Daftar 3 PIC Resmi Master Client', 'List of 3 Official Master Client PICs'],
+        ['PIC penanggung jawab komunikasi lintas divisi untuk administrasi dan eskalasi pengerjaan Change Request.', 'PICs responsible for cross-division communication for administration and Change Request escalation.'],
+        ['Pemberitahuan pembaruan status, persetujuan, dan aktivitas Change Request Anda.', 'Notifications of status updates, approvals, and your Change Request activities.'],
+        ['Bagian Man-Days terkunci otomatis untuk Presales karena telah ditetapkan dan dihitung oleh Project Manager saat verifikasi teknis.', 'Man-Days section is automatically locked for Presales as it was determined and calculated by the Project Manager during technical verification.'],
+        ['Estimasi Man-Days ditentukan langsung oleh Project Manager', 'Man-Days estimate is directly determined by the Project Manager'],
+        ['Belum ada Termin Pembayaran (TOP). Klik tombol + Tambah Termin di atas untuk menginput termin penawaran.', 'No Terms of Payment (TOP) yet. Click the + Add Term button above to input quotation terms.'],
+        ['Penyelesaian seluruh pengerjaan teknis CR hingga Go-Live', 'Completion of all technical CR work through Go-Live'],
+        ['Disertai Berita Acara & Kelengkapan Dokumen', 'Accompanied by Official Report & Complete Documents'],
+        ['Quotation berhasil disimpan & disubmit!', 'Quotation successfully saved & submitted!'],
+        ['Quotation berhasil disimpan & diajukan!', 'Quotation successfully saved & submitted!'],
+        ['Pencatatan invoice baru dapat dilakukan setelah proyek', 'New invoice recording can only be performed after project'],
+        ['Data di bawah ini bersifat baca-dan-pantau untuk Presales.', 'Data below is read-and-monitor for Presales.'],
+
+        // Stepper & Workflow Section (CR Show & Presales Review)
+        ['PROGRESS PENGERJAAN TEKNIS (STATUS PENGEMBANGAN)', 'TECHNICAL WORK PROGRESS (DEVELOPMENT STATUS)'],
+        ['PROGRESS PENGERJAAN TEKNIS (STATUS DEVELOPMENT)', 'TECHNICAL WORK PROGRESS (DEVELOPMENT STATUS)'],
+        ['PROGRESS PENGERJAAN TEKNIS (PM)', 'TECHNICAL WORK PROGRESS (PM)'],
+        ['Progress Pengerjaan Teknis (PM)', 'Technical Work Progress (PM)'],
+        ['PROGRESS PENGERJAAN TEKNIS', 'TECHNICAL WORK PROGRESS'],
+        ['Progress Pengerjaan Teknis', 'Technical Work Progress'],
+        ['Status Eksekusi Saat Ini:', 'Current Execution Status:'],
+        ['Status Eksekusi Saat Ini', 'Current Execution Status'],
+        ['STATUS ALUR CR', 'CR WORKFLOW STATUS'],
+        ['Status Alur CR', 'CR Workflow Status'],
+        ['Total Progres Alur:', 'Total Workflow Progress:'],
+        ['Total Progres Alur', 'Total Workflow Progress'],
+        ['Catatan Pengerjaan PM:', 'PM Work Notes:'],
+        ['Catatan Pengerjaan PM', 'PM Work Notes'],
+        ['Status Saat Ini:', 'Current Status:'],
+        ['Status Saat Ini', 'Current Status'],
+
+        // Workflow 6 stages
+        ['1. Diajukan', '1. Submitted'],
+        ['Tinjauan PM', 'PM Review'],
+        ['Review PM', 'PM Review'],
+        ['Persetujuan PM Head', 'PM Head Approval'],
+        ['Approval PM Head', 'PM Head Approval'],
+        ['Penawaran', 'Quotation'],
+        ['Pengembangan', 'Development'],
+        ['Faktur', 'Invoice'],
+        ['Sedang Berjalan', 'In Progress'],
+        ['Menunggu', 'Pending'],
+        ['Selesai', 'Completed'],
+
+        // Execution status labels
+        ['Menunggu Tinjauan PM', 'Awaiting PM Review'],
+        ['Menunggu Review PM', 'Awaiting PM Review'],
+        ['Sedang Dianalisa', 'Being Analyzed'],
+        ['Menunggu Persetujuan PM Head', 'Awaiting PM Head Approval'],
+        ['Menunggu Approval PM Head', 'Awaiting PM Head Approval'],
+        ['Perlu Revisi', 'Revision Needed'],
+        ['Revision Needed', 'Revision Needed'],
+        ['Disetujui PM Head', 'Approved by PM Head'],
+        ['Sedang Dikerjakan', 'In Development'],
+        ['Menunggu Validasi Go-Live', 'Awaiting Go-Live Validation'],
+        ['Selesai / Penagihan', 'Completed / Invoicing'],
+        ['Selesai / Invoicing', 'Completed / Invoicing'],
+        ['Awaiting PM Verification', 'Awaiting PM Verification'],
+        ['Awaiting PMH Validation', 'Awaiting PMH Validation'],
+        ['Tervalidasi', 'Validated'],
+        ['Validated', 'Validated'],
+        ['Disetujui', 'Approved'],
+        ['Approved', 'Approved'],
+        ['Ditolak', 'Rejected'],
+        ['Rejected', 'Rejected'],
+        ['Belum Bayar', 'Unpaid'],
+        ['Lunas', 'Paid'],
+        ['Mendesak', 'Urgent'],
+        ['MENDESAK', 'URGENT'],
+        ['Normal', 'Normal'],
+        ['NORMAL', 'NORMAL'],
+        ['Tinggi', 'High'],
+        ['Rendah', 'Low'],
+        ['Kritis', 'Critical'],
+
+        // Technical progress 6 steps
+        ['Analisis', 'Analysis'],
+        ['ANALISIS', 'ANALYSIS'],
+        ['Analisa', 'Analysis'],
+        ['Pengembangan', 'Development'],
+        ['PENGEMBANGAN', 'DEVELOPMENT'],
+        ['Develop', 'Development'],
+        ['Pengujian', 'Testing'],
+        ['PENGUJIAN', 'TESTING'],
+        ['Testing', 'Testing'],
+        ['Pelatihan', 'Training'],
+        ['PELATIHAN', 'TRAINING'],
+        ['Training', 'Training'],
+        ['Go Live', 'Go-Live'],
+        ['Go-Live', 'Go-Live'],
+
+        // Presales Review Sections & Quotation
+        ['INFORMASI PENAWARAN (QUOTATION)', 'QUOTATION INFORMATION'],
+        ['INFORMASI PENAWARAN', 'QUOTATION INFORMATION'],
+        ['INFORMASI QUOTATION', 'QUOTATION INFORMATION'],
+        ['Informasi Penawaran', 'Quotation Information'],
+        ['Informasi Quotation', 'Quotation Information'],
+        ['Nomor Penawaran', 'Quotation Number'],
+        ['Nomor Quotation', 'Quotation Number'],
+        ['Tanggal Dibuat', 'Created Date'],
+        ['Berlaku Sampai (30 hari)', 'Valid Until (30 days)'],
+        ['INFORMASI PENGIRIMAN PENAWARAN', 'QUOTATION DELIVERY INFORMATION'],
+        ['INFORMASI PENGIRIMAN QUOTATION', 'QUOTATION DELIVERY INFORMATION'],
+        ['Informasi Pengiriman Penawaran', 'Quotation Delivery Information'],
+        ['Informasi Pengiriman Quotation', 'Quotation Delivery Information'],
+        ['Metode Pengiriman', 'Delivery Method'],
+        ['Alamat Email Tujuan', 'Destination Email Address'],
+        ['Diverifikasi oleh PM (Terkunci)', 'Verified by PM (Locked)'],
+        ['Analisis (hari)', 'Analysis (days)'],
+        ['Pengembangan (hari)', 'Development (days)'],
+        ['Pengujian (hari)', 'Testing (days)'],
+        ['Total Mandays', 'Total Mandays'],
+        ['HARI KERJA', 'MANDAYS'],
+        ['Hari Kerja', 'Mandays'],
+        ['TERMIN PEMBAYARAN (SKEMA TAHAPAN PEMBAYARAN)', 'TERM OF PAYMENT (PAYMENT STAGES SCHEME)'],
+        ['TERMIN OF PAYMENT (SKEMA TAHAPAN PEMBAYARAN)', 'TERM OF PAYMENT (PAYMENT STAGES SCHEME)'],
+        ['Termin Pembayaran (Skema Tahapan Pembayaran)', 'Term of Payment (Payment Stages Scheme)'],
+        ['Termin of Payment (Skema Tahapan Pembayaran)', 'Term of Payment (Payment Stages Scheme)'],
+        ['TERMIN PEMBAYARAN', 'TERM OF PAYMENT'],
+        ['TERMIN OF PAYMENT', 'TERM OF PAYMENT'],
+        ['Termin Pembayaran', 'Term of Payment'],
+        ['Termin of Payment', 'Term of Payment'],
+        ['+ Isi Termin 100%', '+ Fill 100% Term'],
+        ['Tambah Termin', 'Add Term'],
+        ['Simpan Termin', 'Save Term'],
+        ['Ubah Termin', 'Edit Term'],
+        ['KETERANGAN / TAHAPAN DELIVERABLE', 'DESCRIPTION / MILESTONE DELIVERABLE'],
+        ['KETERANGAN / MILESTONE DELIVERABLE', 'DESCRIPTION / MILESTONE DELIVERABLE'],
+        ['Keterangan / Milestone Deliverable', 'Description / Milestone Deliverable'],
+        ['Tahapan Deliverable', 'Milestone Deliverable'],
+        ['Milestone Deliverable', 'Milestone Deliverable'],
+        ['Hasil Pengerjaan', 'Deliverable'],
+        ['Tahapan', 'Milestone'],
+        ['Subtotal Termin', 'Term Subtotal'],
+        ['Dokumen Penawaran / Quotation', 'Quotation Document'],
+        ['Dokumen Penawaran', 'Quotation Document'],
+        ['Pilih Berkas', 'Choose File'],
+        ['Pilih File', 'Choose File'],
+        ['Tidak ada berkas yang dipilih', 'No file chosen'],
+        ['Tidak ada file yang dipilih', 'No file chosen'],
+        ['Total Nilai Layanan', 'Total Service Value'],
+        ['Nilai Penawaran', 'Quotation Value'],
+        ['Total Penawaran Akhir', 'Final Quotation Total'],
+        ['Total Penawaran Final', 'Final Quotation Total'],
+        ['Net Termasuk Pajak', 'Net Including Tax'],
+        ['Nett Termasuk Pajak', 'Net Including Tax'],
+        ['Simpan & Ajukan', 'Save & Submit'],
+        ['Simpan & Submit', 'Save & Submit'],
+        ['Termin Ke-', 'Term No. '],
+        ['Termin Tunggal / Pelunasan', 'Single Term / Full Settlement'],
+
+        // Payment Tab & Invoicing
+        ['Detail Pembayaran & QR', 'Payment & QR Details'],
+        ['Unduh Faktur PDF', 'Download Invoice PDF'],
+        ['Unduh Invoice PDF', 'Download Invoice PDF'],
+        ['Catat Faktur', 'Record Invoice'],
+        ['Catat Invoice', 'Record Invoice'],
+        ['TOTAL DITAGIHKAN', 'TOTAL INVOICED'],
+        ['TOTAL INVOICED', 'TOTAL INVOICED'],
+        ['Total Ditagihkan', 'Total Invoiced'],
+        ['Total Invoiced', 'Total Invoiced'],
+        ['LUNAS', 'PAID'],
+        ['MENUNGGU PEMBAYARAN', 'PENDING PAYMENT'],
+        ['DAFTAR FAKTUR & TERMIN', 'INVOICE & TERM LIST'],
+        ['DAFTAR INVOICE & TERMIN', 'INVOICE & TERM LIST'],
+        ['Tgl Faktur:', 'Invoice Date:'],
+        ['Tgl Invoice:', 'Invoice Date:'],
+        ['Tgl Faktur', 'Invoice Date'],
+        ['Tgl Invoice', 'Invoice Date'],
+        ['Rencana Bayar:', 'Payment Plan:'],
+        ['Plan Bayar:', 'Payment Plan:'],
+        ['Rencana Bayar', 'Payment Plan'],
+        ['Plan Bayar', 'Payment Plan'],
+        ['Aktual:', 'Actual:'],
+        ['Total Tagihan Outstanding', 'Total Outstanding Invoices'],
+        ['Total Tagihan', 'Total Invoices'],
+        ['Outstanding', 'Outstanding'],
+        ['Sudah Lunas', 'Already Paid'],
+        ['Jatuh Tempo', 'Overdue'],
+
+        // Cards & Sections (CR Detail)
+        ['Detail Permintaan Perubahan', 'Change Request Detail'],
+        ['Detail Change Request', 'Change Request Detail'],
+        ['Melihat Data Lengkap CR', 'Viewing Complete CR Data'],
+        ['INFORMASI CR', 'CR INFORMATION'],
+        ['Informasi CR', 'CR Information'],
+        ['NAMA PERUSAHAAN', 'COMPANY NAME'],
+        ['Nama Perusahaan', 'Company Name'],
+        ['INISIAL KLIEN', 'CLIENT INITIALS'],
+        ['Inisial Klien', 'Client Initials'],
+        ['Inisial / Kode:', 'Initials / Code:'],
+        ['NAMA PIC', 'PIC NAME'],
+        ['Nama PIC', 'PIC Name'],
+        ['NAMA PROYEK', 'PROJECT NAME'],
+        ['NAMA PROJECT', 'PROJECT NAME'],
+        ['Nama Proyek', 'Project Name'],
+        ['Nama Project', 'Project Name'],
+        ['PEMILIK CR', 'CR OWNER'],
+        ['CR OWNER', 'CR OWNER'],
+        ['Pemilik CR', 'CR Owner'],
+        ['CR Owner', 'CR Owner'],
+        ['TANGGAL PENGAJUAN', 'SUBMISSION DATE'],
+        ['Tanggal Pengajuan:', 'Submission Date:'],
+        ['Tanggal Pengajuan', 'Submission Date'],
+        ['Tanggal Permintaan', 'Request Date'],
+        ['PERMINTAAN GO-LIVE', 'REQUESTED GO-LIVE'],
+        ['REQUEST GO-LIVE', 'REQUESTED GO-LIVE'],
+        ['Permintaan Go-Live', 'Requested Go-Live'],
+        ['Request Go-Live', 'Requested Go-Live'],
+        ['Tanggal Go Live', 'Go-Live Date'],
+        ['Target Go Live', 'Target Go-Live'],
+        ['PRIORITAS CR', 'CR PRIORITY'],
+        ['Prioritas CR', 'CR Priority'],
+        ['Prioritas Normal', 'Normal Priority'],
+        ['PRIORITAS', 'PRIORITY'],
+        ['Prioritas', 'Priority'],
+
+        // Documents
+        ['DOKUMEN CR', 'CR DOCUMENT'],
+        ['Dokumen CR', 'CR Document'],
+        ['DOKUMEN SOLUSI', 'SOLUTION PAPER'],
+        ['SOLUTION PAPER', 'SOLUTION PAPER'],
+        ['Dokumen Solusi', 'Solution Paper'],
+        ['Solution Paper', 'Solution Paper'],
+        ['DOKUMEN', 'DOCUMENTS'],
+        ['Dokumen', 'Documents'],
+        ['Lihat Dokumen', 'View Document'],
+        ['Dokumen Dan Lainnya', 'Documents and Others'],
+        ['(Hanya format .pdf)', '(PDF format only)'],
+        ['Klik untuk unggah PDF', 'Click to upload PDF'],
+        ['Klik untuk upload PDF', 'Click to upload PDF'],
+        ['Format: .pdf (Maks. 20MB)', 'Format: .pdf (Max. 20MB)'],
+
+        // Description & Mandays
+        ['Detail Deskripsi CR', 'CR Detailed Description'],
+        ['Data Aktual CR', 'Actual CR Data'],
+        ['Data aktual CR', 'Actual CR data'],
+        ['ESTIMASI MANDAYS', 'MANDAYS ESTIMATE'],
+        ['Estimasi Mandays', 'Mandays Estimate'],
+        ['hari kerja', 'working days'],
+        [' hari ', ' days '],
+        ['Catatan CR', 'CR Notes / Remarks'],
+        ['CR Notes / Catatan', 'CR Notes / Remarks'],
+        ['Keterangan & Catatan Tambahan', 'Additional Remarks & Notes'],
+        ['Catatan Pengajuan', 'Submission Notes'],
+        ['Catatan Analisis', 'Analysis Notes'],
+
+        // Tabs
+        ['Verifikasi CR', 'CR Verification'],
+        ['Status CR', 'CR Status'],
+        ['(Terkunci)', '(Locked)'],
+        ['Terkunci', 'Locked'],
+
+        // Buttons & Modals
+        ['Kembali ke Daftar CR', 'Back to CR List'],
+        ['Kembali', 'Back'],
+        ['Batal', 'Cancel'],
+        ['Hapus', 'Delete'],
+        ['Simpan Draft', 'Save Draft'],
+        ['Simpan sebagai Draft', 'Save as Draft'],
+        ['Simpan sebagai Draf', 'Save as Draft'],
+        ['Ajukan CR', 'Submit CR'],
+        ['Simpan & Ajukan CR', 'Save & Submit CR'],
+        ['Kirim ke PM Head', 'Submit to PM Head'],
+        ['Konfirmasi Tolak CR', 'Confirm Reject CR'],
+        ['Alasan Penolakan', 'Rejection Reason'],
+        ['Status CR Belum Bisa Diisi', 'CR Status Not Fillable Yet'],
+        ['Pilih atau Masukkan Project', 'Select or Enter Project'],
+        ['Nama CR', 'CR Name'],
+        ['Detail CR', 'CR Detail'],
+        ['Ajukan CR Baru', 'Submit New CR'],
+
+        // Navigation & Dashboard
+        ['Semua CR', 'All CR'],
+        ['CR Aktif', 'Active CR'],
+        ['CR Selesai', 'Completed CR'],
+        ['Semua Status', 'All Statuses'],
+        ['Semua Status', 'All Status'],
+        ['Draf CR', 'Draft CR'],
+        ['Draft CR', 'Draft CR'],
+        ['Aktif Bulan Ini', 'Active This Month'],
         ['Lihat Semua', 'View All'],
         ['TGL PENGAJUAN', 'SUBMISSION DATE'],
+        ['KODE CR', 'CR CODE'],
+        ['Kode CR', 'CR Code'],
         ['PEMOHON', 'REQUESTER'],
+        ['Pemohon', 'Requester'],
         ['JUDUL CR', 'CR TITLE'],
-        ['PRIORITAS CR', 'CR PRIORITY'],
-        ['PRIORITAS', 'PRIORITY'],
+        ['Judul CR', 'CR Title'],
+        ['PENGAJUAN', 'SUBMISSION'],
+        ['Pengajuan', 'Submission'],
         ['AKSI', 'ACTION'],
-        ['Dokumen BAP Anggota Selesai', 'Member BAP Document Completed'],
-        ['BAP Ditandatangani', 'BAP Signed'],
-        ['Menunggu Konfirmasi', 'Awaiting Confirmation'],
-        ['3 CR Baru Menunggu Konfirmasi', '3 New CRs Awaiting Confirmation'],
-        ['Batas Tenggat: Hari ini', 'Deadline: Today'],
-        ['CR Pengajuan Layanan Baru BAP/SPK', 'New BAP/SPK Service Request CR'],
+        ['Aksi', 'Action'],
+        ['Tinjau >', 'Review >'],
+        ['Tinjau', 'Review'],
+        ['TINJAU', 'REVIEW'],
+        ['Review', 'Review'],
+        ['BARIS PER HALAMAN', 'ROWS PER PAGE'],
+        ['Baris per halaman', 'Rows per page'],
+        ['ROWS PER PAGE', 'ROWS PER PAGE'],
+        ['TOTAL DATA:', 'TOTAL DATA:'],
+        ['TOTAL DATA', 'TOTAL DATA'],
+        ['HALAMAN', 'PAGE'],
+        ['Halaman', 'Page'],
+        ['PAGE', 'PAGE'],
+        ['DARI', 'OF'],
+        ['Dari', 'of'],
+        ['OF', 'OF'],
         ['Notifikasi Masuk', 'Incoming Notifications'],
         ['Pesan Masuk (Inbox)', 'Inbox Messages'],
         ['2 Baru', '2 New'],
         ['3 Baru', '3 New'],
         ['Pengaturan', 'Settings'],
         ['Notifikasi', 'Notifications'],
-        ['Kembali ke Daftar CR', 'Back to CR List'],
         ['Akun Terverifikasi', 'Verified Account'],
         ['Status Kerjasama:', 'Partnership Status:'],
-        ['Inisial / Kode:', 'Initials / Code:'],
         ['NAMA KLIEN / PIC UTAMA', 'CLIENT NAME / MAIN PIC'],
         ['EMAIL TERDAFTAR', 'REGISTERED EMAIL'],
         ['NOMOR TELEPON / WA', 'PHONE NUMBER / WA'],
         ['ALAMAT KANTOR OPERASIONAL', 'OPERATIONAL OFFICE ADDRESS'],
-        ['Daftar 3 PIC Resmi Master Client', 'List of 3 Official Master Client PICs'],
         ['PIC Marketing', 'Marketing PIC'],
         ['PIC IT / Technical', 'IT / Technical PIC'],
         ['PIC Procurement', 'Procurement PIC'],
         ['Keluar', 'Logout'],
         ['Profil Saya', 'My Profile'],
-        ['Pelatihan', 'Training'],
-        ['Selesai', 'Done'],
-        ['Menunggu Review', 'Awaiting Review'],
-        ['Prioritas Normal', 'Normal Priority'],
-        ['Tanggal Pengajuan:', 'Submission Date:'],
-        ['Tanggal Pengajuan', 'Submission Date'],
-        ['PROGRESS PENGERJAAN', 'WORK PROGRESS'],
-        ['INFORMASI CR', 'CR INFORMATION'],
-        ['NAMA PERUSAHAAN', 'COMPANY NAME'],
-        ['INISIAL KLIEN', 'CLIENT INITIAL'],
-        ['NAMA PIC', 'PIC NAME'],
-        ['NAMA PROJECT', 'PROJECT NAME'],
-        ['CR OWNER', 'CR OWNER'],
-        ['REQUEST GO-LIVE', 'REQUESTED GO-LIVE'],
-        ['DOKUMEN CR', 'CR DOCUMENT'],
-        ['SOLUTION PAPER', 'SOLUTION PAPER'],
-        ['DOKUMEN', 'DOCUMENTS'],
-        ['Detail Deskripsi CR', 'Detailed Description of CR'],
-        ['Rendered WYSIWYG Content', 'Rendered WYSIWYG Content'],
-        ['1. LATAR BELAKANG & TUJUAN', '1. BACKGROUND & PURPOSE'],
-        ['2. RUANG LINGKUP PERUBAHAN (SCOPE OF WORK)', '2. SCOPE OF CHANGE (SCOPE OF WORK)'],
-        ['3. DAMPAK TEKNIS & DEPENDENCIES', '3. TECHNICAL IMPACT & DEPENDENCIES'],
-        ['Catatan Dependensi:', 'Dependency Note:'],
-        ['ESTIMASI MANDAYS', 'MANDAYS ESTIMATE'],
-        ['Analisis', 'Analysis'],
-        ['hari kerja', 'working days'],
-        [' hari ', ' days '],
-        ['CR Notes / Catatan', 'CR Notes / Remarks'],
+        ['Profil Klien', 'Client Profile'],
         ['Klien', 'Client'],
-        ['Penambahan opsi pembayaran OVO Wallet pada step 3 (Metode Pembayaran) di aplikasi Web dan Mobile.', 'Addition of OVO Wallet payment option at step 3 (Payment Method) in Web and Mobile apps.'],
-        ['Integrasi Webhook Callback Service untuk konfirmasi status settlement secara real-time.', 'Integration of Webhook Callback Service for real-time settlement status confirmation.'],
-        ['Penyelarasan modul rekonsiliasi harian dan penyesuaian laporan keuangan di portal admin.', 'Alignment of daily reconciliation module and financial report adjustments in admin portal.'],
-        ['Penambahan unit test coverage dan staging automated testing minimum 85%.', 'Addition of unit test coverage and minimum 85% staging automated testing.'],
-        ['Mohon diprioritaskan untuk integrasi sandbox staging sebelum tanggal 15 September agar tim QA dapat melakukan testing payment gateway secara menyeluruh. Testing account sudah kami koordinasikan dengan pihak vendor OVO.', 'Please prioritize staging sandbox integration before September 15 so QA team can perform thorough payment gateway testing. Testing account has been coordinated with OVO vendor.'],
-        ['Grafik Request dari PM', 'PM Request Chart'],
-        ['Total permintaan CR dari PM: hari ini, kemarin, dan hari-hari sebelumnya', 'Total CR requests from PM: today, yesterday, and previous days'],
-        ['7 Hari Terakhir', 'Last 7 Days'],
-        ['REQUEST HARI INI', 'REQUEST TODAY'],
-        ['REQUEST KEMARIN', 'REQUEST YESTERDAY'],
-        ['CR Baru', 'New CR'],
-        ['CR Diproses', 'Processed CR'],
+        ['Menunggu Review', 'Awaiting Review'],
         ['Hari Ini', 'Today'],
         ['Kemarin', 'Yesterday'],
         ['Sebelumnya', 'Previous'],
         ['Hari Lalu', 'Days Ago'],
         ['NAMA PM', 'PM NAME'],
-        ['PENGAJUAN', 'SUBMISSION'],
-        ['TOTAL DATA:', 'TOTAL DATA:'],
-        ['TOTAL DATA', 'TOTAL DATA'],
-        ['ROWS PER PAGE', 'ROWS PER PAGE'],
-        ['PAGE', 'PAGE'],
-        ['OF', 'OF'],
-        ['Review', 'Review'],
-        ['Semua Status', 'All Statuses'],
-        ['Belum Bayar', 'Unpaid'],
-        ['Lunas', 'Paid'],
-        ['Total Tagihan Outstanding', 'Total Outstanding Invoices'],
-        ['Total Tagihan', 'Total Invoices'],
-        ['Outstanding', 'Outstanding'],
-        ['Sudah Lunas', 'Already Paid'],
-        ['Jatuh Tempo', 'Overdue'],
+        ['Nama PM', 'PM Name'],
         ['Review Awal PMH', 'PMH Initial Review'],
         ['Export Rekap (XLS/PDF)', 'Export Summary (XLS/PDF)'],
-        ['Semua CR', 'All CR'],
-        ['CR Aktif', 'Active CR'],
-        ['CR Selesai', 'Completed CR'],
-        ['Diajukan', 'Submitted'],
-        ['Analysis', 'Analysis'],
-        ['Develop', 'Develop'],
-        ['URGENT', 'URGENT'],
-        ['NORMAL', 'NORMAL']
+
+        // Select options
+        ['Keseluruhan', 'Overall'],
+        ['Tahap 1', 'Stage 1'],
+        ['Tahap 2', 'Stage 2'],
+        ['WhatsApp Bisnis', 'WhatsApp Business'],
+        ['Portal Klien', 'Client Portal'],
+        ['Kurir / Cetak Fisik', 'Courier / Hardcopy'],
+
+        // Single generic words
+        ['Penawaran', 'Quotation'],
+        ['PENAWARAN', 'QUOTATION'],
+        ['Faktur', 'Invoice'],
+        ['FAKTUR', 'INVOICE'],
+        ['faktur', 'invoice'],
+        ['Pengembangan', 'Development'],
+        ['PENGEMBANGAN', 'DEVELOPMENT'],
+        ['Draf', 'Draft'],
+        ['DRAF', 'DRAFT']
     ];
 
     window.setAppLanguage = function (lang) {
@@ -2534,16 +2880,55 @@
         });
 
         // 3. Bidirectional phrase replacement for text nodes across the UI
+        const sortedPhrases = [...phraseReplacements].sort((a, b) => {
+            return Math.max(b[0].length, b[1].length) - Math.max(a[0].length, a[1].length);
+        });
+
         function walkTextNodes(node) {
-            if (node.nodeType === Node.ELEMENT_NODE && (['INPUT', 'TEXTAREA', 'SELECT'].includes(node.tagName) || node.classList?.contains('no-i18n'))) {
+            if (node.nodeType === Node.ELEMENT_NODE && (['INPUT', 'TEXTAREA'].includes(node.tagName) || node.classList?.contains('no-i18n'))) {
+                return;
+            }
+
+            // Translate SELECT options text
+            if (node.nodeType === Node.ELEMENT_NODE && node.tagName === 'SELECT') {
+                Array.from(node.options).forEach(opt => {
+                    if (opt._origText === undefined) opt._origText = opt.text;
+                    let text = opt._origText;
+                    if (!text || !text.trim()) return;
+                    sortedPhrases.forEach(([idPhrase, enPhrase]) => {
+                        if (idPhrase === enPhrase) return;
+                        if (lang === 'en' && text.includes(idPhrase)) {
+                            text = text.split(idPhrase).join(enPhrase);
+                        } else if (lang === 'id' && text.includes(enPhrase)) {
+                            text = text.split(enPhrase).join(idPhrase);
+                        }
+                    });
+                    opt.text = text;
+                });
                 return;
             }
 
             if (node.nodeType === Node.TEXT_NODE) {
-                let text = node.nodeValue;
+                if (node._origText === undefined) {
+                    node._origText = node.nodeValue;
+                }
+                let text = node._origText;
                 if (!text || !text.trim()) return;
 
-                phraseReplacements.forEach(([idPhrase, enPhrase]) => {
+                sortedPhrases.forEach(([idPhrase, enPhrase]) => {
+                    if (idPhrase === enPhrase) {
+                        if (lang === 'id') {
+                            if (enPhrase === 'Revision Needed' && text.includes('Revision Needed')) {
+                                text = text.split('Revision Needed').join('Perlu Revisi');
+                            } else if (enPhrase === 'Awaiting PM Verification' && text.includes('Awaiting PM Verification')) {
+                                text = text.split('Awaiting PM Verification').join('Menunggu Tinjauan PM');
+                            } else if (enPhrase === 'Awaiting PMH Validation' && text.includes('Awaiting PMH Validation')) {
+                                text = text.split('Awaiting PMH Validation').join('Menunggu Persetujuan PM Head');
+                            }
+                        }
+                        return;
+                    }
+
                     if (lang === 'en') {
                         if (text.includes(idPhrase)) {
                             text = text.split(idPhrase).join(enPhrase);
@@ -2556,10 +2941,13 @@
                 });
                 node.nodeValue = text;
             } else if (node.nodeType === Node.ELEMENT_NODE && !['SCRIPT', 'STYLE'].includes(node.tagName)) {
-                // If element has placeholder and no data-i18n-placeholder
                 if (node.hasAttribute('placeholder') && !node.classList.contains('no-i18n')) {
-                    let ph = node.getAttribute('placeholder');
-                    phraseReplacements.forEach(([idPhrase, enPhrase]) => {
+                    if (node._origPlaceholder === undefined) {
+                        node._origPlaceholder = node.getAttribute('placeholder');
+                    }
+                    let ph = node._origPlaceholder;
+                    sortedPhrases.forEach(([idPhrase, enPhrase]) => {
+                        if (idPhrase === enPhrase) return;
                         if (lang === 'en' && ph.includes(idPhrase)) {
                             ph = ph.split(idPhrase).join(enPhrase);
                         } else if (lang === 'id' && ph.includes(enPhrase)) {
@@ -2568,11 +2956,26 @@
                     });
                     node.setAttribute('placeholder', ph);
                 }
+                if (node.hasAttribute('title') && !node.classList.contains('no-i18n')) {
+                    let tit = node.getAttribute('title');
+                    sortedPhrases.forEach(([idPhrase, enPhrase]) => {
+                        if (idPhrase === enPhrase) return;
+                        if (lang === 'en' && tit.includes(idPhrase)) {
+                            tit = tit.split(idPhrase).join(enPhrase);
+                        } else if (lang === 'id' && tit.includes(enPhrase)) {
+                            tit = tit.split(enPhrase).join(idPhrase);
+                        }
+                    });
+                    node.setAttribute('title', tit);
+                }
                 node.childNodes.forEach(walkTextNodes);
             }
         }
 
         walkTextNodes(document.body);
+
+        // Dispatch language change event for dynamic components
+        window.dispatchEvent(new CustomEvent('appLanguageChanged', { detail: { lang } }));
     };
 
     const savedLang = localStorage.getItem('itpi_lang') || 'id';

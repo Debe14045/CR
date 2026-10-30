@@ -29,12 +29,19 @@
 @section('content')
 <div class="page-shell">
 
+@php
+    $userRole = auth()->user()?->role ?? 'client';
+    $isPmh = (auth()->check() && auth()->user()->isPmh()) || $userRole === 'pmh' || request('role') === 'pmh';
+    $isPresales = (auth()->check() && auth()->user()->isPresales()) || $userRole === 'presales' || request('role') === 'presales';
+    $isClientUser = (auth()->check() && auth()->user()->isClient()) || $userRole === 'client' || request('role') === 'client';
+    $canSubmitCr = !$isPmh && !$isPresales;
+@endphp
+
 @if ($viewMode === 'dashboard')
     {{-- ══════════════════════════════════════════════════════════
          FIGMA DASHBOARD: ROLE-AWARE (PM & CLIENT MOCKUPS)
     ══════════════════════════════════════════════════════════ --}}
     @php
-        $userRole = auth()->user()?->role ?? 'client';
         $isPmDashboard = in_array($userRole, ['pm', 'pmh', 'admin']) || request('role') === 'pm' || request('view_as') === 'pm';
     @endphp
 
@@ -44,6 +51,7 @@
             <h1 class="fw-bold mb-1" data-i18n="dashboard_title" style="color: #000000; font-size: 2.15rem; font-weight: 800; letter-spacing: -0.02em;">DASHBOARD</h1>
             <p class="text-muted mb-0" data-i18n="dashboard_subtitle" style="font-size: 0.88rem; color: #64748B;">Pantau seluruh permintaan perubahan Anda</p>
         </div>
+        @if($canSubmitCr)
         <div>
             <a href="{{ route('change-requests.create') }}" class="btn text-white fw-bold d-inline-flex align-items-center gap-2"
                style="background: #50CD89; border-radius: 9999px; padding: 0.62rem 1.6rem; font-size: 0.88rem; border: none; box-shadow: 0 4px 14px rgba(80,205,137,0.35); transition: transform 0.15s ease;"
@@ -52,10 +60,10 @@
                 <span data-i18n="btn_new_cr">Ajukan CR Baru</span>
             </a>
         </div>
+        @endif
     </div>
 
     @php
-        $isPmh = (auth()->check() && auth()->user()->isPmh()) || $userRole === 'pmh' || request('role') === 'pmh';
         $linkCard1 = $isPmh ? route('pmh.change-requests') : route('change-requests.index', ['view' => 'total']);
         $linkCard2 = $isPmh ? route('pmh.change-requests', ['status' => 'diajukan']) : route('change-requests.index', ['view' => 'total', 'status' => 'awaiting_pm']);
         $linkCard3 = $isPmh ? route('pmh.change-requests', ['status' => 'development']) : route('change-requests.index', ['view' => 'development']);
@@ -680,7 +688,9 @@
                             <td colspan="5" class="text-center py-5 text-muted">
                                 <div class="mb-2"><i class="bi bi-inbox fs-2 text-muted"></i></div>
                                 <div class="fw-bold">Tidak ada Change Request pada kategori draft</div>
+                                @if(!$isPmh)
                                 <div class="small mt-1">Gunakan menu "Ajukan CR" untuk membuat pengajuan baru.</div>
+                                @endif
                             </td>
                         </tr>
                     @endforelse
@@ -856,11 +866,47 @@
         <p class="text-muted mb-0" data-i18n="dashboard_subtitle" style="font-size: 0.85rem; color: #64748B;">{{ $pageSubtitle }}</p>
     </div>
 
-    {{-- Search and Status Filter Bar matching Figma (media_1791968487029.png) --}}
-    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mt-3 mb-3">
+    {{-- 3-Tab Segmented Control matching user screenshot: [ Semua CR ] [ CR Aktif ] [ CR Selesai ] (Khusus PM / non-client) --}}
+    @php
+        $isClientUser = (auth()->check() && auth()->user()->isClient()) || (isset($userRole) && $userRole === 'client') || request('role') === 'client';
+    @endphp
+    @if(!$isClientUser)
+    @php
+        $rawTab = strtolower(request('tab', 'all'));
+        if (in_array($rawTab, ['aktif', 'active'])) {
+            $activeTab = 'aktif';
+        } elseif (in_array($rawTab, ['selesai', 'completed', 'done'])) {
+            $activeTab = 'selesai';
+        } else {
+            $activeTab = 'all';
+        }
+    @endphp
+    <div class="w-100 mt-3 mb-3" style="border: 1.5px solid #CBD5E1; border-radius: 8px; overflow: hidden; background: #EEF2F6; box-sizing: border-box; display: grid; grid-template-columns: 1fr 1fr 1fr;">
+        <a href="{{ route('change-requests.index', array_filter(['view' => 'total', 'tab' => 'all', 'search' => request('search'), 'per_page' => request('per_page')])) }}"
+           style="display: flex; align-items: center; justify-content: center; height: 42px; font-weight: 700; font-size: 0.88rem; text-decoration: none; transition: all 0.15s ease; {{ $activeTab === 'all' ? 'background: #0070D2; color: #FFFFFF;' : 'background: #EEF2F6; color: #1E293B;' }}">
+            <span data-i18n="tab_all_cr">Semua CR</span>
+        </a>
+        <a href="{{ route('change-requests.index', array_filter(['view' => 'total', 'tab' => 'aktif', 'search' => request('search'), 'per_page' => request('per_page')])) }}"
+           style="display: flex; align-items: center; justify-content: center; height: 42px; font-weight: {{ $activeTab === 'aktif' ? '700' : '600' }}; font-size: 0.88rem; text-decoration: none; border-left: 1.5px solid #CBD5E1; transition: all 0.15s ease; {{ $activeTab === 'aktif' ? 'background: #0070D2; color: #FFFFFF;' : 'background: #EEF2F6; color: #1E293B;' }}">
+            <span data-i18n="tab_active_cr">CR Aktif</span>
+        </a>
+        <a href="{{ route('change-requests.index', array_filter(['view' => 'total', 'tab' => 'selesai', 'search' => request('search'), 'per_page' => request('per_page')])) }}"
+           style="display: flex; align-items: center; justify-content: center; height: 42px; font-weight: {{ $activeTab === 'selesai' ? '700' : '600' }}; font-size: 0.88rem; text-decoration: none; border-left: 1.5px solid #CBD5E1; transition: all 0.15s ease; {{ $activeTab === 'selesai' ? 'background: #0070D2; color: #FFFFFF;' : 'background: #EEF2F6; color: #0070D2;' }}">
+            <span data-i18n="tab_completed_cr">CR Selesai</span>
+        </a>
+    </div>
+    @else
+    <div class="mb-3"></div>
+    @endif
+
+    {{-- Search and Status Filter Bar matching Figma (media_1791968487029.png & media_1793222133988_934922e5.png) --}}
+    <div class="d-flex align-items-center justify-content-between flex-wrap gap-3 mb-3">
         {{-- Search input on left --}}
         <form method="GET" action="{{ route('change-requests.index') }}" class="m-0" style="width: 380px; max-width: 100%;">
             <input type="hidden" name="view" value="{{ $viewMode }}">
+            @if(request('tab'))
+                <input type="hidden" name="tab" value="{{ request('tab') }}">
+            @endif
             @if(request('status'))
                 <input type="hidden" name="status" value="{{ request('status') }}">
             @endif
@@ -885,11 +931,11 @@
                     data-bs-toggle="dropdown"
                     aria-expanded="false"
                     style="border: 1px solid #CBD5E1; border-radius: 10px; font-size: 0.85rem; height: 40px; color: #334155; min-width: 135px;">
-                <span>{{ $currentStatusLabel }}</span>
+                <span data-i18n="all_status">{{ $currentStatusLabel }}</span>
                 <i class="bi bi-chevron-down" style="font-size: 0.75rem;"></i>
             </button>
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" style="border-radius: 8px; font-size: 0.85rem; min-width: 150px;">
-                <li><a class="dropdown-item py-2 {{ empty($statusParam) ? 'active fw-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['status' => null, 'page' => 1]) }}">Semua Status</a></li>
+                <li><a class="dropdown-item py-2 {{ empty($statusParam) ? 'active fw-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['status' => null, 'page' => 1]) }}" data-i18n="all_status">Semua Status</a></li>
                 <li><a class="dropdown-item py-2 {{ $statusParam === 'diajukan' ? 'active fw-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['status' => 'diajukan', 'page' => 1]) }}">Diajukan</a></li>
                 <li><a class="dropdown-item py-2 {{ in_array($statusParam, ['analisa', 'analysis', 'dianalisis']) ? 'active fw-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['status' => 'analisa', 'page' => 1]) }}">Analysis</a></li>
                 <li><a class="dropdown-item py-2 {{ in_array($statusParam, ['development', 'develop', 'dikerjakan']) ? 'active fw-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['status' => 'development', 'page' => 1]) }}">Develop</a></li>
@@ -898,9 +944,6 @@
             </ul>
         </div>
     </div>
-
-    {{-- Horizontal Light Blue Line matching Figma --}}
-    <div style="height: 1.5px; background: #E0F2FE; margin: 0.75rem 0 1.5rem 0; width: 100%;"></div>
 
     {{-- CR Table Card (Figma 8 Columns: NO, KODE CR, PEMOHON, JUDUL CR, PENGAJUAN, STATUS, PRIORITAS, AKSI) --}}
     <div class="card overflow-hidden border-0 mb-3" style="border: 1px solid #E2E8F0 !important; border-radius: 14px; background: #FFFFFF; box-shadow: 0 1px 3px rgba(0,0,0,0.02);">
@@ -1047,11 +1090,10 @@
                                 {{ $dateStr }}
                             </td>
 
-                            {{-- 6. STATUS --}}
+                            {{-- 6. STATUS (bullet dot + status text without badge pill matching screenshot) --}}
                             <td class="py-3 px-4" style="white-space: nowrap;">
-                                <span class="d-inline-flex align-items-center gap-1 fw-bold"
-                                      style="background: {{ $statusBg }}; color: {{ $statusColor }}; border-radius: 9999px; font-size: 0.74rem; padding: 0.28rem 0.75rem;">
-                                    <span style="font-size: 0.6rem;">●</span>
+                                <span class="d-inline-flex align-items-center gap-1 fw-bold" style="color: {{ $statusColor }}; font-size: 0.78rem;">
+                                    <span style="font-size: 0.95rem; line-height: 1;">•</span>
                                     <span>{{ $statusText }}</span>
                                 </span>
                             </td>
@@ -1073,7 +1115,7 @@
                             <td class="py-3 px-4 text-center" style="white-space: nowrap;">
                                 <a href="{{ route('change-requests.show', $cr) }}"
                                    class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
-                                   style="background: #155DFC; border-radius: 6px; font-size: 0.74rem; padding: 0.35rem 0.95rem; border: none; box-shadow: 0 1px 2px rgba(21,93,252,0.25); text-decoration: none; transition: opacity 0.15s ease;"
+                                   style="background: #0070D2; border-radius: 6px; font-size: 0.74rem; padding: 0.35rem 0.95rem; border: none; box-shadow: 0 1px 2px rgba(0,112,210,0.25); text-decoration: none; transition: opacity 0.15s ease;"
                                    onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">
                                     <span>Review</span>
                                     <i class="bi bi-chevron-right" style="font-size: 0.65rem; font-weight: 700;"></i>
@@ -1085,7 +1127,9 @@
                             <td colspan="8" class="text-center py-5 text-muted">
                                 <div class="mb-2"><i class="bi bi-inbox fs-2 text-muted"></i></div>
                                 <div class="fw-bold">Tidak ada Change Request pada kategori ini</div>
+                                @if(!$isPmh)
                                 <div class="small mt-1">Gunakan tombol "Ajukan CR" untuk membuat pengajuan baru.</div>
+                                @endif
                             </td>
                         </tr>
                     @endforelse

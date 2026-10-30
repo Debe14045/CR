@@ -230,11 +230,9 @@ class PMHeadFeatureTest extends TestCase
         $response->assertSee('Dibatalkan');
         $response->assertSee('Aktif');
 
-        // Access via change-requests.index
+        // Access via change-requests.index directly redirects PM Head to their dedicated dashboard
         $responseCr = $this->actingAs($pmh)->get(route('change-requests.index'));
-        $responseCr->assertOk();
-        $responseCr->assertSee('Tren CR Bulanan (Diagram Batang)');
-        $responseCr->assertSee('Aktif');
+        $responseCr->assertRedirect(route('pmh.dashboard'));
     }
 }
 

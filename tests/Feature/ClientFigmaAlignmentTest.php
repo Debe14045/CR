@@ -205,7 +205,7 @@ class ClientFigmaAlignmentTest extends TestCase
 
         // 7. Action Button
         $response->assertSee('Review');
-        $response->assertSee('#155DFC');
+        $response->assertSee('#0070D2');
 
         // 8. Pagination
         $response->assertSee('TOTAL DATA:');

@@ -279,8 +279,8 @@ class PresalesFeatureTest extends TestCase
         $response = $this->actingAs($presales)->get(route('presales.review', $cr));
         $response->assertOk();
         $response->assertSee('PROGRESS PENGERJAAN TEKNIS (STATUS DEVELOPMENT)');
-        $response->assertSee('modalUpdateStatusDev');
-        $response->assertSee('33% — Develop');
+        $response->assertDontSee('modalUpdateStatusDev');
+        $response->assertSee('Develop');
     }
 
     public function test_updating_status_updates_all_dashboards(): void
@@ -310,8 +310,8 @@ class PresalesFeatureTest extends TestCase
         $resPresalesDash->assertOk();
         $this->assertEquals(1, $resPresalesDash->viewData('figmaDevCr'));
 
-        // 2. Presales updates status to 'sit'
-        $response = $this->actingAs($presales)->put(route('change-requests.update', $cr), [
+        // 2. PM updates status to 'sit' (Presales is view-only for development progress)
+        $response = $this->actingAs($pm)->put(route('change-requests.update', $cr), [
             'from_tab' => 'presales_status',
             'status' => 'sit',
         ]);

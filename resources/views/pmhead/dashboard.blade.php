@@ -6,20 +6,7 @@
 <div class="page-shell pb-5">
 
     @php
-        $cAnalisa = \App\Models\ChangeRequest::whereIn('status', ['analisa', 'dianalisis', 'awaiting_pm', 'diajukan', 'awaiting_pmh'])->count();
-        $cDev = \App\Models\ChangeRequest::whereIn('status', ['development', 'dikerjakan'])->count();
-        $cSit = \App\Models\ChangeRequest::whereIn('status', ['sit'])->count();
-        $cUat = \App\Models\ChangeRequest::whereIn('status', ['uat'])->count();
-        $cTrain = \App\Models\ChangeRequest::whereIn('status', ['training'])->count();
         $cGoLive = \App\Models\ChangeRequest::whereIn('status', ['golive', 'selesai', 'invoicing'])->count();
-        $totalDonut = $cAnalisa + $cDev + $cSit + $cUat + $cTrain + $cGoLive;
-        $totalDonutCalc = $totalDonut == 0 ? 1 : $totalDonut;
-
-        $p1 = ($cAnalisa / $totalDonutCalc) * 100;
-        $p2 = $p1 + (($cDev / $totalDonutCalc) * 100);
-        $p3 = $p2 + (($cSit / $totalDonutCalc) * 100);
-        $p4 = $p3 + (($cUat / $totalDonutCalc) * 100);
-        $p5 = $p4 + (($cTrain / $totalDonutCalc) * 100);
     @endphp
 
     <div class="d-flex justify-content-between align-items-center mb-4 flex-wrap gap-3">
@@ -218,43 +205,25 @@
             </div>
         </div>
 
-        {{-- Card Left: Tren CR Bulanan (Diagram Batang) & Status Siklus --}}
+        {{-- Card Left: Tren CR Bulanan (Diagram Batang) --}}
         <div class="col-lg-7 col-12 order-lg-1">
             <div class="card p-4 border-0 h-100 shadow-sm" style="border-radius: 20px; background: #EEF1F6; border: 1px solid #E2E8F0 !important;">
-                {{-- Header with Tab switcher --}}
+                {{-- Header with Legend --}}
                 <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2">
                     <div>
                         <div class="d-flex align-items-center gap-2 mb-1 flex-wrap">
-                            <h5 class="fw-bold mb-0" id="pmhChartTitle" style="color: #0F172A; font-size: 0.98rem; font-weight: 800;">Tren CR Bulanan (Diagram Batang)</h5>
+                            <h5 class="fw-bold mb-0" style="color: #0F172A; font-size: 0.98rem; font-weight: 800;">Tren CR Bulanan (Diagram Batang)</h5>
                             <span class="badge text-white d-inline-flex align-items-center gap-1.5" style="background: #0063D7; font-size: 0.72rem; padding: 4px 10px; border-radius: 9999px; font-weight: 700; box-shadow: 0 2px 6px rgba(0,99,215,0.25);">
                                 <span style="width: 6px; height: 6px; border-radius: 50%; background: #4ADE80; display: inline-block;"></span>
                                 <span>Aktif: {{ $currentMonthLabel ?? 'Bulan Ini' }}</span>
                             </span>
                         </div>
-                        <p class="text-muted small mb-0" id="pmhChartSubtitle" style="font-size: 0.78rem; color: #64748B;">
+                        <p class="text-muted small mb-0" style="font-size: 0.78rem; color: #64748B;">
                             Jumlah CR Masuk, Keluar, dan Dibatalkan ({{ $trendPeriodLabel ?? '6 Bulan Terakhir' }})
                         </p>
                     </div>
 
-                    <div class="d-flex align-items-center gap-2 ms-auto">
-                        <ul class="nav nav-pills" id="pmhChartTabs" style="background: #E2E8F0; padding: 3px; border-radius: 999px;">
-                            <li class="nav-item">
-                                <button type="button" class="nav-link active py-1 px-3 fw-bold" id="tabPmhTrendBtn" onclick="switchPmhChart('trend')" style="font-size: 0.74rem; border-radius: 999px;">
-                                    Tren Bulanan
-                                </button>
-                            </li>
-                            <li class="nav-item">
-                                <button type="button" class="nav-link py-1 px-3 fw-semibold text-secondary" id="tabPmhStatusBtn" onclick="switchPmhChart('status')" style="font-size: 0.74rem; border-radius: 999px;">
-                                    Status Siklus
-                                </button>
-                            </li>
-                        </ul>
-                    </div>
-                </div>
-
-                {{-- VIEW 1: Tren Bulanan (Diagram Batang) --}}
-                <div id="pmhTrendView">
-                    <div class="d-flex align-items-center justify-content-end gap-3 mt-1 mb-2" style="font-size: 0.75rem; font-weight: 600;">
+                    <div class="d-flex align-items-center gap-3 ms-auto" style="font-size: 0.75rem; font-weight: 600;">
                         <div class="d-flex align-items-center gap-1.5">
                             <span style="width: 11px; height: 11px; background: #3B7CE7; border-radius: 2px; display: inline-block;"></span>
                             <span style="color: #334155;">CR Masuk</span>
@@ -268,7 +237,10 @@
                             <span style="color: #334155;">Dibatalkan</span>
                         </div>
                     </div>
+                </div>
 
+                {{-- Tren Bulanan (Diagram Batang) SVG --}}
+                <div id="pmhTrendView">
                     @php
                         $trendData = $pmMonthlyTrend ?? [];
                         $allVals = [5];
@@ -360,188 +332,7 @@
                         <span style="font-size: 0.72rem; color: #64748B; font-weight: 500;">Sumber Data: Laporan Internal CR</span>
                     </div>
                 </div>
-
-                {{-- VIEW 2: Status Siklus (Donut + 6 Progress Lines) --}}
-                <div id="pmhStatusView" style="display: none;">
-                    <div style="height: 1px; background: #DCE1E7; margin: 0.85rem 0 1.25rem;"></div>
-
-                    <div class="row align-items-center g-3 pt-1">
-                        {{-- Donut Chart Left --}}
-                        <div class="col-sm-5 col-12 text-center">
-                            <div style="position: relative; width: 155px; height: 155px; margin: 0 auto;">
-                                <div style="width: 100%; height: 100%; border-radius: 50%; background: {{ $totalDonut == 0 ? '#E2E8F0' : "conic-gradient(
-                                    #00A3FF 0% {$p1}%,
-                                    #4338CA {$p1}% {$p2}%,
-                                    #F59E0B {$p2}% {$p3}%,
-                                    #EC4899 {$p3}% {$p4}%,
-                                    #047857 {$p4}% {$p5}%,
-                                    #10B981 {$p5}% 100%
-                                )" }}; display: flex; align-items: center; justify-content: center;">
-                                    <div style="width: 96px; height: 96px; background: #FFFFFF; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                        <span class="fw-bold" style="font-size: 2.2rem; line-height: 1; color: #0F172A; font-weight: 800;">{{ $totalDonut }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- 6 Status Progress Lines Right --}}
-                        <div class="col-sm-7 col-12">
-                            <div class="d-flex flex-column gap-3">
-                                <div class="d-flex align-items-center" style="font-size: 0.78rem;">
-                                    <span class="d-inline-flex align-items-center gap-2" style="width: 76px; flex-shrink: 0; font-weight: 600; color: #475569;">
-                                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #00A3FF; flex-shrink: 0;"></span>
-                                        <span>Analisa</span>
-                                    </span>
-                                    <div style="flex: 1; height: 4px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                        <div style="width: {{ ($cAnalisa / $totalDonutCalc) * 100 }}%; height: 100%; background: #00A3FF; border-radius: 999px;"></div>
-                                    </div>
-                                    <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cAnalisa }}</span>
-                                </div>
-
-                                <div class="d-flex align-items-center" style="font-size: 0.78rem;">
-                                    <span class="d-inline-flex align-items-center gap-2" style="width: 76px; flex-shrink: 0; font-weight: 600; color: #475569;">
-                                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #4338CA; flex-shrink: 0;"></span>
-                                        <span>Develop</span>
-                                    </span>
-                                    <div style="flex: 1; height: 4px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                        <div style="width: {{ ($cDev / $totalDonutCalc) * 100 }}%; height: 100%; background: #4338CA; border-radius: 999px;"></div>
-                                    </div>
-                                    <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cDev }}</span>
-                                </div>
-
-                                <div class="d-flex align-items-center" style="font-size: 0.78rem;">
-                                    <span class="d-inline-flex align-items-center gap-2" style="width: 76px; flex-shrink: 0; font-weight: 600; color: #475569;">
-                                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #F59E0B; flex-shrink: 0;"></span>
-                                        <span>SIT</span>
-                                    </span>
-                                    <div style="flex: 1; height: 4px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                        <div style="width: {{ ($cSit / $totalDonutCalc) * 100 }}%; height: 100%; background: #F59E0B; border-radius: 999px;"></div>
-                                    </div>
-                                    <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cSit }}</span>
-                                </div>
-
-                                <div class="d-flex align-items-center" style="font-size: 0.78rem;">
-                                    <span class="d-inline-flex align-items-center gap-2" style="width: 76px; flex-shrink: 0; font-weight: 600; color: #475569;">
-                                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #EC4899; flex-shrink: 0;"></span>
-                                        <span>UAT</span>
-                                    </span>
-                                    <div style="flex: 1; height: 4px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                        <div style="width: {{ ($cUat / $totalDonutCalc) * 100 }}%; height: 100%; background: #EC4899; border-radius: 999px;"></div>
-                                    </div>
-                                    <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cUat }}</span>
-                                </div>
-
-                                <div class="d-flex align-items-center" style="font-size: 0.78rem;">
-                                    <span class="d-inline-flex align-items-center gap-2" style="width: 76px; flex-shrink: 0; font-weight: 600; color: #475569;">
-                                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #047857; flex-shrink: 0;"></span>
-                                        <span>Pelatihan</span>
-                                    </span>
-                                    <div style="flex: 1; height: 4px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                        <div style="width: {{ ($cTrain / $totalDonutCalc) * 100 }}%; height: 100%; background: #047857; border-radius: 999px;"></div>
-                                    </div>
-                                    <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cTrain }}</span>
-                                </div>
-
-                                <div class="d-flex align-items-center" style="font-size: 0.78rem;">
-                                    <span class="d-inline-flex align-items-center gap-2" style="width: 76px; flex-shrink: 0; font-weight: 600; color: #475569;">
-                                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #10B981; flex-shrink: 0;"></span>
-                                        <span>Go Live</span>
-                                    </span>
-                                    <div style="flex: 1; height: 4px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                        <div style="width: {{ ($cGoLive / $totalDonutCalc) * 100 }}%; height: 100%; background: #10B981; border-radius: 999px;"></div>
-                                    </div>
-                                    <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cGoLive }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
             </div>
-        </div>
-
-        <script>
-            function switchPmhChart(mode) {
-                const trendView = document.getElementById('pmhTrendView');
-                const statusView = document.getElementById('pmhStatusView');
-                const trendBtn = document.getElementById('tabPmhTrendBtn');
-                const statusBtn = document.getElementById('tabPmhStatusBtn');
-                const title = document.getElementById('pmhChartTitle');
-                const sub = document.getElementById('pmhChartSubtitle');
-
-                if (mode === 'trend') {
-                    if (trendView) trendView.style.display = 'block';
-                    if (statusView) statusView.style.display = 'none';
-                    if (trendBtn) { trendBtn.classList.add('active', 'fw-bold'); trendBtn.classList.remove('text-secondary'); }
-                    if (statusBtn) { statusBtn.classList.remove('active', 'fw-bold'); statusBtn.classList.add('text-secondary'); }
-                    if (title) title.innerText = 'Tren CR Bulanan (Diagram Batang)';
-                    if (sub) sub.innerText = 'Jumlah CR Masuk, Keluar, dan Dibatalkan ({{ $trendPeriodLabel ?? "6 Bulan Terakhir" }})';
-                } else {
-                    if (trendView) trendView.style.display = 'none';
-                    if (statusView) statusView.style.display = 'block';
-                    if (statusBtn) { statusBtn.classList.add('active', 'fw-bold'); statusBtn.classList.remove('text-secondary'); }
-                    if (trendBtn) { trendBtn.classList.remove('active', 'fw-bold'); trendBtn.classList.add('text-secondary'); }
-                    if (title) title.innerText = 'STATUS SIKLUS PROYEK';
-                    if (sub) sub.innerText = 'Monitoring pergerakan CR melalui 6 tahapan siklus proyek TI';
-                }
-            }
-        </script>
-    </div>
-
-    <div class="card p-4 border-0 shadow-sm" style="border: 1px solid #E2E8F0 !important; border-radius: 18px; background: #FFFFFF;">
-        <div class="d-flex justify-content-between align-items-center mb-3">
-            <div>
-                <h5 class="fw-bold text-dark mb-1" style="font-size: 1.05rem;">Antrean CR Perlu Keputusan PM Head</h5>
-                <p class="text-muted small mb-0" style="font-size: 0.8rem;">Daftar CR yang telah diverifikasi PM dan menunggu validasi kelayakan atau go-live.</p>
-            </div>
-            <a href="{{ route('pmh.persetujuan') }}" class="btn btn-sm btn-outline-primary fw-semibold" style="border-radius: 8px;">
-                Lihat Semua Antrean <i class="bi bi-arrow-right"></i>
-            </a>
-        </div>
-
-        <div class="table-responsive">
-            <table class="table align-middle mb-0">
-                <thead style="background: #F8FAFC;">
-                    <tr>
-                        <th class="py-2 px-3 small text-muted">ID &amp; JUDUL CR</th>
-                        <th class="py-2 px-3 small text-muted">PEMOHON</th>
-                        <th class="py-2 px-3 small text-muted">NAMA PM</th>
-                        <th class="py-2 px-3 small text-muted text-center">STATUS</th>
-                        <th class="py-2 px-3 small text-muted text-center">AKSI</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    @forelse ($latestReviews as $cr)
-                        <tr>
-                            <td class="py-3 px-3">
-                                <div class="fw-bold text-dark" style="font-size: 0.88rem;">{{ $cr->judul }}</div>
-                                <div class="text-muted small font-monospace">{{ $cr->kode_cr }}</div>
-                            </td>
-                            <td class="py-3 px-3 fw-semibold text-dark small">
-                                {{ $cr->client?->company ?? ($cr->klien ?: '-') }}
-                            </td>
-                            <td class="py-3 px-3 small text-secondary">
-                                {{ $cr->nama_pm }}
-                            </td>
-                            <td class="py-3 px-3 text-center">
-                                <span class="badge bg-warning-subtle text-warning fw-semibold px-2 py-1" style="border-radius: 999px;">
-                                    {{ ucfirst(str_replace('_', ' ', $cr->status)) }}
-                                </span>
-                            </td>
-                            <td class="py-3 px-3 text-center">
-                                <a href="{{ route('pmh.review', $cr) }}" class="btn btn-primary btn-sm px-3 fw-bold" style="border-radius: 6px; font-size: 0.78rem;">
-                                    Review &gt;
-                                </a>
-                            </td>
-                        </tr>
-                    @empty
-                        <tr>
-                            <td colspan="5" class="py-4 text-center text-muted small">
-                                Tidak ada antrean persetujuan yang menunggu saat ini.
-                            </td>
-                        </tr>
-                    @endforelse
-                </tbody>
-            </table>
         </div>
     </div>
 
