@@ -102,7 +102,6 @@ class NotificationController extends Controller
         $user = Auth::user();
         Notification::forUser($user)->unread()->update([
             'is_read' => true,
-            'read_at' => now(),
         ]);
 
         if ($request->wantsJson() || $request->ajax()) {

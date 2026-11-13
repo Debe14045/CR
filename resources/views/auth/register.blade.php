@@ -63,7 +63,7 @@
             z-index: 0;
         }
 
-        /* ── Main White Container Card (Figma MacBook Pro 14" - 28) ── */
+        /* ── Main White Container Card ── */
         .auth-container {
             position: relative;
             z-index: 1;
@@ -80,7 +80,7 @@
             gap: 22px;
         }
 
-        /* ── Left Form Panel (Figma MacBook Pro 14" - 28) ── */
+        /* ── Left Form Panel ── */
         .form-panel {
             flex: 1;
             display: flex;
@@ -95,23 +95,23 @@
             max-width: 380px;
             border: 1.5px solid var(--card-border);
             border-radius: 22px;
-            padding: 2.25rem 2rem;
+            padding: 1.8rem 2rem;
             background: #FFFFFF;
             box-shadow: 0 4px 20px rgba(0, 0, 0, 0.02);
         }
 
         .auth-heading {
-            font-size: 1.55rem;
+            font-size: 1.4rem;
             font-weight: 800;
             color: var(--text-navy);
             text-align: center;
             letter-spacing: -0.015em;
-            margin-bottom: 1.4rem;
+            margin-bottom: 1.1rem;
         }
 
         /* ── Form Inputs ── */
         .input-group-custom {
-            margin-bottom: 0.95rem;
+            margin-bottom: 0.8rem;
             text-align: left;
         }
 
@@ -120,17 +120,17 @@
             font-size: 0.78rem;
             font-weight: 600;
             color: var(--text-muted);
-            margin-bottom: 0.35rem;
+            margin-bottom: 0.3rem;
         }
 
         .custom-input {
             width: 100%;
-            height: 42px;
+            height: 38px;
             background: var(--input-bg);
             border: 1.5px solid var(--input-border);
             border-radius: 8px;
             padding: 0 0.95rem;
-            font-size: 0.88rem;
+            font-size: 0.85rem;
             color: #1A202C;
             font-family: var(--font-main);
             outline: none;
@@ -139,7 +139,7 @@
 
         .custom-input::placeholder {
             color: #A0AEC0;
-            font-size: 0.82rem;
+            font-size: 0.8rem;
         }
 
         .custom-input:focus {
@@ -157,12 +157,12 @@
         .forgot-link-wrap {
             display: flex;
             justify-content: flex-end;
-            margin-top: 0.25rem;
-            margin-bottom: 1.15rem;
+            margin-top: 0.15rem;
+            margin-bottom: 0.95rem;
         }
 
         .forgot-link {
-            font-size: 0.75rem;
+            font-size: 0.73rem;
             color: #64748B;
             text-decoration: none;
             font-weight: 500;
@@ -177,12 +177,12 @@
         /* ── Submit Button (Get Started) ── */
         .btn-sign-in {
             width: 100%;
-            height: 42px;
+            height: 40px;
             background: var(--primary-blue);
             border: none;
             border-radius: 8px;
             color: #FFFFFF;
-            font-size: 0.9rem;
+            font-size: 0.88rem;
             font-weight: 700;
             letter-spacing: 0.5px;
             cursor: pointer;
@@ -199,40 +199,40 @@
             box-shadow: 0 6px 18px rgba(56, 189, 248, 0.45);
         }
 
-        /* ── Divider: Our Continue With ── */
+        /* ── Divider ── */
         .divider-container {
             display: flex;
             align-items: center;
             justify-content: center;
             gap: 0.75rem;
-            margin: 1.15rem 0 1.05rem 0;
+            margin: 0.95rem 0 0.85rem 0;
         }
 
         .divider-line {
-            width: 45px;
+            width: 40px;
             height: 1.5px;
             background: #1E293B;
         }
 
         .divider-text {
-            font-size: 0.72rem;
+            font-size: 0.7rem;
             font-weight: 600;
             color: #64748B;
             white-space: nowrap;
         }
 
-        /* ── Social Icons (Google, Apple) ── */
+        /* ── Social Icons ── */
         .social-buttons {
             display: flex;
             justify-content: center;
             align-items: center;
             gap: 1.25rem;
-            margin-bottom: 1.35rem;
+            margin-bottom: 1.1rem;
         }
 
         .btn-social {
-            width: 38px;
-            height: 38px;
+            width: 36px;
+            height: 36px;
             border-radius: 50%;
             background: #FFFFFF;
             border: 1.5px solid #E2E8F0;
@@ -252,16 +252,16 @@
         }
 
         .btn-social svg {
-            width: 18px;
-            height: 18px;
+            width: 16px;
+            height: 16px;
         }
 
         /* ── Footer Link ── */
         .auth-footer {
             text-align: center;
-            font-size: 0.78rem;
+            font-size: 0.76rem;
             color: #64748B;
-            margin-top: 0.25rem;
+            margin-top: 0.2rem;
         }
 
         .auth-footer a {
@@ -275,7 +275,7 @@
             text-decoration: underline;
         }
 
-        /* ── Right Hero Panel (Skyscraper Image + ITPI Logo) ── */
+        /* ── Right Hero Panel ── */
         .hero-panel {
             flex: 1.05;
             border-radius: 26px;
@@ -348,10 +348,10 @@
         }
 
         .alert-box {
-            padding: 0.65rem 0.9rem;
+            padding: 0.55rem 0.8rem;
             border-radius: 8px;
-            font-size: 0.8rem;
-            margin-bottom: 1rem;
+            font-size: 0.78rem;
+            margin-bottom: 0.85rem;
             display: flex;
             align-items: center;
             gap: 0.5rem;
@@ -394,7 +394,7 @@
                 width: 100%;
             }
             .form-wrapper-box {
-                padding: 1.75rem 1.25rem;
+                padding: 1.5rem 1.15rem;
                 max-width: 100%;
             }
         }
@@ -405,7 +405,7 @@
     <div class="ambient-glow"></div>
 
     <div class="auth-container">
-        <!-- SISI KIRI: Form Box Create an account (Figma MacBook Pro 14" - 28) -->
+        <!-- SISI KIRI: Form Box Create an account -->
         <div class="form-panel">
             <div class="form-wrapper-box">
                 <h2 class="auth-heading">Create an account</h2>
@@ -443,6 +443,16 @@
                                required autofocus autocomplete="name">
                     </div>
 
+                    <!-- Nama Perusahaan Input -->
+                    <div class="input-group-custom">
+                        <label class="custom-label" for="company">Nama Perusahaan</label>
+                        <input type="text" id="company" name="company"
+                               class="custom-input @error('company') is-invalid @enderror"
+                               value="{{ old('company') }}"
+                               placeholder="PT Maju Bersama"
+                               required autocomplete="organization">
+                    </div>
+
                     <!-- Email Input -->
                     <div class="input-group-custom">
                         <label class="custom-label" for="email">Email</label>
@@ -454,7 +464,7 @@
                     </div>
 
                     <!-- Password Input -->
-                    <div class="input-group-custom" style="margin-bottom: 0.25rem;">
+                    <div class="input-group-custom" style="margin-bottom: 0.2rem;">
                         <label class="custom-label" for="password">Password</label>
                         <input type="password" id="password" name="password"
                                class="custom-input @error('password') is-invalid @enderror"
@@ -472,16 +482,15 @@
                     </button>
                 </form>
 
-                <!-- Divider: Our Continue With -->
+                <!-- Divider -->
                 <div class="divider-container">
                     <span class="divider-line"></span>
                     <span class="divider-text">Our Continue With</span>
                     <span class="divider-line"></span>
                 </div>
 
-                <!-- Social Login: Google & Apple -->
+                <!-- Social Login -->
                 <div class="social-buttons">
-                    <!-- Google Button -->
                     <a href="{{ route('auth.google') }}" class="btn-social" title="Daftar dengan Akun Google">
                         <svg viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
                             <path d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z" fill="#4285F4"/>
@@ -491,7 +500,6 @@
                         </svg>
                     </a>
 
-                    <!-- Apple Button -->
                     <a href="javascript:void(0)" onclick="alert('Apple Sign In akan segera aktif pada pembaruan mendatang. Silakan gunakan Akun Google atau Email.')" class="btn-social" title="Daftar dengan Apple ID">
                         <svg viewBox="0 0 24 24" fill="#000000" xmlns="http://www.w3.org/2000/svg">
                             <path d="M18.71 19.5c-.83 1.24-1.71 2.45-3.05 2.47-1.34.03-1.77-.79-3.29-.79-1.53 0-2 .77-3.27.82-1.31.05-2.3-1.32-3.14-2.53C4.25 17 2.94 12.45 4.7 9.39c.87-1.52 2.43-2.48 4.12-2.51 1.28-.02 2.5.87 3.29.87.78 0 2.26-1.07 3.81-.91.65.03 2.47.26 3.64 1.98-.09.06-2.17 1.28-2.15 3.81.03 3.02 2.65 4.03 2.68 4.04-.03.07-.42 1.44-1.38 2.83M15.97 6.38c.62-.75 1.04-1.8 0.93-2.85-.9.04-1.99.6-2.63 1.35-.57.65-1.06 1.71-.93 2.73 1 .08 2.01-.48 2.63-1.23z"/>
@@ -499,14 +507,14 @@
                     </a>
                 </div>
 
-                <!-- Footer: Login Switch -->
+                <!-- Footer -->
                 <div class="auth-footer">
                     Already have an account? <a href="{{ route('login') }}">Sign In</a>
                 </div>
             </div>
         </div>
 
-        <!-- SISI KANAN: Visual Skyscraper & Authentic ITPI Technology Logo (Figma MacBook Pro 14" - 28) -->
+        <!-- SISI KANAN -->
         <div class="hero-panel">
             <div class="hero-logo-box">
                 <img src="/images/itpi_logo_tight.png" alt="ITPI TECHNOLOGY" class="hero-logo-img">

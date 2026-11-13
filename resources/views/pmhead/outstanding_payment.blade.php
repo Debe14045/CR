@@ -3,6 +3,15 @@
 @section('title', 'OUTSTANDING PAYMENT • Monitoring Change Request')
 
 @section('content')
+@php
+    $payments = $payments ?? [];
+    $metrics = $metrics ?? [
+        'total_outstanding' => 0,
+        'count_overdue' => 0,
+        'count_due_soon' => 0,
+        'count_paid' => 0,
+    ];
+@endphp
 <style>
     .pm-table-container {
         border: 1px solid #D0DCEB !important;

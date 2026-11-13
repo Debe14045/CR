@@ -34,7 +34,7 @@
          FIGMA DASHBOARD: ROLE-AWARE (PM & CLIENT MOCKUPS)
     ══════════════════════════════════════════════════════════ --}}
     @php
-        $userRole = auth()->user()?->role ?? 'client';
+        $userRole = $dashboardRole ?? session('active_role', auth()->user()?->role ?? 'client');
         $isPmDashboard = in_array($userRole, ['pm', 'pmh', 'admin']) || request('role') === 'pm' || request('view_as') === 'pm';
     @endphp
 
@@ -217,225 +217,10 @@
         <div class="col-lg-7 col-12">
             @if ($isPmDashboard)
                 {{-- PM DASHBOARD: Tren CR Bulanan (Diagram Batang) --}}
-                <div class="card p-4 border-0 h-100 shadow-sm" style="border-radius: 20px; background: #EEF1F6; border: 1px solid #E2E8F0 !important;">
-                    <div class="d-flex justify-content-between align-items-start mb-2 flex-wrap gap-2">
-                        <div>
-                            <h5 class="fw-bold mb-1" style="color: #0F172A; font-size: 0.98rem; font-weight: 800;">Tren CR Bulanan (Diagram Batang)</h5>
-                            <p class="text-muted small mb-0" style="font-size: 0.78rem; color: #64748B;">Jumlah CR Masuk, Keluar, dan Dibatalkan (Januari - Juni)</p>
-                        </div>
-                        <div class="d-flex align-items-center gap-3 ms-auto" style="font-size: 0.75rem; font-weight: 600;">
-                            <div class="d-flex align-items-center gap-1.5">
-                                <span style="width: 11px; height: 11px; background: #3B7CE7; border-radius: 2px; display: inline-block;"></span>
-                                <span style="color: #334155;">CR Masuk</span>
-                            </div>
-                            <div class="d-flex align-items-center gap-1.5">
-                                <span style="width: 11px; height: 11px; background: #31A773; border-radius: 2px; display: inline-block;"></span>
-                                <span style="color: #334155;">Keluar</span>
-                            </div>
-                            <div class="d-flex align-items-center gap-1.5">
-                                <span style="width: 11px; height: 11px; background: #EF4444; border-radius: 2px; display: inline-block;"></span>
-                                <span style="color: #334155;">Dibatalkan</span>
-                            </div>
-                        </div>
-                    </div>
-
-                    <div class="w-100 position-relative pt-2">
-                        <svg viewBox="0 0 540 230" class="w-100" style="overflow: visible; font-family: 'Plus Jakarta Sans', sans-serif;">
-                            <line x1="45" y1="35" x2="525" y2="35" stroke="#DCE2EC" stroke-dasharray="3, 3" stroke-width="1" />
-                            <text x="34" y="39" font-size="11" fill="#94A3B8" font-weight="600" text-anchor="end">5</text>
-
-                            <line x1="45" y1="65" x2="525" y2="65" stroke="#DCE2EC" stroke-dasharray="3, 3" stroke-width="1" />
-                            <text x="34" y="69" font-size="11" fill="#94A3B8" font-weight="600" text-anchor="end">4</text>
-
-                            <line x1="45" y1="95" x2="525" y2="95" stroke="#DCE2EC" stroke-dasharray="3, 3" stroke-width="1" />
-                            <text x="34" y="99" font-size="11" fill="#94A3B8" font-weight="600" text-anchor="end">3</text>
-
-                            <line x1="45" y1="135" x2="525" y2="135" stroke="#DCE2EC" stroke-dasharray="3, 3" stroke-width="1" />
-                            <text x="34" y="139" font-size="11" fill="#94A3B8" font-weight="600" text-anchor="end">1</text>
-
-                            <line x1="45" y1="175" x2="525" y2="175" stroke="#CBD5E1" stroke-width="1.2" />
-                            <text x="34" y="179" font-size="11" fill="#94A3B8" font-weight="600" text-anchor="end">0</text>
-
-                            @php
-                                $trendData = $pmMonthlyTrend ?? [
-                                    ['month' => 'Jan', 'masuk' => 3, 'keluar' => 0, 'batal' => 0],
-                                    ['month' => 'Feb', 'masuk' => 4, 'keluar' => 1, 'batal' => 0],
-                                    ['month' => 'Mar', 'masuk' => 1, 'keluar' => 1, 'batal' => 1],
-                                    ['month' => 'Apr', 'masuk' => 5, 'keluar' => 2, 'batal' => 0],
-                                    ['month' => 'Mei', 'masuk' => 3, 'keluar' => 1, 'batal' => 1],
-                                    ['month' => 'Jun', 'masuk' => 4, 'keluar' => 2, 'batal' => 0],
-                                ];
-                                $xCenters = [96, 181, 266, 351, 436, 511];
-                            @endphp
-
-                            @foreach($trendData as $idx => $m)
-                                @php
-                                    $cx = $xCenters[$idx] ?? (96 + $idx * 85);
-                                    $vMasuk = $m['masuk'];
-                                    $vKeluar = $m['keluar'];
-                                    $vBatal = $m['batal'];
-
-                                    $hMasuk = $vMasuk > 0 ? min(140, $vMasuk * 28) : 2;
-                                    $yMasuk = $vMasuk > 0 ? (175 - $hMasuk) : 173;
-                                    $tYMasuk = $vMasuk > 0 ? ($yMasuk - 7) : 169;
-
-                                    $hKeluar = $vKeluar > 0 ? min(140, $vKeluar * 28) : 2;
-                                    $yKeluar = $vKeluar > 0 ? (175 - $hKeluar) : 173;
-                                    $tYKeluar = $vKeluar > 0 ? ($yKeluar - 7) : 169;
-
-                                    $hBatal = $vBatal > 0 ? min(140, $vBatal * 28) : 2;
-                                    $yBatal = $vBatal > 0 ? (175 - $hBatal) : 173;
-                                    $tYBatal = $vBatal > 0 ? ($yBatal - 7) : 169;
-                                @endphp
-
-                                <g class="chart-month-group" style="cursor: pointer;">
-                                    <text x="{{ $cx - 16 }}" y="{{ $tYMasuk }}" font-size="10.5" font-weight="700" fill="#3B7CE7" text-anchor="middle">{{ $vMasuk }}</text>
-                                    <rect x="{{ $cx - 23 }}" y="{{ $yMasuk }}" width="14" height="{{ $hMasuk }}" rx="2" fill="#3B7CE7" style="transition: opacity 0.15s ease;" onmouseover="this.style.opacity='0.85';" onmouseout="this.style.opacity='1';">
-                                        <title>{{ $m['month'] }}: {{ $vMasuk }} CR Masuk</title>
-                                    </rect>
-
-                                    <text x="{{ $cx }}" y="{{ $tYKeluar }}" font-size="{{ $vKeluar > 0 ? 10 : 9 }}" font-weight="600" fill="#31A773" text-anchor="middle">{{ $vKeluar }}</text>
-                                    <rect x="{{ $cx - 7 }}" y="{{ $yKeluar }}" width="14" height="{{ $hKeluar }}" rx="{{ $vKeluar > 0 ? 2 : 1 }}" fill="#31A773" style="transition: opacity 0.15s ease;" onmouseover="this.style.opacity='0.85';" onmouseout="this.style.opacity='1';">
-                                        <title>{{ $m['month'] }}: {{ $vKeluar }} CR Keluar / Selesai</title>
-                                    </rect>
-
-                                    <text x="{{ $cx + 16 }}" y="{{ $tYBatal }}" font-size="{{ $vBatal > 0 ? 10 : 9 }}" font-weight="600" fill="#EF4444" text-anchor="middle">{{ $vBatal }}</text>
-                                    <rect x="{{ $cx + 9 }}" y="{{ $yBatal }}" width="14" height="{{ $hBatal }}" rx="{{ $vBatal > 0 ? 2 : 1 }}" fill="#EF4444" style="transition: opacity 0.15s ease;" onmouseover="this.style.opacity='0.85';" onmouseout="this.style.opacity='1';">
-                                        <title>{{ $m['month'] }}: {{ $vBatal }} CR Dibatalkan</title>
-                                    </rect>
-
-                                    <text x="{{ $cx }}" y="196" font-size="11.5" font-weight="600" fill="#64748B" text-anchor="middle">{{ $m['month'] }}</text>
-                                </g>
-                            @endforeach
-                        </svg>
-                    </div>
-
-                    <div class="mt-2 py-1.5 px-3 rounded-2 text-end" style="background: #E3E6ED;">
-                        <span style="font-size: 0.72rem; color: #64748B; font-weight: 500;">Sumber Data: Laporan Internal CR</span>
-                    </div>
-                </div>
+                @include('dashboard.partials.pm-trend-chart')
             @else
                 {{-- CLIENT DASHBOARD: STATUS (Donut + Progress) matching Figma --}}
-                <div class="card p-4 border-0 h-100 shadow-sm" style="border-radius: 20px; background: #F0F3F6; border: 1.5px solid #D6E0EC !important;">
-                    <div>
-                        <h5 class="fw-bold mb-1 text-uppercase" data-i18n="status_title" style="color: #0F172A; font-size: 1.05rem; font-weight: 800; letter-spacing: 0.02em;">STATUS</h5>
-                        <p class="text-muted small mb-0" data-i18n="status_subtitle" style="font-size: 0.8rem; color: #64748B;">Monitoring pergerakan CR melalui 6 tahapan siklus proyek TI</p>
-                    </div>
-                    <div style="height: 1px; background: #D5DDE6; margin: 0.75rem 0 1.25rem;"></div>
-
-                    <div class="row align-items-center g-3 pt-1">
-                        {{-- Donut Chart Left --}}
-                        <div class="col-sm-5 col-12 text-center">
-                            <div style="position: relative; width: 155px; height: 155px; margin: 0 auto;">
-                                @php
-                                    $cAnalisa  = $statusCounts['analisis'] ?? 2;
-                                    $cDevelop  = $statusCounts['develop'] ?? 0;
-                                    $cSit      = $statusCounts['sit'] ?? 1;
-                                    $cUat      = $statusCounts['uat'] ?? 0;
-                                    $cTraining = $statusCounts['deploying'] ?? 0;
-                                    $cGoLive   = $statusCounts['golive'] ?? 2;
-                                    $totalDonut = $cAnalisa + $cDevelop + $cSit + $cUat + $cTraining + $cGoLive;
-                                    if ($totalDonut == 0) $totalDonut = 1;
-
-                                    $p1 = ($cAnalisa / $totalDonut) * 100;
-                                    $p2 = $p1 + (($cDevelop / $totalDonut) * 100);
-                                    $p3 = $p2 + (($cSit / $totalDonut) * 100);
-                                    $p4 = $p3 + (($cUat / $totalDonut) * 100);
-                                    $p5 = $p4 + (($cTraining / $totalDonut) * 100);
-                                @endphp
-                                <div style="width: 100%; height: 100%; border-radius: 50%; background: conic-gradient(
-                                    #0EA5E9 0% {{ $p1 }}%,
-                                    #6366F1 {{ $p1 }}% {{ $p2 }}%,
-                                    #F59E0B {{ $p2 }}% {{ $p3 }}%,
-                                    #EC4899 {{ $p3 }}% {{ $p4 }}%,
-                                    #059669 {{ $p4 }}% {{ $p5 }}%,
-                                    #16A34A {{ $p5 }}% 100%
-                                ); display: flex; align-items: center; justify-content: center;">
-                                    <div style="width: 96px; height: 96px; background: #F0F3F6; border-radius: 50%; display: flex; align-items: center; justify-content: center;">
-                                        <span class="fw-bold" style="font-size: 2.35rem; line-height: 1; color: #0F172A; font-weight: 800;">{{ $totalDonut }}</span>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-
-                        {{-- 6 Status Progress Lines Right (INLINE LAYOUT MATCHING FIGMA) --}}
-                        <div class="col-sm-7 col-12">
-                            <div class="d-flex flex-column gap-3">
-                                {{-- 1. Analisa --}}
-                                <div class="d-flex align-items-center" style="font-size: 0.78rem;">
-                                    <span class="d-inline-flex align-items-center gap-2" style="width: 76px; flex-shrink: 0; font-weight: 600; color: #475569;">
-                                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #0EA5E9; flex-shrink: 0;"></span>
-                                        <span data-i18n="stage_analisa">Analisa</span>
-                                    </span>
-                                    <div style="flex: 1; height: 5px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                        <div style="width: {{ ($cAnalisa / $totalDonut) * 100 }}%; height: 100%; background: #0EA5E9; border-radius: 999px;"></div>
-                                    </div>
-                                    <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cAnalisa }}</span>
-                                </div>
-
-                                {{-- 2. Develop --}}
-                                <div class="d-flex align-items-center" style="font-size: 0.78rem;">
-                                    <span class="d-inline-flex align-items-center gap-2" style="width: 76px; flex-shrink: 0; font-weight: 600; color: #475569;">
-                                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #6366F1; flex-shrink: 0;"></span>
-                                        <span data-i18n="stage_develop">Develop</span>
-                                    </span>
-                                    <div style="flex: 1; height: 5px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                        <div style="width: {{ ($cDevelop / $totalDonut) * 100 }}%; height: 100%; background: #6366F1; border-radius: 999px;"></div>
-                                    </div>
-                                    <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cDevelop }}</span>
-                                </div>
-
-                                {{-- 3. SIT --}}
-                                <div class="d-flex align-items-center" style="font-size: 0.78rem;">
-                                    <span class="d-inline-flex align-items-center gap-2" style="width: 76px; flex-shrink: 0; font-weight: 600; color: #475569;">
-                                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #F59E0B; flex-shrink: 0;"></span>
-                                        <span data-i18n="stage_sit">SIT</span>
-                                    </span>
-                                    <div style="flex: 1; height: 5px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                        <div style="width: {{ ($cSit / $totalDonut) * 100 }}%; height: 100%; background: #F59E0B; border-radius: 999px;"></div>
-                                    </div>
-                                    <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cSit }}</span>
-                                </div>
-
-                                {{-- 4. UAT --}}
-                                <div class="d-flex align-items-center" style="font-size: 0.78rem;">
-                                    <span class="d-inline-flex align-items-center gap-2" style="width: 76px; flex-shrink: 0; font-weight: 600; color: #475569;">
-                                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #EC4899; flex-shrink: 0;"></span>
-                                        <span data-i18n="stage_uat">UAT</span>
-                                    </span>
-                                    <div style="flex: 1; height: 5px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                        <div style="width: {{ ($cUat / $totalDonut) * 100 }}%; height: 100%; background: #EC4899; border-radius: 999px;"></div>
-                                    </div>
-                                    <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cUat }}</span>
-                                </div>
-
-                                {{-- 5. Training --}}
-                                <div class="d-flex align-items-center" style="font-size: 0.78rem;">
-                                    <span class="d-inline-flex align-items-center gap-2" style="width: 76px; flex-shrink: 0; font-weight: 600; color: #475569;">
-                                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #059669; flex-shrink: 0;"></span>
-                                        <span data-i18n="stage_training">Training</span>
-                                    </span>
-                                    <div style="flex: 1; height: 5px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                        <div style="width: {{ ($cTraining / $totalDonut) * 100 }}%; height: 100%; background: #059669; border-radius: 999px;"></div>
-                                    </div>
-                                    <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cTraining }}</span>
-                                </div>
-
-                                {{-- 6. Go Live --}}
-                                <div class="d-flex align-items-center" style="font-size: 0.78rem;">
-                                    <span class="d-inline-flex align-items-center gap-2" style="width: 76px; flex-shrink: 0; font-weight: 600; color: #475569;">
-                                        <span style="width: 7px; height: 7px; border-radius: 50%; background: #16A34A; flex-shrink: 0;"></span>
-                                        <span data-i18n="stage_golive">Go Live</span>
-                                    </span>
-                                    <div style="flex: 1; height: 5px; background: #DBD8CE; border-radius: 999px; margin: 0 12px; overflow: hidden;">
-                                        <div style="width: {{ ($cGoLive / $totalDonut) * 100 }}%; height: 100%; background: #16A34A; border-radius: 999px;"></div>
-                                    </div>
-                                    <span class="fw-bold" style="color: #0F172A; min-width: 14px; text-align: right;">{{ $cGoLive }}</span>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-                </div>
+                @include('dashboard.partials.status-donut-card')
             @endif
         </div>
 
@@ -447,7 +232,7 @@
                         <span style="width: 8px; height: 8px; border-radius: 50%; background: #EF4444; display: inline-block;"></span>
                         <h5 class="fw-bold mb-0 text-uppercase" data-i18n="notif_title" style="color: #0F172A; font-size: 0.95rem; font-weight: 800; letter-spacing: 0.02em;">NOTIFIKASI</h5>
                     </div>
-                    <a href="{{ $isPmh ? route('pmh.notifications') : route('notifications.index') }}" class="text-decoration-none fw-semibold" style="color: #0284C7; font-size: 0.82rem;">Lihat Semua</a>
+                    <a href="{{ route('notifications.index') }}" class="text-decoration-none fw-semibold" style="color: #0284C7; font-size: 0.82rem;">Lihat Semua</a>
                 </div>
                 <p class="text-muted small mb-0" style="font-size: 0.74rem; line-height: 1.45; color: #64748B;">
                     Pemberitahuan persetujuan penting, batas waktu tinjauan dokumen, dan tindak lanjut status tahapan proyek.
@@ -645,7 +430,7 @@
                                        class="btn btn-sm text-white fw-semibold d-inline-flex align-items-center gap-1"
                                        style="background: #155DFC; border-radius: 6px; font-size: 0.74rem; padding: 0.35rem 0.85rem; border: none; box-shadow: 0 1px 2px rgba(21,93,252,0.25); text-decoration: none; transition: opacity 0.15s ease;"
                                        onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">
-                                        <span>Review</span>
+                                        <span>{{ in_array(strtolower($cr->status ?? ''), ['diajukan', 'awaiting_pm', 'analisa', 'dianalisis']) ? 'Review' : 'Detail' }}</span>
                                         <i class="bi bi-chevron-right" style="font-size: 0.65rem; font-weight: 700;"></i>
                                     </a>
                                 </div>
@@ -792,22 +577,26 @@
     @php
         $statusParam = strtolower(request('status', ''));
         $statusTitleMap = [
-            'diajukan'     => 'Diajukan',
-            'awaiting_pm'  => 'Diajukan',
-            'awaiting_pmh' => 'Diajukan',
-            'persetujuan'  => 'Diajukan',
-            'analisa'      => 'Analysis',
-            'analysis'     => 'Analysis',
-            'dianalisis'   => 'Analysis',
-            'development'  => 'Develop',
-            'develop'      => 'Develop',
-            'dikerjakan'   => 'Develop',
-            'uat'          => 'UAT',
-            'sit'          => 'UAT',
-            'golive'       => 'Go-Live',
-            'go-live'      => 'Go-Live',
-            'go_live'      => 'Go-Live',
-            'selesai'      => 'Go-Live',
+            'diajukan'        => 'Diajukan',
+            'awaiting_pm'     => 'Review PM',
+            'analisa'         => 'Review PM',
+            'analysis'        => 'Review PM',
+            'dianalisis'      => 'Review PM',
+            'awaiting_pmh'    => 'Approval PM Head',
+            'revision_needed' => 'Revisi PM Head',
+            'validated'       => 'Disetujui',
+            'disetujui'       => 'Disetujui',
+            'quotation'       => 'Quotation',
+            'development'     => 'Develop',
+            'develop'         => 'Develop',
+            'dikerjakan'      => 'Develop',
+            'uat'             => 'UAT',
+            'sit'             => 'UAT',
+            'training'        => 'Training',
+            'golive'          => 'Go-Live',
+            'go-live'         => 'Go-Live',
+            'go_live'         => 'Go-Live',
+            'selesai'         => 'Go-Live',
         ];
 
         if ($statusParam && isset($statusTitleMap[$statusParam])) {
@@ -867,7 +656,9 @@
             <ul class="dropdown-menu dropdown-menu-end shadow-sm border py-1" style="border-radius: 8px; font-size: 0.85rem; min-width: 150px;">
                 <li><a class="dropdown-item py-2 {{ empty($statusParam) ? 'active fw-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['status' => null, 'page' => 1]) }}">Semua Status</a></li>
                 <li><a class="dropdown-item py-2 {{ $statusParam === 'diajukan' ? 'active fw-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['status' => 'diajukan', 'page' => 1]) }}">Diajukan</a></li>
-                <li><a class="dropdown-item py-2 {{ in_array($statusParam, ['analisa', 'analysis', 'dianalisis']) ? 'active fw-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['status' => 'analisa', 'page' => 1]) }}">Analysis</a></li>
+                <li><a class="dropdown-item py-2 {{ in_array($statusParam, ['analisa', 'analysis', 'dianalisis', 'awaiting_pm']) ? 'active fw-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['status' => 'analisa', 'page' => 1]) }}">Review PM</a></li>
+                <li><a class="dropdown-item py-2 {{ in_array($statusParam, ['awaiting_pmh']) ? 'active fw-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['status' => 'awaiting_pmh', 'page' => 1]) }}">Approval PM Head</a></li>
+                <li><a class="dropdown-item py-2 {{ in_array($statusParam, ['quotation']) ? 'active fw-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['status' => 'quotation', 'page' => 1]) }}">Quotation</a></li>
                 <li><a class="dropdown-item py-2 {{ in_array($statusParam, ['development', 'develop', 'dikerjakan']) ? 'active fw-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['status' => 'development', 'page' => 1]) }}">Develop</a></li>
                 <li><a class="dropdown-item py-2 {{ in_array($statusParam, ['uat', 'sit']) ? 'active fw-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['status' => 'uat', 'page' => 1]) }}">UAT</a></li>
                 <li><a class="dropdown-item py-2 {{ in_array($statusParam, ['golive', 'go-live', 'go_live', 'selesai']) ? 'active fw-bold' : '' }}" href="{{ request()->fullUrlWithQuery(['status' => 'golive', 'page' => 1]) }}">Go-Live</a></li>
@@ -895,16 +686,11 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @php
-                        $avatarPalette = ['#8B5CF6', '#EF4444', '#10B981', '#8B5CF6', '#3B82F6', '#EF4444', '#F59E0B'];
-                    @endphp
-
                     @forelse ($changeRequests as $index => $cr)
                         @php
-                            $avColor = $avatarPalette[$index % count($avatarPalette)];
                             $companyName = $cr->klien ?: ($cr->client?->company ?: '-');
                             
-                            // Generate initials for Pemohon avatar circle
+                            // Inisial/nickname perusahaan mengikuti tampilan Admin Master Klien
                             $cleanName = trim(preg_replace('/^(pt\.?|cv\.?)\s+/i', '', $companyName));
                             $words = preg_split('/\s+/', $cleanName);
                             if (count($words) >= 2) {
@@ -912,34 +698,18 @@
                             } else {
                                 $compInitials = $cleanName ? strtoupper(substr($cleanName, 0, min(2, strlen($cleanName)))) : 'CR';
                             }
+                            $companyBadge = $cr->client?->nickname ?: ($companyName !== '-' ? $compInitials : null);
 
                             // Status mapping
-                            $statusText = 'Diajukan';
-                            $statusBg = '#FEF3C7';
-                            $statusColor = '#D97706';
-
-                            if (in_array(strtolower($cr->status ?? ''), ['analisa', 'dianalisis', 'analysis'])) {
-                                $statusText = 'Analysis';
-                                $statusBg = '#DBEAFE';
-                                $statusColor = '#2563EB';
-                            } elseif (in_array(strtolower($cr->status ?? ''), ['development', 'dikerjakan', 'develop'])) {
-                                $statusText = 'Develop';
-                                $statusBg = '#EDE9FE';
-                                $statusColor = '#7C3AED';
-                            } elseif (in_array(strtolower($cr->status ?? ''), ['uat', 'sit'])) {
-                                $statusText = 'UAT';
-                                $statusBg = '#FCE7F3';
-                                $statusColor = '#DB2777';
-                            } elseif (in_array(strtolower($cr->status ?? ''), ['golive', 'selesai', 'invoicing', 'go-live'])) {
-                                $statusText = 'Go-Live';
-                                $statusBg = '#D1FAE5';
-                                $statusColor = '#059669';
-                            }
+                            $badgeCfg = $cr->statusBadgeConfig();
+                            $statusText = $badgeCfg['text'];
+                            $statusBg = $badgeCfg['bg'];
+                            $statusColor = $badgeCfg['color'];
 
                             // Priority mapping: URGENT vs NORMAL
                             $isUrgent = in_array(strtolower($cr->prioritas ?? ''), ['urgent', 'kritis', 'tinggi', 'high']);
                             $rowNumber = ($changeRequests->currentPage() - 1) * $changeRequests->perPage() + ($index + 1);
-                            $dateStr = $cr->tanggal_pengajuan ? \Carbon\Carbon::parse($cr->tanggal_pengajuan)->format('d M Y') : ($cr->created_at ? $cr->created_at->format('d M Y') : '01 Feb 2024');
+                            $dateStr = $cr->tanggal_pengajuan ? \Carbon\Carbon::parse($cr->tanggal_pengajuan)->format('d M Y') : ($cr->created_at ? $cr->created_at->format('d M Y') : '-');
                         @endphp
                         <tr style="border-bottom: 1px solid #F1F5F9; transition: background 0.15s ease;" onmouseover="this.style.background='#F8FAFC';" onmouseout="this.style.background='#FFFFFF';">
                             {{-- 1. NO --}}
@@ -952,16 +722,13 @@
                                 {{ $cr->kode_cr }}
                             </td>
 
-                            {{-- 3. PEMOHON (Company Name on Left + Initials Badge on Right) --}}
+                            {{-- 3. PEMOHON (Company Name + Admin-style Nickname Badge on Right) --}}
                             <td class="py-3 px-4">
-                                <div class="d-flex align-items-center gap-2">
-                                    <span class="fw-bold" style="color: #1E293B; font-size: 0.82rem; white-space: nowrap;">
-                                        {{ $companyName }}
-                                    </span>
-                                    <div class="rounded-circle text-white fw-bold d-flex align-items-center justify-content-center flex-shrink-0"
-                                         style="width: 22px; height: 22px; font-size: 0.62rem; background: {{ $avColor }};">
-                                        {{ $compInitials }}
-                                    </div>
+                                <div class="fw-bold" style="color: #1E293B; font-size: 0.82rem; white-space: nowrap;">
+                                    <span>{{ $companyName }}</span>
+                                    @if ($companyBadge)
+                                        <span class="badge bg-light text-primary border ms-1" style="font-size: 0.70rem; border-radius: 6px;">{{ $companyBadge }}</span>
+                                    @endif
                                 </div>
                             </td>
 
@@ -1004,13 +771,26 @@
                                 @endif
                             </td>
 
-                            {{-- 8. AKSI (Review >) --}}
+                            {{-- 8. AKSI (Review / Quotation / Detail >) --}}
+                            @php
+                                $crSt = strtolower($cr->status ?? '');
+                                $userRole = session('active_role', auth()->user()?->role ?? '');
+                                if ($userRole === 'presales' && in_array($crSt, ['validated', 'disetujui'])) {
+                                    $btnLabel = 'Quotation';
+                                } elseif ($userRole === 'pmh' && in_array($crSt, ['awaiting_pmh', 'review_pmh'])) {
+                                    $btnLabel = 'Review';
+                                } elseif (in_array($crSt, ['diajukan', 'awaiting_pm', 'analisa', 'dianalisis'])) {
+                                    $btnLabel = 'Review';
+                                } else {
+                                    $btnLabel = 'Detail';
+                                }
+                            @endphp
                             <td class="py-3 px-4 text-center" style="white-space: nowrap;">
                                 <a href="{{ route('change-requests.show', $cr) }}"
                                    class="btn btn-sm text-white fw-bold d-inline-flex align-items-center gap-1"
                                    style="background: #155DFC; border-radius: 6px; font-size: 0.74rem; padding: 0.35rem 0.95rem; border: none; box-shadow: 0 1px 2px rgba(21,93,252,0.25); text-decoration: none; transition: opacity 0.15s ease;"
                                    onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">
-                                    <span>Review</span>
+                                    <span>{{ $btnLabel }}</span>
                                     <i class="bi bi-chevron-right" style="font-size: 0.65rem; font-weight: 700;"></i>
                                 </a>
                             </td>

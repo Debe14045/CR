@@ -1,4 +1,4 @@
-﻿@extends('layouts.app')
+@extends('layouts.app')
 
 @section('title', 'Master Status Transaksi &middot; Administrator')
 
@@ -84,7 +84,9 @@
                                                     </div>
                                                     <div class="mb-3">
                                                         <label class="form-label">Urutan Tampil (Sort Order)</label>
-                                                        <input type="number" name="sort_order" class="form-control" value="{{ $st->sort_order }}">
+                                                        <input type="number" name="sort_order" class="form-control" value="{{ $st->sort_order }}" min="0" step="1"
+                                                               onkeydown="if(['e','E','+','-','.'].includes(event.key)) event.preventDefault();"
+                                                               oninput="this.value = this.value.replace(/[^0-9]/g, '');">
                                                     </div>
                                                     <div class="mb-3">
                                                         <label class="form-label">Deskripsi</label>
@@ -145,7 +147,9 @@
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Urutan Tampil</label>
-                        <input type="number" name="sort_order" class="form-control" placeholder="Angka urutan">
+                        <input type="number" name="sort_order" class="form-control" placeholder="Angka urutan" min="0" step="1"
+                               onkeydown="if(['e','E','+','-','.'].includes(event.key)) event.preventDefault();"
+                               oninput="this.value = this.value.replace(/[^0-9]/g, '');">
                     </div>
                     <div class="mb-3">
                         <label class="form-label">Deskripsi</label>

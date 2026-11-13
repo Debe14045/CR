@@ -2,181 +2,84 @@
 
 namespace App\Models;
 
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection;
 
 class ChangeRequest extends Model
 {
     use HasFactory;
 
+    public const RATE_PER_MINDESK = 1500000; // Standar IDR 1.500.000 per mandays
+
+    protected $table = 'change_requests';
+
     protected $fillable = [
         'kode_cr',
-        'judul',
-        'owner_cr',
-        'pic_sales',
+        'user_id',
         'client_id',
-        'klien',
-        'proyek_terkait',
+        'project_id',
+        'pm_id',
+        'judul',
+        'prioritas',
         'deskripsi',
         'alasan',
-        'reject_reason',
         'catatan_pengajuan',
-        'pesan_client',
-        'google_drive_url',
-        'lampiran_pengajuan',
-        'solution_paper_required',
-        'solution_paper_note',
-        'solution_paper_url',
         'tanggal_pengajuan',
-        'bap_date',
-        'status',
-        'prioritas',
-        'estimasi_waktu',
+        'target_selesai',
+        'dokumen_cr',          // Path file upload PDF dokumen CR utama
+        'dokumen_lainnya',     // Path file upload dokumen pendukung opsional
+        'solution_paper_required',
+        'solution_paper_file', // Path file upload PDF Solution Paper dari PM
         'mindesk_analisis',
         'mindesk_development',
         'mindesk_testing',
-        'target_selesai',
-        'target_start_date',
-        'actual_completion_date',
-        'estimasi_resource',
-        'biaya_pengerjaan',
-        'harga_penawaran',
-        'potensi_penjualan',
-        'main_desk',
-        'mulai_dikerjakan_pada',
-        'selesai_dikerjakan_pada',
         'catatan_analisis',
+        'harga_penawaran',
+        'biaya_pengerjaan',
+        'quotation_file',
+        'pmh_approved_at',
+        'pmh_approved_by',
         'catatan_approval',
         'catatan_revisi',
-        'lampiran_revisi',
-        'direvisi_pada',
-        'approved_by',
-        'pmh_approved_by',
-        'pmh_approved_at',
+        'reject_reason',
+        'status',
         'berita_acara_file',
-        'berita_acara_date',
         'berita_acara_no',
-        'golive_validated_at',
-        'golive_validated_by',
-        'quotation_approved_client_at',
-        'quotation_approved_tp_at',
-        'invoicing_status',
-        'user_id',
+        'berita_acara_date',
     ];
 
     protected $casts = [
         'tanggal_pengajuan' => 'date',
-        'bap_date' => 'date',
         'target_selesai' => 'date',
-        'target_start_date' => 'date',
-        'actual_completion_date' => 'date',
         'berita_acara_date' => 'date',
-        'direvisi_pada' => 'datetime',
-        'biaya_pengerjaan' => 'decimal:2',
-        'harga_penawaran' => 'decimal:2',
-        'solution_paper_required' => 'boolean',
-        'mulai_dikerjakan_pada' => 'date',
-        'selesai_dikerjakan_pada' => 'date',
-        'mindesk_analisis' => 'decimal:2',
-        'mindesk_development' => 'decimal:2',
-        'mindesk_testing' => 'decimal:2',
         'pmh_approved_at' => 'datetime',
-        'golive_validated_at' => 'datetime',
-        'quotation_approved_client_at' => 'datetime',
-        'quotation_approved_tp_at' => 'datetime',
+        'solution_paper_required' => 'boolean',
+        'harga_penawaran' => 'decimal:2',
+        'biaya_pengerjaan' => 'decimal:2',
     ];
 
-    // Status sequential tracking list for execution
-    public const SEQUENTIAL_STATUSES = [
-        'analisa' => 'Analisa (Analysis)',
-        'development' => 'Development',
-        'sit' => 'SIT (System Integration Testing)',
-        'uat' => 'UAT (User Acceptance Testing)',
-        'training' => 'Training',
-        'golive' => 'Go-Live',
-    ];
-
-    // Complete status mapping
-    public static function statusList(): array
+    protected static function booted(): void
     {
-        return [
-            'awaiting_pm'                => 'Awaiting PM Verification',
-            'diajukan'                   => 'Awaiting PM Verification',
-            'awaiting_pmh'               => 'Awaiting PMH Validation',
-            'dianalisis'                 => 'Awaiting PMH Validation',
-            'revision_needed'            => 'Revision Needed',
-            'validated'                  => 'Validated',
-            'disetujui'                  => 'Validated',
-            'analisa'                    => 'Analisa',
-            'development'                => 'Development',
-            'dikerjakan'                 => 'Development',
-            'sit'                        => 'SIT (System Integration Testing)',
-            'uat'                        => 'UAT (User Acceptance Testing)',
-            'training'                   => 'Training',
-            'awaiting_golive_validation' => 'Awaiting Go-Live Validation',
-            'golive'                     => 'Go-Live',
-            'selesai'                    => 'Go-Live',
-            'invoicing'                  => 'Invoicing',
-            'ditolak'                    => 'Ditolak',
-        ];
+        static::saving(function (ChangeRequest $cr) {
+            if ($cr->project_id) {
+                $cr->pm_id = Project::whereKey($cr->project_id)->value('pm_id');
+            } else {
+                $cr->pm_id = null;
+            }
+        });
+
+        static::saved(function (ChangeRequest $cr) {
+            if ($cr->wasRecentlyCreated || $cr->wasChanged('project_id')) {
+                $cr->syncPmsFromProject();
+            }
+        });
     }
 
-    public static function statusLabels(): array
+    // ── RELASI ──
+    public function user()
     {
-        return [
-            'awaiting_pm'                => 'Awaiting PM Verification',
-            'awaiting_pmh'               => 'Awaiting PMH Validation',
-            'revision_needed'            => 'Revision Needed',
-            'validated'                  => 'Validated',
-            'analisa'                    => 'Analisa',
-            'development'                => 'Development',
-            'sit'                        => 'SIT',
-            'uat'                        => 'UAT',
-            'training'                   => 'Training',
-            'awaiting_golive_validation' => 'Awaiting Go-Live Validation',
-            'golive'                     => 'Go-Live',
-            'invoicing'                  => 'Invoicing',
-            'ditolak'                    => 'Ditolak',
-        ];
-    }
-
-    public function statusLabel(): string
-    {
-        return self::statusList()[$this->status] ?? ucfirst($this->status);
-    }
-
-    public function statusBadgeColor(): string
-    {
-        return match ($this->status) {
-            'awaiting_pm', 'diajukan' => 'warning',
-            'awaiting_pmh', 'dianalisis' => 'info',
-            'revision_needed', 'ditolak' => 'danger',
-            'validated', 'disetujui' => 'primary',
-            'analisa' => 'info',
-            'development', 'dikerjakan' => 'primary',
-            'sit' => 'warning',
-            'uat' => 'warning',
-            'training' => 'info',
-            'awaiting_golive_validation' => 'secondary',
-            'golive', 'selesai' => 'success',
-            'invoicing' => 'success',
-            default => 'light',
-        };
-    }
-
-    public function isOverdue(): bool
-    {
-        if (in_array($this->status, ['golive', 'selesai', 'invoicing', 'ditolak'], true)) {
-            return false;
-        }
-
-        $dueDate = $this->target_selesai ?? $this->actual_completion_date;
-        if (! $dueDate) {
-            return false;
-        }
-
-        return $dueDate->startOfDay()->isPast();
+        return $this->belongsTo(User::class, 'user_id');
     }
 
     public function client()
@@ -184,65 +87,231 @@ class ChangeRequest extends Model
         return $this->belongsTo(Client::class, 'client_id');
     }
 
-    public function user()
+    public function project()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Project::class, 'project_id');
     }
 
-    public function solutionPaper()
+    /**
+     * PM utama CR (selalu disinkronkan dengan projects.pm_id).
+     */
+    public function pm()
     {
-        return $this->hasOne(SolutionPaper::class, 'change_request_id');
+        return $this->belongsTo(User::class, 'pm_id');
+    }
+
+    /**
+     * Seluruh PM (maksimal 2 PM) yang bertanggung jawab atas CR ini, sinkron dengan project_pm.
+     */
+    public function pms()
+    {
+        return $this->belongsToMany(User::class, 'change_request_pm', 'change_request_id', 'pm_id')->withTimestamps();
+    }
+
+    /**
+     * Ambil koleksi PM yang bertanggung jawab pada CR ini (dengan fallback ke PM proyek).
+     */
+    public function assignedPms(): Collection
+    {
+        $this->loadMissing(['pms.pegawai', 'pm.pegawai', 'project.pms.pegawai', 'project.pm.pegawai']);
+
+        if ($this->pms->isNotEmpty()) {
+            $primaryId = $this->pm_id ?: $this->project?->pm_id;
+            if ($primaryId && $this->pms->contains('id', $primaryId)) {
+                return $this->pms->sortBy(fn ($u) => (int) $u->id === (int) $primaryId ? 0 : 1)->values();
+            }
+
+            return $this->pms->values();
+        }
+
+        if ($this->pm) {
+            return collect([$this->pm]);
+        }
+
+        if ($this->project) {
+            return $this->project->assignedPms();
+        }
+
+        return collect();
+    }
+
+    /**
+     * Sinkronkan pm_id dan pivot change_request_pm dari proyek induknya.
+     */
+    public function syncPmsFromProject(?Project $project = null): void
+    {
+        $project = $project ?: ($this->project_id ? Project::with('pms')->find($this->project_id) : null);
+
+        if (!$project) {
+            if ($this->pm_id !== null) {
+                $this->pm_id = null;
+                $this->saveQuietly();
+            }
+            $this->pms()->sync([]);
+            return;
+        }
+
+        $pmIds = $project->pms->pluck('id')->map(fn ($id) => (int) $id)->all();
+        if (empty($pmIds) && $project->pm_id) {
+            $pmIds = [(int) $project->pm_id];
+        }
+        $pmIds = array_slice(array_values(array_unique($pmIds)), 0, 2);
+        $primaryPmId = $project->pm_id ? (int) $project->pm_id : ($pmIds[0] ?? null);
+
+        if ((int) $this->pm_id !== (int) $primaryPmId || ($this->pm_id === null) !== ($primaryPmId === null)) {
+            $this->pm_id = $primaryPmId;
+            $this->saveQuietly();
+        }
+
+        $this->pms()->sync($pmIds);
     }
 
     public function invoices()
     {
-        return $this->hasMany(CrInvoice::class, 'change_request_id');
+        return $this->hasMany(Invoice::class, 'change_request_id');
     }
 
-    public function totalMindesk(): float
+    public function notifications()
     {
-        return (float) ($this->mindesk_analisis ?? 0)
-            + (float) ($this->mindesk_development ?? 0)
-            + (float) ($this->mindesk_testing ?? 0);
+        return $this->hasMany(Notification::class, 'change_request_id');
     }
 
-    public const RATE_PER_MINDESK = 4500000;
-
-    public function saranHargaPenawaran(): float
+    public function pmhApprover()
     {
-        return $this->totalMindesk() * self::RATE_PER_MINDESK;
+        return $this->belongsTo(User::class, 'pmh_approved_by');
+    }
+
+    // ── HELPER METHODS ──
+    public function statusBadgeConfig(): array
+    {
+        return match (strtolower($this->status ?? '')) {
+            'draft' => [
+                'text' => 'Draft',
+                'bg' => '#F1F5F9',
+                'color' => '#64748B',
+            ],
+            'diajukan' => [
+                'text' => 'Diajukan',
+                'bg' => '#FEF3C7',
+                'color' => '#D97706',
+            ],
+            'awaiting_pm', 'analisa', 'dianalisis', 'analysis' => [
+                'text' => 'Review PM',
+                'bg' => '#DBEAFE',
+                'color' => '#2563EB',
+            ],
+            'awaiting_pmh', 'review_pmh' => [
+                'text' => 'Approval PM Head',
+                'bg' => '#E0E7FF',
+                'color' => '#4F46E5',
+            ],
+            'revision_needed' => [
+                'text' => 'Revisi PM Head',
+                'bg' => '#FFEDD5',
+                'color' => '#C2410C',
+            ],
+            'validated', 'disetujui' => [
+                'text' => (session('active_role') === 'presales' || (auth()->check() && auth()->user()->role === 'presales')) ? 'Menunggu Quotation' : 'Disetujui',
+                'bg' => (session('active_role') === 'presales' || (auth()->check() && auth()->user()->role === 'presales')) ? '#FEF9C3' : '#DCFCE7',
+                'color' => (session('active_role') === 'presales' || (auth()->check() && auth()->user()->role === 'presales')) ? '#CA8A04' : '#16A34A',
+            ],
+            'quotation' => [
+                'text' => 'Quotation',
+                'bg' => '#FEF9C3',
+                'color' => '#CA8A04',
+            ],
+            'development', 'dikerjakan', 'develop' => [
+                'text' => 'Develop',
+                'bg' => '#EDE9FE',
+                'color' => '#7C3AED',
+            ],
+            'sit' => [
+                'text' => 'SIT',
+                'bg' => '#FCE7F3',
+                'color' => '#DB2777',
+            ],
+            'uat' => [
+                'text' => 'UAT',
+                'bg' => '#FCE7F3',
+                'color' => '#DB2777',
+            ],
+            'training' => [
+                'text' => 'Training',
+                'bg' => '#CCFBF1',
+                'color' => '#0F766E',
+            ],
+            'golive', 'go-live', 'go_live' => [
+                'text' => 'Go-Live',
+                'bg' => '#D1FAE5',
+                'color' => '#059669',
+            ],
+            'invoicing' => [
+                'text' => 'Invoicing',
+                'bg' => '#CFFAFE',
+                'color' => '#0891B2',
+            ],
+            'selesai' => [
+                'text' => 'Selesai',
+                'bg' => '#D1FAE5',
+                'color' => '#059669',
+            ],
+            'ditolak' => [
+                'text' => 'Ditolak',
+                'bg' => '#FEE2E2',
+                'color' => '#DC2626',
+            ],
+            default => [
+                'text' => ucfirst($this->status ?? 'Diajukan'),
+                'bg' => '#FEF3C7',
+                'color' => '#D97706',
+            ],
+        };
+    }
+
+    public function statusLabel(): string
+    {
+        return match (strtolower($this->status)) {
+            'draft' => 'Draft',
+            'diajukan' => 'Diajukan',
+            'awaiting_pm' => 'Menunggu Review PM',
+            'analisa', 'dianalisis' => 'Analisa',
+            'awaiting_pmh' => 'Menunggu Approval PM Head',
+            'validated', 'disetujui' => 'Disetujui',
+            'quotation' => 'Quotation',
+            'development', 'dikerjakan' => 'Sedang Dikerjakan (Development)',
+            'sit' => 'SIT (System Integration Testing)',
+            'uat' => 'UAT (User Acceptance Testing)',
+            'training' => 'Training',
+            'golive', 'selesai' => 'Selesai Go-Live',
+            'invoicing' => 'Invoicing',
+            'ditolak' => 'Ditolak',
+            default => ucfirst($this->status),
+        };
     }
 
     public function isPmhApproved(): bool
     {
-        if ($this->status === 'ditolak' || $this->status === 'revision_needed') {
+        $status = strtolower($this->status ?? '');
+        if (in_array($status, ['draft', 'diajukan', 'awaiting_pm', 'analisa', 'dianalisis', 'awaiting_pmh', 'revision_needed', 'ditolak'])) {
             return false;
         }
 
-        return $this->pmh_approved_at !== null
-            || in_array($this->status, ['validated', 'disetujui', 'analisa', 'development', 'dikerjakan', 'sit', 'uat', 'training', 'awaiting_golive_validation', 'golive', 'selesai', 'invoicing'], true);
-    }
-
-    public function isReadyForInvoicing(): bool
-    {
-        return in_array($this->status, ['golive', 'selesai', 'invoicing'], true)
-            || $this->golive_validated_at !== null;
+        return !is_null($this->pmh_approved_at) || in_array($status, ['validated', 'disetujui', 'quotation', 'development', 'dikerjakan', 'sit', 'uat', 'training', 'golive', 'selesai', 'invoicing']);
     }
 
     public function canBeQuoted(): bool
     {
-        return $this->isPmhApproved() && ! in_array($this->status, ['ditolak', 'revision_needed'], true);
+        return $this->isPmhApproved();
     }
 
-    public function getNamaPmAttribute(): string
+    public function isReadyForInvoicing(): bool
     {
-        return $this->owner_cr ?: ($this->main_desk ?: ($this->user?->name ?: '-'));
+        return in_array(strtolower((string)$this->status), ['golive', 'go-live', 'go_live', 'selesai', 'invoicing']);
     }
 
-    public static function generateKode(): string
+    public function saranHargaPenawaran(): float
     {
-        $year = date('Y');
-        $lastNumber = static::whereYear('created_at', $year)->count() + 1;
-        return sprintf('CR-%s-%03d', $year, $lastNumber);
+        $totalMandays = (int)($this->mindesk_analisis ?? 0) + (int)($this->mindesk_development ?? 0) + (int)($this->mindesk_testing ?? 0);
+        return (float)($totalMandays * self::RATE_PER_MINDESK);
     }
 }

@@ -17,6 +17,16 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->timestamp('email_verified_at')->nullable();
             $table->string('password');
+            
+            // Kolom kustom untuk sistem Change Request
+            $table->string('role')->default('client'); // 'admin', 'client', 'pm', 'pmh', 'presales'
+            $table->string('phone')->nullable();
+            $table->boolean('can_act_as_pm')->default(false); // Flag khusus PMH merangkap PM
+            
+            // Kolom untuk verifikasi ganti password via OTP Gmail
+            $table->string('password_otp', 10)->nullable();
+            $table->timestamp('otp_expires_at')->nullable();
+
             $table->rememberToken();
             $table->timestamps();
         });

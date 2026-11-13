@@ -1367,7 +1367,7 @@
 
         {{-- Brand / Logo (Figma: ITPI PT. ITPI Technology) --}}
         <div class="sidebar-header" style="padding: 1.35rem 1.25rem; border-bottom: 1px solid rgba(255,255,255,0.06);">
-            <a class="sidebar-brand d-flex align-items-center gap-2 text-decoration-none" href="{{ route('change-requests.index') }}">
+            <a class="sidebar-brand d-flex align-items-center gap-2 text-decoration-none" href="{{ route('dashboard') }}">
                 <img src="{{ asset('images/itpi_logo_white_tight.png') }}" alt="ITPI" style="height: 34px; width: auto; object-fit: contain;">
                 <div style="color: #FFFFFF; font-weight: 800; font-size: 0.95rem; letter-spacing: -0.01em; white-space: nowrap;">
                     PT. ITPI Technology
@@ -1451,10 +1451,10 @@
 
                 {{-- 3. Notifikasi --}}
                 @php
-                    $isNotifActive = request()->routeIs('presales.notifications');
+                    $isNotifActive = request()->routeIs('notifications.*') || request()->routeIs('presales.notifications');
                     $presalesNotifCount = auth()->check() ? \App\Models\Notification::forUser(auth()->user())->unread()->count() : 0;
                 @endphp
-                <a href="{{ route('presales.notifications') }}"
+                <a href="{{ route('notifications.index') }}"
                    class="sidebar-link d-flex align-items-center justify-content-between {{ $isNotifActive ? 'active' : '' }}"
                    style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: #FFFFFF; margin-top: 0.35rem; {{ $isNotifActive ? 'background: #0063D7 !important;' : '' }}">
                     <span class="d-flex align-items-center gap-2">
@@ -1507,10 +1507,10 @@
 
                 {{-- 4. Notifikasi --}}
                 @php
-                    $isNotifActive = request()->routeIs('pmh.notifications');
+                    $isNotifActive = request()->routeIs('notifications.*') || request()->routeIs('pmh.notifications');
                     $sidebarNotifCount = auth()->check() ? \App\Models\Notification::forUser(auth()->user())->unread()->count() : 0;
                 @endphp
-                <a href="{{ route('pmh.notifications') }}"
+                <a href="{{ route('notifications.index') }}"
                    class="sidebar-link d-flex align-items-center justify-content-between {{ $isNotifActive ? 'active' : '' }}"
                    style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: #FFFFFF; margin-top: 0.35rem; {{ $isNotifActive ? 'background: #0063D7 !important;' : '' }}">
                     <span class="d-flex align-items-center gap-2">
@@ -1530,11 +1530,146 @@
                     <span class="fw-medium">Pengaturan</span>
                 </a>
 
+            @elseif ($currentRole === 'admin')
+                {{-- ══ ADMIN DEDICATED SIDEBAR (DROPDOWN SETIAP KELOLA) ══ --}}
+                @php
+                    $isAdminDashboardActive = request()->routeIs('admin.dashboard') || request()->routeIs('dashboard');
+
+                    $isAdminClientsGroup = request()->routeIs('admin.clients.*') || str_starts_with($currentRouteName, 'admin.clients') || str_starts_with($currentRouteName, 'master.clients');
+                    $isClientsIndex = request()->routeIs('admin.clients.index') || request()->routeIs('admin.clients.show');
+                    $isClientsCreate = request()->routeIs('admin.clients.create') || request()->routeIs('admin.clients.edit');
+
+                    $isAdminPegawaiGroup = request()->routeIs('admin.pegawai.*') || str_starts_with($currentRouteName, 'admin.pegawai') || str_starts_with($currentRouteName, 'master.pegawai');
+                    $isPegawaiIndex = request()->routeIs('admin.pegawai.index');
+                    $isPegawaiCreate = request()->routeIs('admin.pegawai.create') || request()->routeIs('admin.pegawai.edit');
+
+                    $isAdminProjectsGroup = request()->routeIs('admin.projects.*') || str_starts_with($currentRouteName, 'admin.projects') || str_starts_with($currentRouteName, 'master.projects');
+                    $isProjectsIndex = request()->routeIs('admin.projects.index');
+                    $isProjectsCreate = request()->routeIs('admin.projects.create') || request()->routeIs('admin.projects.edit');
+
+                    $isProfileActive = request()->routeIs('profile');
+                @endphp
+
+                {{-- 1. Dashboard --}}
+                <a href="{{ route('admin.dashboard') }}"
+                   class="sidebar-link {{ $isAdminDashboardActive ? 'active' : '' }}"
+                   style="position: relative; border-radius: 9999px; padding: 0.65rem 0.95rem; font-size: 0.88rem; {{ $isAdminDashboardActive ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'color: #FFFFFF;' }}">
+                    <i class="bi bi-grid-fill nav-icon" style="font-size: 1.05rem;"></i>
+                    <span class="fw-semibold">Dashboard</span>
+                </a>
+
+                {{-- 2. Kelola Klien Dropdown --}}
+                <div class="nav-group-toggle {{ $isAdminClientsGroup ? 'open' : '' }}"
+                     id="adminClientsToggle"
+                     role="button"
+                     onclick="this.classList.toggle('open'); document.getElementById('adminClientsBody').classList.toggle('open');"
+                     aria-expanded="{{ $isAdminClientsGroup ? 'true' : 'false' }}"
+                     style="border-radius: 9999px; padding: 0.65rem 0.95rem; font-size: 0.88rem; display: flex; align-items: center; gap: 0.75rem; color: #FFFFFF; margin-top: 0.35rem; cursor: pointer; {{ $isAdminClientsGroup ? 'background: #0063D7 !important;' : 'background: transparent;' }}">
+                    <i class="bi bi-buildings nav-icon" style="font-size: 1.05rem; opacity: 1;"></i>
+                    <span class="fw-semibold" style="letter-spacing: -0.01em;">Kelola Klien</span>
+                    <i class="bi bi-chevron-down toggle-chevron ms-auto" style="font-size: 0.75rem; font-weight: 700; opacity: 0.95;"></i>
+                </div>
+
+                <div class="nav-group-body sidebar-sub {{ $isAdminClientsGroup ? 'open' : '' }}" id="adminClientsBody" style="padding-left: 0.45rem; display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.25rem;">
+                    <a href="{{ route('admin.clients.index') }}"
+                       class="sidebar-link {{ $isClientsIndex ? 'active' : '' }}"
+                       style="border-radius: 9999px; padding: 0.52rem 0.95rem; font-size: 0.84rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; background: transparent !important;">
+                        @if($isClientsIndex)
+                            <span style="width: 7px; height: 7px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 8px #00B4FF;"></span>
+                        @endif
+                        <i class="bi bi-list-ul nav-icon" style="font-size: 0.90rem;"></i>
+                        <span>Semua Klien</span>
+                    </a>
+                    <a href="{{ route('admin.clients.create') }}"
+                       class="sidebar-link {{ $isClientsCreate ? 'active' : '' }}"
+                       style="border-radius: 9999px; padding: 0.52rem 0.95rem; font-size: 0.84rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; background: transparent !important;">
+                        @if($isClientsCreate)
+                            <span style="width: 7px; height: 7px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 8px #00B4FF;"></span>
+                        @endif
+                        <i class="bi bi-plus-circle nav-icon" style="font-size: 0.90rem;"></i>
+                        <span>Tambah Klien</span>
+                    </a>
+                </div>
+
+                {{-- 3. Kelola Pegawai Dropdown --}}
+                <div class="nav-group-toggle {{ $isAdminPegawaiGroup ? 'open' : '' }}"
+                     id="adminPegawaiToggle"
+                     role="button"
+                     onclick="this.classList.toggle('open'); document.getElementById('adminPegawaiBody').classList.toggle('open');"
+                     aria-expanded="{{ $isAdminPegawaiGroup ? 'true' : 'false' }}"
+                     style="border-radius: 9999px; padding: 0.65rem 0.95rem; font-size: 0.88rem; display: flex; align-items: center; gap: 0.75rem; color: #FFFFFF; margin-top: 0.35rem; cursor: pointer; {{ $isAdminPegawaiGroup ? 'background: #0063D7 !important;' : 'background: transparent;' }}">
+                    <i class="bi bi-people nav-icon" style="font-size: 1.05rem; opacity: 1;"></i>
+                    <span class="fw-semibold" style="letter-spacing: -0.01em;">Kelola Pegawai</span>
+                    <i class="bi bi-chevron-down toggle-chevron ms-auto" style="font-size: 0.75rem; font-weight: 700; opacity: 0.95;"></i>
+                </div>
+
+                <div class="nav-group-body sidebar-sub {{ $isAdminPegawaiGroup ? 'open' : '' }}" id="adminPegawaiBody" style="padding-left: 0.45rem; display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.25rem;">
+                    <a href="{{ route('admin.pegawai.index') }}"
+                       class="sidebar-link {{ $isPegawaiIndex ? 'active' : '' }}"
+                       style="border-radius: 9999px; padding: 0.52rem 0.95rem; font-size: 0.84rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; background: transparent !important;">
+                        @if($isPegawaiIndex)
+                            <span style="width: 7px; height: 7px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 8px #00B4FF;"></span>
+                        @endif
+                        <i class="bi bi-list-ul nav-icon" style="font-size: 0.90rem;"></i>
+                        <span>Semua Pegawai</span>
+                    </a>
+                    <a href="{{ route('admin.pegawai.create') }}"
+                       class="sidebar-link {{ $isPegawaiCreate ? 'active' : '' }}"
+                       style="border-radius: 9999px; padding: 0.52rem 0.95rem; font-size: 0.84rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; background: transparent !important;">
+                        @if($isPegawaiCreate)
+                            <span style="width: 7px; height: 7px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 8px #00B4FF;"></span>
+                        @endif
+                        <i class="bi bi-plus-circle nav-icon" style="font-size: 0.90rem;"></i>
+                        <span>Tambah Pegawai</span>
+                    </a>
+                </div>
+
+                {{-- 4. Kelola Proyek Dropdown --}}
+                <div class="nav-group-toggle {{ $isAdminProjectsGroup ? 'open' : '' }}"
+                     id="adminProjectsToggle"
+                     role="button"
+                     onclick="this.classList.toggle('open'); document.getElementById('adminProjectsBody').classList.toggle('open');"
+                     aria-expanded="{{ $isAdminProjectsGroup ? 'true' : 'false' }}"
+                     style="border-radius: 9999px; padding: 0.65rem 0.95rem; font-size: 0.88rem; display: flex; align-items: center; gap: 0.75rem; color: #FFFFFF; margin-top: 0.35rem; cursor: pointer; {{ $isAdminProjectsGroup ? 'background: #0063D7 !important;' : 'background: transparent;' }}">
+                    <i class="bi bi-kanban nav-icon" style="font-size: 1.05rem; opacity: 1;"></i>
+                    <span class="fw-semibold" style="letter-spacing: -0.01em;">Kelola Proyek</span>
+                    <i class="bi bi-chevron-down toggle-chevron ms-auto" style="font-size: 0.75rem; font-weight: 700; opacity: 0.95;"></i>
+                </div>
+
+                <div class="nav-group-body sidebar-sub {{ $isAdminProjectsGroup ? 'open' : '' }}" id="adminProjectsBody" style="padding-left: 0.45rem; display: flex; flex-direction: column; gap: 0.25rem; margin-top: 0.25rem;">
+                    <a href="{{ route('admin.projects.index') }}"
+                       class="sidebar-link {{ $isProjectsIndex ? 'active' : '' }}"
+                       style="border-radius: 9999px; padding: 0.52rem 0.95rem; font-size: 0.84rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; background: transparent !important;">
+                        @if($isProjectsIndex)
+                            <span style="width: 7px; height: 7px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 8px #00B4FF;"></span>
+                        @endif
+                        <i class="bi bi-list-ul nav-icon" style="font-size: 0.90rem;"></i>
+                        <span>Semua Proyek</span>
+                    </a>
+                    <a href="{{ route('admin.projects.create') }}"
+                       class="sidebar-link {{ $isProjectsCreate ? 'active' : '' }}"
+                       style="border-radius: 9999px; padding: 0.52rem 0.95rem; font-size: 0.84rem; color: #FFFFFF; display: flex; align-items: center; gap: 0.65rem; background: transparent !important;">
+                        @if($isProjectsCreate)
+                            <span style="width: 7px; height: 7px; border-radius: 50%; background: #00B4FF; display: inline-block; flex-shrink: 0; box-shadow: 0 0 8px #00B4FF;"></span>
+                        @endif
+                        <i class="bi bi-plus-circle nav-icon" style="font-size: 0.90rem;"></i>
+                        <span>Tambah Proyek</span>
+                    </a>
+                </div>
+
+                {{-- 5. Profil & Akun --}}
+                <a href="{{ route('profile') }}"
+                   class="sidebar-link {{ $isProfileActive ? 'active' : '' }}"
+                   style="position: relative; border-radius: 9999px; padding: 0.65rem 0.95rem; font-size: 0.88rem; margin-top: 0.35rem; {{ $isProfileActive ? 'background: #0063D7 !important; color: #FFFFFF !important;' : 'color: #FFFFFF;' }}">
+                    <i class="bi bi-person-gear nav-icon" style="font-size: 1.05rem;"></i>
+                    <span class="fw-semibold">Profil &amp; Akun</span>
+                </a>
+
             @else
-                {{-- ══ STANDARD ROLE SIDEBAR (CLIENT, PM, ADMIN) ══ --}}
+                {{-- ══ STANDARD ROLE SIDEBAR (CLIENT, PM) ══ --}}
                 {{-- 1. Dashboard --}}
                 @php
-                    $isDashboardActive = ($currentRouteName === 'change-requests.index' && (!request()->filled('view') || request('view') === 'dashboard') && !request()->filled('search') && !request()->filled('status'));
+                    $isDashboardActive = request()->routeIs('*.dashboard') || request()->routeIs('dashboard') || ($currentRouteName === 'change-requests.index' && (!request()->filled('view') || request('view') === 'dashboard') && !request()->filled('search') && !request()->filled('status'));
                     $isCrShow = request()->routeIs('change-requests.show');
                     $isDraftActive = request('view') === 'draft';
                     $isCreateActive = $currentRouteName === 'change-requests.create';
@@ -1542,7 +1677,7 @@
                     $isSemuaCrActive = !$isDraftActive && !$isCreateActive && ($isCrShow || $isTotalCrActive || ($currentRouteName === 'change-requests.index' && !$isDashboardActive && !request()->filled('status')));
                     $isCrGroupActive = $isCrShow || (request()->routeIs('change-requests.*') && !$isDashboardActive);
                 @endphp
-                <a href="{{ route('change-requests.index') }}"
+                <a href="{{ route('dashboard') }}"
                    class="sidebar-link {{ $isDashboardActive ? 'active' : '' }}"
                    style="position: relative; border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; {{ $isDashboardActive ? 'background: #0063D7 !important; color: #FFFFFF !important;' : '' }}">
                     <i class="bi bi-grid-fill nav-icon" style="font-size: 1.05rem;"></i>
@@ -1595,7 +1730,7 @@
                         <span data-i18n="nav_draft_cr" style="color: #FFFFFF; font-weight: {{ $isDraftActive ? '700' : '500' }};">Draft CR</span>
                     </a>
 
-                    @if(auth()->check() && (auth()->user()->isPm() || auth()->user()->isAdmin()))
+                    @if(auth()->check() && auth()->user()->isPm())
                     {{-- Dev Board PM --}}
                     @php $isDevboardActive = request()->routeIs('change-requests.devboard'); @endphp
                     <a href="{{ route('change-requests.devboard') }}"
@@ -1612,11 +1747,12 @@
 
                 {{-- 3. Notifikasi --}}
                 @php
+                    $isStdNotifActive = request()->routeIs('notifications.*');
                     $stdNotifCount = auth()->check() ? \App\Models\Notification::forUser(auth()->user())->unread()->count() : 0;
                 @endphp
                 <a href="{{ route('notifications.index') }}"
-                   class="sidebar-link d-flex align-items-center justify-content-between"
-                   style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem;">
+                   class="sidebar-link d-flex align-items-center justify-content-between {{ $isStdNotifActive ? 'active' : '' }}"
+                   style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem; {{ $isStdNotifActive ? 'background: #0063D7 !important; color: #FFFFFF !important;' : '' }}">
                     <span class="d-flex align-items-center gap-2">
                         <i class="bi bi-bell nav-icon" style="font-size: 1.05rem;"></i>
                         <span class="fw-medium" data-i18n="nav_notifications">Notifikasi</span>
@@ -1627,52 +1763,12 @@
                 </a>
 
                 {{-- 4. Pengaturan --}}
-                @if ($currentRole === 'admin')
-                    <div class="nav-group-toggle {{ str_starts_with($currentRouteName, 'master.') ? 'open' : '' }}"
-                         id="settingsGroupToggle"
-                         role="button"
-                         onclick="this.classList.toggle('open'); document.getElementById('settingsGroupBody').classList.toggle('open');"
-                         aria-expanded="{{ str_starts_with($currentRouteName, 'master.') ? 'true' : 'false' }}"
-                         style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem;">
-                        <i class="bi bi-gear nav-icon" style="font-size: 1.05rem;"></i>
-                        <span class="fw-medium" data-i18n="nav_settings">Pengaturan</span>
-                        <i class="bi bi-chevron-down toggle-chevron ms-auto" style="font-size: 0.75rem; opacity: 0.6;"></i>
-                    </div>
-
-                    <div class="nav-group-body sidebar-sub {{ str_starts_with($currentRouteName, 'master.') ? 'open' : '' }}" id="settingsGroupBody" style="padding-left: 1.2rem; display: flex; flex-direction: column; gap: 0.3rem;">
-                        <a href="{{ route('master.clients.index') }}"
-                           class="sidebar-link {{ str_starts_with($currentRouteName, 'master.clients') ? 'active' : '' }}"
-                           style="border-radius: 8px; padding: 0.45rem 0.75rem; font-size: 0.84rem;">
-                            <i class="bi bi-buildings nav-icon"></i>
-                            <span data-i18n="master_clients">Master Client</span>
-                        </a>
-                        <a href="{{ route('master.pegawai.index') }}"
-                           class="sidebar-link {{ str_starts_with($currentRouteName, 'master.pegawai') ? 'active' : '' }}"
-                           style="border-radius: 8px; padding: 0.45rem 0.75rem; font-size: 0.84rem;">
-                            <i class="bi bi-person-badge nav-icon"></i>
-                            <span data-i18n="master_pegawai">Master Pegawai</span>
-                        </a>
-                        <a href="{{ route('master.status.index') }}"
-                           class="sidebar-link {{ str_starts_with($currentRouteName, 'master.status') ? 'active' : '' }}"
-                           style="border-radius: 8px; padding: 0.45rem 0.75rem; font-size: 0.84rem;">
-                            <i class="bi bi-list-check nav-icon"></i>
-                            <span data-i18n="master_status">Master Status</span>
-                        </a>
-                        <a href="{{ route('profile') }}"
-                           class="sidebar-link {{ request()->routeIs('profile') ? 'active' : '' }}"
-                           style="border-radius: 8px; padding: 0.45rem 0.75rem; font-size: 0.84rem;">
-                            <i class="bi bi-person-gear nav-icon"></i>
-                            <span>Profil &amp; Akun</span>
-                        </a>
-                    </div>
-                @else
-                    <a href="{{ route('profile') }}"
-                       class="sidebar-link"
-                       style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem;">
-                        <i class="bi bi-gear nav-icon" style="font-size: 1.05rem;"></i>
-                        <span class="fw-medium" data-i18n="nav_settings">Pengaturan</span>
-                    </a>
-                @endif
+                <a href="{{ route('profile') }}"
+                   class="sidebar-link {{ request()->routeIs('profile') ? 'active' : '' }}"
+                   style="border-radius: 9999px; padding: 0.65rem 1rem; font-size: 0.88rem; color: rgba(255,255,255,0.85); margin-top: 0.35rem; {{ request()->routeIs('profile') ? 'background: #0063D7 !important; color: #FFFFFF !important;' : '' }}">
+                    <i class="bi bi-gear nav-icon" style="font-size: 1.05rem;"></i>
+                    <span class="fw-medium" data-i18n="nav_settings">Pengaturan</span>
+                </a>
             @endif
 
         </nav>

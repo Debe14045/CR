@@ -9,72 +9,148 @@
     $crCode = $changeRequest->kode_cr ?: ('CR-' . str_pad($changeRequest->id, 4, '0', STR_PAD_LEFT));
 
     $statusKey = strtolower($changeRequest->status ?? '');
-    $statusText = match($statusKey) {
+
+    // Status pill in sub-bar
+    $statusPillText = match($statusKey) {
+        'draft' => 'Draft',
+        'diajukan' => 'Menunggu Review PM',
+        'awaiting_pm', 'analisa', 'dianalisis' => 'Menunggu Review PM',
+        'awaiting_pmh' => 'Menunggu Review (In Progress)',
         'validated', 'disetujui' => 'Disetujui',
+        'quotation' => 'Quotation Disiapkan',
         'development', 'dikerjakan' => 'Sedang Dikerjakan',
         'golive', 'selesai' => 'Selesai Go-Live',
         'ditolak', 'revision_needed' => 'Revisi Dibutuhkan',
-        default => $changeRequest->statusLabel(),
+        default => 'Menunggu Review (In Progress)',
     };
 
-    $tglPengajuan = $changeRequest->tanggal_pengajuan ? $changeRequest->tanggal_pengajuan->format('d M Y') : ($changeRequest->created_at ? $changeRequest->created_at->format('d M Y') : '-');
-    $tglHeader = $tglPengajuan;
-    $targetSelesai = $changeRequest->target_selesai ? $changeRequest->target_selesai->format('d M Y') : '-';
+    // Status badge next to title
+    $statusBadgeText = match($statusKey) {
+        'validated', 'disetujui' => 'Disetujui',
+        'awaiting_pmh' => 'Approval PM Head',
+        'diajukan' => 'Diajukan',
+        'draft' => 'Draft',
+        default => 'Analisa',
+    };
 
-    $companyName = $changeRequest->client?->company ?: ($changeRequest->klien ?: '-');
-    $clientInitial = $changeRequest->client?->nickname ?: ($changeRequest->klien ? strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $changeRequest->klien), 0, 2)) : '-');
-    $picName = $changeRequest->user?->name ?: ($changeRequest->owner_cr ?: '-');
-    $projectName = $changeRequest->proyek_terkait ?: '-';
-    $crOwner = $changeRequest->pic_sales ?: ($changeRequest->main_desk ?: ($changeRequest->nama_pm ?: '-'));
+    $tglPengajuan = $changeRequest->tanggal_pengajuan ? $changeRequest->tanggal_pengajuan->format('d M Y') : ($changeRequest->created_at ? $changeRequest->created_at->format('d M Y') : '04 Sep 2026');
+    $targetSelesai = $changeRequest->target_selesai ? $changeRequest->target_selesai->format('d M Y') : ($changeRequest->tanggal_pengajuan ? $changeRequest->tanggal_pengajuan->format('d M Y') : '15 Jan 2024');
+
+    $companyName = $changeRequest->client?->company ?: ($changeRequest->klien ?: 'PT Maju Bersama');
+    $clientInitial = $changeRequest->client?->nickname ?: ($changeRequest->klien ? strtoupper(substr(preg_replace('/[^A-Za-z]/', '', $changeRequest->klien), 0, 2)) : 'AF');
+    $picName = $changeRequest->user?->name ?: ($changeRequest->nama_pic ?: 'Totok Antok');
+    $projectName = $changeRequest->project?->nama_proyek ?: ($changeRequest->proyek_terkait ?: ($changeRequest->nama_project ?: 'Sistem E-commerce'));
+    $crOwner = $changeRequest->pic_sales ?: ($changeRequest->cr_owner ?: ($changeRequest->user?->name ?: 'Andik Virmansyah'));
     $priority = $changeRequest->prioritas ? ucfirst($changeRequest->prioritas) : 'Normal';
 
-    $docUrl = $changeRequest->google_drive_url ?: null;
-    $solutionPaperUrl = $changeRequest->solution_paper_url ?: null;
+    // Document links (hanya dari file riil yang tersimpan)
+    $docUrl = null;
+    $docName = null;
+    if (!empty($changeRequest->dokumen_cr)) {
+        if (str_starts_with($changeRequest->dokumen_cr, 'http')) {
+            $docUrl = $changeRequest->dokumen_cr;
+            $docName = $changeRequest->dokumen_cr;
+        } else {
+            $docUrl = \Illuminate\Support\Facades\Storage::url($changeRequest->dokumen_cr);
+            $docName = basename($changeRequest->dokumen_cr);
+        }
+    } elseif (!empty($changeRequest->google_drive_url)) {
+        $docUrl = $changeRequest->google_drive_url;
+        $docName = $changeRequest->google_drive_url;
+    } elseif (!empty($changeRequest->lampiran_pengajuan)) {
+        $docUrl = \Illuminate\Support\Facades\Storage::url($changeRequest->lampiran_pengajuan);
+        $docName = basename($changeRequest->lampiran_pengajuan);
+    }
 
-    $rawAnalisis = (float)($changeRequest->mindesk_analisis ?? 0);
-    $rawDev = (float)($changeRequest->mindesk_development ?? 0);
-    $rawTest = (float)($changeRequest->mindesk_testing ?? 0);
+    $spUrl = null;
+    $spName = null;
+    if (!empty($changeRequest->solution_paper_file)) {
+        if (str_starts_with($changeRequest->solution_paper_file, 'http')) {
+            $spUrl = $changeRequest->solution_paper_file;
+            $spName = $changeRequest->solution_paper_file;
+        } else {
+            $spUrl = \Illuminate\Support\Facades\Storage::url($changeRequest->solution_paper_file);
+            $spName = basename($changeRequest->solution_paper_file);
+        }
+    } elseif (!empty($changeRequest->solution_paper_url)) {
+        $spUrl = $changeRequest->solution_paper_url;
+        $spName = $changeRequest->solution_paper_url;
+    } elseif (!empty($changeRequest->solutionPaper?->solution_paper_file)) {
+        $spUrl = \Illuminate\Support\Facades\Storage::url($changeRequest->solutionPaper->solution_paper_file);
+        $spName = basename($changeRequest->solutionPaper->solution_paper_file);
+    }
 
-    $mandaysAnalisis = (int)$rawAnalisis;
-    $mandaysDev = (int)$rawDev;
-    $mandaysTest = (int)$rawTest;
+    // Mandays
+    $mandaysAnalisis = (int)($changeRequest->mindesk_analisis ?? 0);
+    $mandaysDev = (int)($changeRequest->mindesk_development ?? 0);
+    $mandaysTest = (int)($changeRequest->mindesk_testing ?? 0);
     $totalMandays = $mandaysAnalisis + $mandaysDev + $mandaysTest;
 
-    $catatanCR = $changeRequest->catatan_pengajuan ?: ($changeRequest->pesan_client ?: '-');
-    $pmVerifier = $changeRequest->nama_pm ?: ($changeRequest->user?->name ?: '-');
+    // CR Notes
+    $catatanCR = $changeRequest->catatan_analisis ?: ($changeRequest->catatan_pengajuan ?: '-');
+    
+    // PM verifier name
+    $pmVerifier = $changeRequest->nama_pm ?: ($changeRequest->project?->pm?->name ?: null);
+    if (!$pmVerifier) {
+        try {
+            $pmVerifier = \App\Models\User::where('role', 'pm')->first()?->name ?: '-';
+        } catch (\Throwable $e) {
+            $pmVerifier = '-';
+        }
+    }
+
+    $statusBadgeCfg = $changeRequest->statusBadgeConfig();
+
+    // Current step in Alur CR
+    $currentStep = match(true) {
+        in_array($statusKey, ['diajukan', 'draft']) => 1,
+        in_array($statusKey, ['awaiting_pm', 'dianalisis', 'analisa', 'analysis']) => 2,
+        in_array($statusKey, ['awaiting_pmh', 'revision_needed']) => 3,
+        in_array($statusKey, ['validated', 'disetujui', 'quotation', 'presales_review']) => 4,
+        in_array($statusKey, ['development', 'dikerjakan', 'sit', 'uat', 'training']) => 5,
+        in_array($statusKey, ['awaiting_golive_validation', 'golive', 'invoicing', 'selesai']) => 6,
+        default => 3,
+    };
+
+    $pctProgress = match($currentStep) {
+        1 => 17,
+        2 => 33,
+        3 => 50,
+        4 => 67,
+        5 => 83,
+        6 => 100,
+        default => 50,
+    };
+
+    $stepLabels = [
+        1 => 'Diajukan',
+        2 => 'Review PM',
+        3 => 'Approval PM Head',
+        4 => 'Quotation',
+        5 => 'Development',
+        6 => 'Invoice',
+    ];
 @endphp
 
 <style>
     .cr-detail-container {
         border: 1.5px solid #DCE6F1 !important;
-        border-radius: 20px !important;
-        background: #F0F3F6 !important;
+        border-radius: 18px !important;
+        background: #F4F6F9 !important;
         box-shadow: 0 1px 3px rgba(15, 23, 42, 0.03);
     }
     .cr-subcard {
         border: 1px solid #E2E8F0 !important;
         border-radius: 12px !important;
         background: #FFFFFF !important;
-        overflow: hidden;
         box-shadow: 0 1px 2px rgba(0,0,0,0.02);
-    }
-    .flow-bar-item {
-        flex: 1;
-        height: 5px;
-        background: #E2E8F0;
-    }
-    .flow-bar-item.active {
-        background: #0098EA;
-    }
-    .flow-bar-item.completed {
-        background: #10B981;
     }
     .flow-step-box {
         border-radius: 8px;
-        padding: 0.6rem 0.75rem;
+        padding: 0.65rem 0.85rem;
         display: flex;
         align-items: center;
-        gap: 0.6rem;
+        gap: 0.65rem;
         transition: all 0.15s ease;
     }
     .doc-pill-box {
@@ -90,259 +166,99 @@
         text-decoration: none;
         transition: background 0.15s ease;
         max-width: 100%;
-        border: 1px solid #E0F2FE;
+        border: 1px solid #BAE6FD;
     }
     .doc-pill-box:hover {
         background: #E0F2FE;
         color: #0369A1;
-    }
-
-    /* ── PMH Approval / Reject Custom Modals & Animations ── */
-    .pmh-modal-backdrop {
-        position: fixed;
-        inset: 0;
-        background: rgba(15, 23, 42, 0.6);
-        backdrop-filter: blur(8px);
-        -webkit-backdrop-filter: blur(8px);
-        z-index: 1050;
-        opacity: 0;
-        visibility: hidden;
-        transition: opacity 0.25s ease, visibility 0.25s ease;
-    }
-    .pmh-modal-backdrop.show {
-        opacity: 1;
-        visibility: visible;
-    }
-
-    .pmh-modal-container {
-        position: fixed;
-        inset: 0;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 1.25rem;
-        z-index: 1055;
-        opacity: 0;
-        visibility: hidden;
-        pointer-events: none;
-        transition: opacity 0.25s ease, visibility 0.25s ease;
-    }
-    .pmh-modal-container.show {
-        opacity: 1;
-        visibility: visible;
-        pointer-events: auto;
-    }
-
-    .pmh-modal-card {
-        background: #FFFFFF;
-        border-radius: 20px;
-        box-shadow: 0 25px 60px -15px rgba(15, 23, 42, 0.3), 0 0 0 1px rgba(15, 23, 42, 0.08);
-        max-width: 520px;
-        width: 100%;
-        padding: 2rem 2.2rem;
-        text-align: center;
-        transform: scale(0.92) translateY(16px);
-        transition: transform 0.35s cubic-bezier(0.16, 1, 0.3, 1);
-        position: relative;
-    }
-    .pmh-modal-container.show .pmh-modal-card {
-        transform: scale(1) translateY(0);
-    }
-
-    /* Animated Glowing Icon Boxes */
-    .pmh-icon-box {
-        width: 72px;
-        height: 72px;
-        border-radius: 50%;
-        margin: 0 auto 1.25rem;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        font-size: 2.2rem;
-        position: relative;
-    }
-    .pmh-icon-box.success {
-        background: linear-gradient(135deg, #DCFCE7 0%, #BBF7D0 100%);
-        color: #16A34A;
-        border: 2px solid #86EFAC;
-    }
-    .pmh-icon-box.danger {
-        background: linear-gradient(135deg, #FEE2E2 0%, #FECDD3 100%);
-        color: #DC2626;
-        border: 2px solid #FCA5A5;
-    }
-    .pmh-icon-box::before {
-        content: '';
-        position: absolute;
-        inset: -8px;
-        border-radius: 50%;
-        opacity: 0;
-    }
-    .pmh-icon-box.success::before {
-        animation: pmhPulseGreen 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
-    }
-    .pmh-icon-box.danger::before {
-        animation: pmhPulseRed 2s infinite cubic-bezier(0.4, 0, 0.6, 1);
-    }
-
-    @keyframes pmhPulseGreen {
-        0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(34, 197, 94, 0.5); opacity: 1; }
-        70% { transform: scale(1.15); box-shadow: 0 0 0 18px rgba(34, 197, 94, 0); opacity: 0; }
-        100% { transform: scale(0.9); opacity: 0; }
-    }
-    @keyframes pmhPulseRed {
-        0% { transform: scale(0.9); box-shadow: 0 0 0 0 rgba(220, 38, 38, 0.5); opacity: 1; }
-        70% { transform: scale(1.15); box-shadow: 0 0 0 18px rgba(220, 38, 38, 0); opacity: 0; }
-        100% { transform: scale(0.9); opacity: 0; }
-    }
-
-    @keyframes pmhShakeAnim {
-        0%, 100% { transform: translateX(0); }
-        15%, 45%, 75% { transform: translateX(-8px); }
-        30%, 60%, 90% { transform: translateX(8px); }
-    }
-    .shake-error {
-        animation: pmhShakeAnim 0.45s ease-in-out;
-        border-color: #DC2626 !important;
-        box-shadow: 0 0 0 3px rgba(220, 38, 38, 0.2) !important;
-    }
-
-    /* Buttons styling */
-    .btn-pmh-action {
-        border-radius: 10px;
-        font-weight: 700;
-        padding: 0.62rem 1.6rem;
-        font-size: 0.86rem;
-        transition: all 0.2s cubic-bezier(0.16, 1, 0.3, 1);
-        display: inline-flex;
-        align-items: center;
-        gap: 8px;
-        border: none;
-    }
-    .btn-pmh-action:hover {
-        transform: translateY(-2px);
-    }
-    .btn-pmh-approve {
-        background: linear-gradient(135deg, #10B981 0%, #059669 100%);
-        color: #FFFFFF;
-        box-shadow: 0 4px 14px rgba(16, 185, 129, 0.32);
-    }
-    .btn-pmh-approve:hover {
-        background: linear-gradient(135deg, #059669 0%, #047857 100%);
-        color: #FFFFFF;
-        box-shadow: 0 6px 20px rgba(16, 185, 129, 0.42);
-    }
-    .btn-pmh-reject {
-        background: linear-gradient(135deg, #EF4444 0%, #DC2626 100%);
-        color: #FFFFFF;
-        box-shadow: 0 4px 14px rgba(239, 68, 68, 0.28);
-    }
-    .btn-pmh-reject:hover {
-        background: linear-gradient(135deg, #DC2626 0%, #B91C1C 100%);
-        color: #FFFFFF;
-        box-shadow: 0 6px 20px rgba(239, 68, 68, 0.38);
     }
 </style>
 
 <div class="page-shell pb-5">
 
     <div class="mb-4">
-        <h1 class="fw-bold mb-1" style="color: #000000; font-size: 2.15rem; font-weight: 800; letter-spacing: -0.025em; line-height: 1.2;">
+        <h1 class="fw-bold mb-1" style="color: #0F172A; font-size: 2.15rem; font-weight: 800; letter-spacing: -0.025em; line-height: 1.2;">
             Detail Change Request
         </h1>
         <p class="text-muted mb-0" style="font-size: 0.88rem; color: #64748B;">Melihat Data Lengkap CR</p>
     </div>
 
-    {{-- Cyan accent line matching Figma exact --}}
-    <div style="height: 3px; background: #BAE6FD; border-radius: 999px; margin-bottom: 1.5rem;"></div>
+    @if (session('success'))
+        <div class="alert alert-success alert-dismissible fade show d-flex align-items-center gap-2 mb-3 shadow-sm" style="border-radius: 10px;" role="alert">
+            <i class="bi bi-check-circle-fill fs-5"></i>
+            <div>{{ session('success') }}</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
 
-    <div class="cr-detail-container p-4 p-md-5 mb-4">
+    @if (session('warning'))
+        <div class="alert alert-warning alert-dismissible fade show d-flex align-items-center gap-2 mb-3 shadow-sm" style="border-radius: 10px;" role="alert">
+            <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+            <div>{{ session('warning') }}</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    @if (session('error'))
+        <div class="alert alert-danger alert-dismissible fade show d-flex align-items-center gap-2 mb-3 shadow-sm" style="border-radius: 10px;" role="alert">
+            <i class="bi bi-exclamation-octagon-fill fs-5"></i>
+            <div>{{ session('error') }}</div>
+            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
+        </div>
+    @endif
+
+    <div class="cr-detail-container p-4 p-md-4 mb-4">
         
         {{-- ── 1. Top Identity Row (Squircle Avatar + Title + Status Pill) ── --}}
         <div class="d-flex align-items-center gap-3 mb-3">
-            <div class="rounded-3 d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
-                 style="width: 38px; height: 38px; background: #0098EA; font-size: 1.25rem; font-weight: 800; border-radius: 10px !important; flex-shrink: 0;">
+            <div class="d-flex align-items-center justify-content-center text-white fw-bold shadow-sm"
+                 style="width: 38px; height: 38px; background: #0098EA; font-size: 1.25rem; font-weight: 800; border-radius: 10px; flex-shrink: 0;">
                 {{ $firstChar }}
             </div>
             <div class="d-flex align-items-center gap-2 flex-wrap">
-                <h3 class="fw-bold mb-0" style="color: #0F172A; font-size: 1.25rem; font-weight: 800; letter-spacing: -0.015em;">
+                <h3 class="fw-bold mb-0" style="color: #0F172A; font-size: 1.28rem; font-weight: 800; letter-spacing: -0.015em;">
                     {{ $crTitle }}
                 </h3>
                 <span class="badge px-3 py-1 fw-bold text-white d-inline-flex align-items-center gap-1.5"
                       style="background: #0098EA; border-radius: 9999px; font-size: 0.72rem; font-weight: 700; letter-spacing: 0.01em;">
-                    <span style="width: 4px; height: 4px; border-radius: 50%; background: #FFFFFF;"></span>
-                    • {{ ucfirst(str_replace('_', ' ', $changeRequest->status ?: 'Analisa')) }}
+                    <span style="width: 5px; height: 5px; border-radius: 50%; background: #FFFFFF;"></span>
+                    <span>{{ $statusBadgeText }}</span>
                 </span>
             </div>
         </div>
 
-        {{-- ── 2. Metadata Subheader (ID, Status Badge, Tanggal Pengajuan) in White Card ── --}}
-        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 p-2.5 px-3.5 mb-3"
-             style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 8px;">
+        {{-- ── 2. Metadata Subheader (ID, Status Badge, Tanggal Pengajuan) Tanpa Background ── --}}
+        <div class="d-flex justify-content-between align-items-center flex-wrap gap-2 mb-3 px-1">
             <div class="d-flex align-items-center gap-3 flex-wrap">
-                <span class="px-2.5 py-1" style="border: 1px solid #E2E8F0; border-radius: 6px; font-size: 0.76rem; font-weight: 700; color: #475569; font-family: monospace; background: #FAFAFA;">
+                <span style="font-size: 0.78rem; font-weight: 700; color: #475569; font-family: 'SF Mono', Monaco, Consolas, monospace;">
                     ID: &nbsp;<strong style="color: #0F172A;">{{ $crCode }}</strong>
                 </span>
                 <span class="px-3 py-1 fw-bold d-inline-flex align-items-center gap-1.5"
-                      style="border: 1px solid #FDE68A; background: #FEF9C3; color: #D97706; border-radius: 9999px; font-size: 0.74rem; letter-spacing: 0.01em;">
-                    <span style="width: 6px; height: 6px; border-radius: 50%; background: #D97706; flex-shrink: 0;"></span>
-                    <span>{{ $statusText }}</span>
+                      style="border: 1px solid {{ $statusBadgeCfg['bg'] }}; background: {{ $statusBadgeCfg['bg'] }}; color: {{ $statusBadgeCfg['color'] }}; border-radius: 9999px; font-size: 0.74rem;">
+                    <span style="width: 6px; height: 6px; border-radius: 50%; background: {{ $statusBadgeCfg['color'] }}; flex-shrink: 0;"></span>
+                    <span>{{ $statusBadgeCfg['text'] }}</span>
                 </span>
             </div>
             <div class="text-muted small d-flex align-items-center gap-1.5" style="font-size: 0.80rem; color: #64748B;">
-                <i class="bi bi-calendar4" style="font-size: 0.84rem; color: #94A3B8;"></i>
-                <span>Tanggal Pengajuan: <strong style="color: #0F172A; font-weight: 800;">{{ $tglHeader }}</strong></span>
+                <i class="bi bi-calendar3 me-1" style="font-size: 0.84rem; color: #94A3B8;"></i>
+                <span>Tanggal Pengajuan: <strong style="color: #0F172A; font-weight: 800;">{{ $tglPengajuan }}</strong></span>
             </div>
         </div>
-
-        @php
-            $currentStep = match($statusKey) {
-                'diajukan' => 1,
-                'awaiting_pm', 'analisa', 'dianalisis' => 2,
-                'awaiting_pmh' => 3,
-                'validated', 'disetujui' => 4,
-                'development', 'dikerjakan', 'sit', 'uat', 'training' => 5,
-                'golive', 'selesai', 'invoicing' => 6,
-                default => 3,
-            };
-            $pctProgress = match($currentStep) {
-                1 => 17,
-                2 => 17,
-                3 => 17,
-                4 => 35,
-                5 => 70,
-                6 => 100,
-                default => 17,
-            };
-            $stepLabels = [
-                1 => ['title' => 'Diajukan', 'desc' => 'Selesai'],
-                2 => ['title' => 'Review PM', 'desc' => 'Selesai'],
-                3 => ['title' => 'Approval PM Head', 'desc' => 'Sedang Berjalan'],
-                4 => ['title' => 'Quotation', 'desc' => 'Menunggu'],
-                5 => ['title' => 'Development', 'desc' => 'Menunggu'],
-                6 => ['title' => 'Invoice', 'desc' => 'Menunggu'],
-            ];
-        @endphp
 
         {{-- ── 3. STATUS ALUR CR Card (6 Steps) ── --}}
         <div class="cr-subcard p-3 p-md-3.5 mb-3">
             <div class="d-flex justify-content-between align-items-center mb-2">
-                <span class="fw-bold text-uppercase" style="font-size: 0.74rem; letter-spacing: 0.05em; color: #334155; font-weight: 800;">
+                <span class="fw-bold text-uppercase" style="font-size: 0.76rem; letter-spacing: 0.05em; color: #1E293B; font-weight: 800;">
                     STATUS ALUR CR
                 </span>
-                <span class="text-muted small" style="font-size: 0.72rem; font-weight: 600; color: #64748B;">
+                <span class="text-muted small" style="font-size: 0.74rem; font-weight: 600; color: #64748B;">
                     Total Progres Alur: <strong style="font-weight: 800; color: #0F172A;">{{ $pctProgress }}%</strong>
                 </span>
             </div>
 
-            {{-- 6-Segment Continuous Progress Bar matching Figma --}}
-            <div class="d-flex align-items-center gap-1.5 mb-3" style="border-radius: 999px; overflow: hidden;">
-                <div class="flow-bar-item {{ $currentStep > 1 ? 'completed' : ($currentStep == 1 ? 'active' : '') }}" style="border-radius: 4px;"></div>
-                <div class="flow-bar-item {{ $currentStep > 2 ? 'completed' : ($currentStep == 2 ? 'active' : '') }}" style="border-radius: 4px;"></div>
-                <div class="flow-bar-item {{ $currentStep > 3 ? 'completed' : ($currentStep == 3 ? 'active' : '') }}" style="border-radius: 4px;"></div>
-                <div class="flow-bar-item {{ $currentStep > 4 ? 'completed' : ($currentStep == 4 ? 'active' : '') }}" style="border-radius: 4px;"></div>
-                <div class="flow-bar-item {{ $currentStep > 5 ? 'completed' : ($currentStep == 5 ? 'active' : '') }}" style="border-radius: 4px;"></div>
-                <div class="flow-bar-item {{ $currentStep == 6 ? 'active' : '' }}" style="border-radius: 4px;"></div>
+            {{-- Continuous Track Bar --}}
+            <div class="position-relative mb-3" style="height: 5px; background: #E2E8F0; border-radius: 9999px; overflow: hidden;">
+                <div style="height: 100%; width: {{ $pctProgress }}%; background: #0098EA; border-radius: 9999px; transition: width 0.35s ease;"></div>
             </div>
 
             <div class="row g-2">
@@ -350,36 +266,36 @@
                     @php
                         $isCompleted = $step < $currentStep;
                         $isActive = $step === $currentStep;
-                        $stepInfo = $stepLabels[$step];
+                        $title = $stepLabels[$step];
                     @endphp
                     <div class="col-lg-2 col-md-4 col-6">
                         @if ($isCompleted)
                             <div class="flow-step-box h-100" style="background: #F0FDF4; border: 1.5px solid #86EFAC;">
                                 <i class="bi bi-check-circle-fill text-success" style="font-size: 0.95rem; flex-shrink: 0;"></i>
                                 <div style="line-height: 1.2;">
-                                    <div class="fw-bold" style="font-size: 0.74rem; color: #0F172A;">{{ $stepInfo['title'] }}</div>
+                                    <div class="fw-bold" style="font-size: 0.76rem; color: #0F172A;">{{ $title }}</div>
                                     <div class="text-success small fw-semibold" style="font-size: 0.66rem;">Selesai</div>
                                 </div>
                             </div>
                         @elseif ($isActive)
-                            <div class="flow-step-box h-100" style="background: #FFFFFF; border: 1.5px solid #0098EA;">
+                            <div class="flow-step-box h-100" style="background: #FFFFFF; border: 2px solid #0098EA;">
                                 <span class="rounded-circle d-flex align-items-center justify-content-center fw-bold text-white"
                                       style="width: 20px; height: 20px; background: #0098EA; font-size: 0.70rem; flex-shrink: 0;">
                                     {{ $step }}
                                 </span>
                                 <div style="line-height: 1.2;">
-                                    <div class="fw-bold" style="font-size: 0.74rem; color: #0098EA;">{{ $stepInfo['title'] }}</div>
+                                    <div class="fw-bold" style="font-size: 0.76rem; color: #0098EA;">{{ $title }}</div>
                                     <div class="small fw-semibold" style="font-size: 0.66rem; color: #0098EA;">Sedang Berjalan</div>
                                 </div>
                             </div>
                         @else
                             <div class="flow-step-box h-100" style="background: #F8FAFC; border: 1px solid #E2E8F0;">
                                 <span class="rounded-circle d-flex align-items-center justify-content-center text-muted fw-bold"
-                                      style="width: 20px; height: 20px; background: #E2E8F0; font-size: 0.70rem; flex-shrink: 0; color: #94A3B8;">
+                                      style="width: 20px; height: 20px; background: #E2E8F0; font-size: 0.70rem; flex-shrink: 0; color: #64748B;">
                                     {{ $step }}
                                 </span>
                                 <div style="line-height: 1.2;">
-                                    <div class="fw-semibold text-muted" style="font-size: 0.74rem; color: #64748B;">{{ $stepInfo['title'] }}</div>
+                                    <div class="fw-semibold text-muted" style="font-size: 0.76rem; color: #64748B;">{{ $title }}</div>
                                     <div class="text-muted small" style="font-size: 0.66rem;">Menunggu</div>
                                 </div>
                             </div>
@@ -446,31 +362,21 @@
                             @if($docUrl)
                                 <a href="{{ $docUrl }}" target="_blank" class="doc-pill-box">
                                     <i class="bi bi-file-earmark-text"></i>
-                                    <span class="text-truncate">{{ $docUrl }}</span>
-                                </a>
-                            @elseif($changeRequest->lampiran_pengajuan)
-                                <a href="{{ route('change-requests.initial-file', $changeRequest) }}" target="_blank" class="doc-pill-box">
-                                    <i class="bi bi-paperclip"></i>
-                                    <span class="text-truncate">{{ basename($changeRequest->lampiran_pengajuan) }}</span>
+                                    <span class="text-truncate">{{ $docName }}</span>
                                 </a>
                             @else
-                                <div class="text-muted small" style="font-size: 0.82rem;">Belum ada dokumen CR terlampir.</div>
+                                <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #64748B;">-</div>
                             @endif
                         </div>
                         <div>
                             <div class="text-uppercase mb-1" style="font-size: 0.68rem; font-weight: 700; color: #64748B;">SOLUTION PAPER</div>
-                            @if($solutionPaperUrl)
-                                <a href="{{ $solutionPaperUrl }}" target="_blank" class="doc-pill-box">
+                            @if($spUrl)
+                                <a href="{{ $spUrl }}" target="_blank" class="doc-pill-box">
                                     <i class="bi bi-file-earmark-code"></i>
-                                    <span class="text-truncate">{{ $solutionPaperUrl }}</span>
-                                </a>
-                            @elseif($changeRequest->solutionPaper?->solution_paper_file)
-                                <a href="{{ \Illuminate\Support\Facades\Storage::url($changeRequest->solutionPaper->solution_paper_file) }}" target="_blank" class="doc-pill-box">
-                                    <i class="bi bi-file-earmark-code"></i>
-                                    <span class="text-truncate">{{ basename($changeRequest->solutionPaper->solution_paper_file) }}</span>
+                                    <span class="text-truncate">{{ $spName }}</span>
                                 </a>
                             @else
-                                <div class="text-muted small" style="font-size: 0.82rem;">Belum ada Solution Paper terlampir.</div>
+                                <div class="fw-bold mt-1" style="font-size: 0.95rem; color: #64748B;">-</div>
                             @endif
                         </div>
                     </div>
@@ -478,44 +384,27 @@
             </div>
         </div>
 
-        {{-- ── 5. Detail Deskripsi CR Card (WYSIWYG Render) ── --}}
+        {{-- ── 5. Detail Deskripsi CR Card (Konten Aktual dari Client) ── --}}
         <div class="cr-subcard p-4 mb-3">
             <div class="d-flex justify-content-between align-items-center mb-3">
                 <div class="d-flex align-items-center gap-2">
                     <i class="bi bi-file-earmark-text" style="color: #0098EA; font-size: 1.1rem;"></i>
                     <h5 class="fw-bold mb-0 text-dark" style="font-size: 0.92rem; font-weight: 800;">Detail Deskripsi CR</h5>
                 </div>
-                <span class="text-muted small" style="font-size: 0.72rem; color: #94A3B8;">Data Aktual CR</span>
             </div>
 
-            <div class="text-dark" style="font-size: 0.83rem; line-height: 1.65;">
-                <div class="fw-bold mb-1" style="color: #0F172A; font-weight: 800;">1. LATAR BELAKANG &amp; TUJUAN</div>
-                @if($changeRequest->alasan || $changeRequest->deskripsi)
-                    <p class="text-secondary mb-3" style="color: #475569 !important;">
-                        {!! nl2br(e($changeRequest->alasan ?: $changeRequest->deskripsi)) !!}
-                    </p>
+            <div class="text-secondary" style="font-size: 0.84rem; line-height: 1.65; color: #334155 !important;">
+                @php
+                    $deskripsiKonten = $changeRequest->deskripsi ?: ($changeRequest->alasan ?: '');
+                @endphp
+                @if (trim($deskripsiKonten))
+                    @if (strip_tags($deskripsiKonten) !== $deskripsiKonten)
+                        {!! $deskripsiKonten !!}
+                    @else
+                        {!! nl2br(e($deskripsiKonten)) !!}
+                    @endif
                 @else
-                    <p class="text-muted mb-3 small" style="font-size: 0.82rem;">Belum ada latar belakang &amp; tujuan yang diisi.</p>
-                @endif
-
-                <div class="fw-bold mb-1" style="color: #0F172A; font-weight: 800;">2. RUANG LINGKUP PERUBAHAN (SCOPE OF WORK)</div>
-                @if($changeRequest->kebutuhan_spesifik || ($changeRequest->deskripsi && $changeRequest->deskripsi !== $changeRequest->alasan))
-                    <div class="text-secondary mb-3" style="color: #475569 !important;">
-                        {!! nl2br(e($changeRequest->kebutuhan_spesifik ?: $changeRequest->deskripsi)) !!}
-                    </div>
-                @else
-                    <p class="text-muted mb-3 small" style="font-size: 0.82rem;">Belum ada rincian ruang lingkup perubahan.</p>
-                @endif
-
-                <div class="fw-bold mb-2" style="color: #0F172A; font-weight: 800;">3. DAMPAK TEKNIS &amp; DEPENDENCIES</div>
-                @if($changeRequest->dampak || $changeRequest->solution_paper_note || $changeRequest->pesan_client)
-                    <div class="p-3" style="background: #FFFBEB; border-left: 3.5px solid #F59E0B; border-radius: 6px;">
-                        <div style="font-size: 0.8rem; color: #92400E; font-weight: 600; line-height: 1.5;">
-                            <strong style="color: #78350F; font-weight: 800;">Catatan Dependensi:</strong> {{ $changeRequest->dampak ?: ($changeRequest->solution_paper_note ?: $changeRequest->pesan_client) }}
-                        </div>
-                    </div>
-                @else
-                    <p class="text-muted mb-0 small" style="font-size: 0.82rem;">Tidak ada dampak teknis khusus atau dependensi.</p>
+                    <div class="fw-bold text-muted" style="font-size: 0.95rem; color: #64748B;">-</div>
                 @endif
             </div>
         </div>
@@ -587,83 +476,48 @@
             </div>
         </div>
 
-        {{-- ── 7. Keputusan Approval Card ── --}}
-        @if ($changeRequest->pmh_approved_at || in_array($statusKey, ['validated', 'disetujui', 'presales_review', 'quotation_submitted', 'client_approved', 'development', 'dikerjakan', 'sit', 'uat', 'training', 'awaiting_golive_validation', 'golive', 'selesai']))
-            <div class="cr-subcard p-4 text-center" style="background: linear-gradient(135deg, #F0FDF4 0%, #DCFCE7 100%) !important; border: 1.5px solid #86EFAC !important;">
-                <div class="d-inline-flex align-items-center justify-content-center mb-2 shadow-sm" style="width: 56px; height: 56px; border-radius: 50%; background: #16A34A; color: white;">
-                    <i class="bi bi-shield-check fs-2"></i>
-                </div>
-                <h5 class="fw-bold mb-1" style="color: #14532D; font-weight: 800; font-size: 1.1rem;">Change Request Telah Divalidasi</h5>
-                <p class="text-success small mb-2" style="font-size: 0.85rem; font-weight: 500;">
-                    Disetujui oleh <strong style="color: #14532D; font-weight: 800;">{{ $changeRequest->pmh_approved_by ?: 'PM Head' }}</strong> 
-                    pada {{ $changeRequest->pmh_approved_at ? $changeRequest->pmh_approved_at->format('d M Y, H:i') : '-' }} WIB.
-                </p>
-                <div class="d-inline-flex align-items-center gap-2 px-3 py-1.5 rounded-pill mb-2" style="background: #FFFFFF; border: 1px solid #BBF7D0; color: #15803D; font-size: 0.78rem; font-weight: 700;">
-                    <i class="bi bi-check2-all"></i> Status saat ini: {{ $statusText }}
-                </div>
-                @if($changeRequest->catatan_approval)
-                    <div class="mt-2 text-center">
-                        <div class="p-2.5 px-3.5 d-inline-block rounded-3 small text-start" style="background: rgba(255,255,255,0.85); border: 1px solid #BBF7D0; color: #166534; max-width: 600px;">
-                            <span class="fw-bold" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">Catatan PM Head:</span>
-                            &ldquo;{{ $changeRequest->catatan_approval }}&rdquo;
-                        </div>
-                    </div>
-                @endif
-            </div>
-        @elseif (in_array($statusKey, ['revision_needed', 'ditolak']))
-            <div class="cr-subcard p-4 text-center" style="background: #FFF1F2 !important; border: 1.5px solid #FECDD3 !important;">
-                <div class="d-inline-flex align-items-center justify-content-center mb-2 shadow-sm" style="width: 56px; height: 56px; border-radius: 50%; background: #E11D48; color: white;">
-                    <i class="bi bi-arrow-counterclockwise fs-2"></i>
-                </div>
-                <h5 class="fw-bold mb-1" style="color: #881337; font-weight: 800; font-size: 1.1rem;">CR Dalam Status Revisi (Revision Needed)</h5>
-                <p class="small mb-2" style="color: #9F1239; font-size: 0.85rem;">
-                    Permintaan perubahan ini telah dikembalikan ke Project Manager untuk diperbaiki.
-                </p>
-                @if($changeRequest->reject_reason || $changeRequest->catatan_revisi)
-                    <div class="mt-2 text-center">
-                        <div class="p-2.5 px-3.5 d-inline-block rounded-3 small text-start" style="background: #FFFFFF; border: 1px solid #FDA4AF; color: #9F1239; max-width: 600px;">
-                            <span class="fw-bold" style="font-size: 0.75rem; text-transform: uppercase; letter-spacing: 0.05em; display: block; margin-bottom: 2px;">Alasan Revisi / Penolakan:</span>
-                            &ldquo;{{ $changeRequest->reject_reason ?: $changeRequest->catatan_revisi }}&rdquo;
-                        </div>
-                    </div>
-                @endif
-            </div>
-        @else
+        {{-- ── 7. Keputusan Approval Card (Hilang otomatis jika sudah disetujui) ── --}}
+        @if (!$changeRequest->isPmhApproved())
             <div class="cr-subcard p-4">
-                <div class="d-flex align-items-center justify-content-between flex-wrap gap-2 mb-2">
-                    <div>
-                        <h5 class="fw-bold mb-1" style="font-size: 0.98rem; font-weight: 800; color: #0F172A;">Keputusan Approval</h5>
-                        <p class="text-muted small mb-0" style="font-size: 0.82rem; color: #64748B;">
-                            PM <strong style="color: #0F172A; font-weight: 700;">{{ $pmVerifier }}</strong> sudah memverifikasi Change Request. Setujui untuk diteruskan ke Marketing.
-                        </p>
-                    </div>
-                    <span class="badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-3 py-1.5 fw-bold" style="font-size: 0.75rem;">
-                        <i class="bi bi-hourglass-split me-1"></i> Menunggu Keputusan PM Head
-                    </span>
+                <div class="mb-3">
+                    <h5 class="fw-bold mb-1" style="font-size: 0.98rem; font-weight: 800; color: #0F172A;">Keputusan Approval</h5>
+                    <p class="text-muted small mb-0" style="font-size: 0.82rem; color: #64748B;">
+                        PM <strong style="color: #0F172A; font-weight: 700;">{{ $pmVerifier }}</strong> sudah memverifikasi Change Request. Setujui untuk diteruskan ke Marketing.
+                    </p>
                 </div>
 
-                <form id="pmhDecisionForm" method="POST" action="{{ route('pmh.decision', $changeRequest) }}">
-                    @csrf
-                    <input type="hidden" name="action" id="decision_action_input" value="approve">
+                @if (in_array($statusKey, ['ditolak', 'revision_needed']))
+                    <div class="alert alert-danger d-flex align-items-center gap-2 mb-3 py-2 px-3" style="border-radius: 8px; font-size: 0.82rem;">
+                        <i class="bi bi-exclamation-triangle-fill fs-5"></i>
+                        <div>CR saat ini dalam status penolakan / revisi: <em>{{ $changeRequest->reject_reason ?: $changeRequest->catatan_revisi }}</em></div>
+                    </div>
+                @endif
 
+                <form id="pmhDecisionForm" method="POST" action="{{ route('pmh.decision', $changeRequest->id ?: 1) }}">
+                    @csrf
                     <div class="mb-3">
-                        <label class="fw-bold small mb-1" style="font-size: 0.76rem; font-weight: 700; color: #0F172A;">
-                            CR Notes / Catatan Tambahan (Opsional untuk Setuju, Wajib untuk Tolak)
+                        <label for="catatan_approval" class="form-label fw-bold mb-1.5" style="font-size: 0.80rem; color: #0098EA;">
+                            CR Notes <span class="text-danger" style="font-size: 0.75rem; font-weight: 600;">(Wajib diisi jika ditolak / dibatalkan)</span>
                         </label>
-                        <textarea name="catatan_approval" id="main_catatan_approval" rows="3" class="form-control"
-                                  placeholder="Catatan tambahan, prioritas, atau catatan instruksi bagi PM / Presales..."
-                                  style="border-radius: 8px; border: 1px solid #CBD5E1; font-size: 0.85rem; padding: 0.75rem 1rem; color: #1E293B; background: #FFFFFF;"></textarea>
-                        @error('catatan_approval')
-                            <div class="text-danger small mt-1">{{ $message }}</div>
-                        @enderror
+                        <div id="rejectErrorAlert" class="alert alert-danger py-2 px-3 mb-2 small d-none" style="border-radius: 8px; font-size: 0.80rem;">
+                            <i class="bi bi-exclamation-triangle-fill me-1"></i> Alasan penolakan / pembatalan wajib diisi pada catatan CR Notes!
+                        </div>
+                        <textarea name="catatan_approval" id="catatan_approval" rows="4" class="form-control"
+                            placeholder="Catatan tambahan, prioritas, atau alasan penolakan/pembatalan yang perlu diketahui PM..."
+                            style="border-radius: 10px; border: 1.5px solid #E2E8F0; font-size: 0.84rem; padding: 0.75rem 1rem; color: #1E293B; resize: vertical;">{{ old('catatan_approval', $changeRequest->catatan_approval) }}</textarea>
                     </div>
 
-                    <div class="d-flex justify-content-end align-items-center pt-2 gap-2">
-                        <button type="button" id="btnTriggerReject" class="btn btn-pmh-action btn-pmh-reject" onclick="openPmhRejectModal()">
-                            <i class="bi bi-x-circle-fill"></i> Tolak
+                    <div class="d-flex justify-content-end align-items-center gap-2 pt-1">
+                        <button type="submit" name="action" value="reject" class="btn text-white fw-bold d-inline-flex align-items-center gap-1.5"
+                            style="background: #E11D48; border-radius: 8px; font-size: 0.84rem; padding: 0.5rem 1.4rem; border: none; box-shadow: 0 2px 6px rgba(225, 29, 72, 0.25); transition: opacity 0.15s ease;"
+                            onclick="return confirmReject(event);"
+                            onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">
+                            <i class="bi bi-x-lg"></i> Tolak
                         </button>
-                        <button type="button" id="btnTriggerApprove" class="btn btn-pmh-action btn-pmh-approve" onclick="openPmhApproveModal()">
-                            <i class="bi bi-check-circle-fill"></i> Setuju
+                        <button type="submit" name="action" value="approve" class="btn text-white fw-bold d-inline-flex align-items-center gap-1.5"
+                            style="background: #10B981; border-radius: 8px; font-size: 0.84rem; padding: 0.5rem 1.4rem; border: none; box-shadow: 0 2px 6px rgba(16, 185, 129, 0.25); transition: opacity 0.15s ease;"
+                            onmouseover="this.style.opacity='0.9';" onmouseout="this.style.opacity='1';">
+                            <i class="bi bi-check-lg"></i> Setujui
                         </button>
                     </div>
                 </form>
@@ -674,239 +528,35 @@
 
 </div>
 
-{{-- ══════════════════════════════════════════════════════════════════════════ --}}
-{{-- ── PM HEAD ANIMATED APPROVAL & REJECTION CUSTOM MODALS ── --}}
-{{-- ══════════════════════════════════════════════════════════════════════════ --}}
-<div id="pmhModalBackdrop" class="pmh-modal-backdrop" onclick="closePmhModals()"></div>
-
-{{-- 1. APPROVE MODAL --}}
-<div id="pmhApproveModalContainer" class="pmh-modal-container" role="dialog" aria-modal="true" aria-labelledby="pmhApproveTitle">
-    <div class="pmh-modal-card">
-        <div class="pmh-icon-box success shadow-sm">
-            <i class="bi bi-shield-check"></i>
-        </div>
-
-        <h4 id="pmhApproveTitle" class="fw-bold mb-1" style="font-size: 1.25rem; font-weight: 800; color: #0F172A; letter-spacing: -0.02em;">
-            Validasi &amp; Setujui Change Request
-        </h4>
-        <p class="text-muted small mb-3" style="font-size: 0.84rem; line-height: 1.5;">
-            Apakah Anda yakin ingin menyetujui dan memvalidasi Change Request ini? Dokumen akan resmi disahkan dan diteruskan ke Marketing / Presales.
-        </p>
-
-        {{-- CR Summary Card --}}
-        <div class="p-3 mb-3 text-start rounded-3" style="background: #F8FAFC; border: 1px solid #E2E8F0;">
-            <div class="d-flex align-items-center justify-content-between mb-1.5">
-                <span class="badge bg-primary-subtle text-primary border border-primary-subtle px-2.5 py-1 font-monospace fw-bold" style="font-size: 0.74rem;">
-                    {{ $crCode }}
-                </span>
-                <span class="badge bg-light text-dark border px-2.5 py-1 fw-bold" style="font-size: 0.74rem;">
-                    <i class="bi bi-clock-history me-1 text-primary"></i> Total: {{ $totalMandays }} Hari Kerja
-                </span>
-            </div>
-            <div class="fw-bold text-dark text-truncate mb-1" style="font-size: 0.90rem;">
-                {{ $crTitle }}
-            </div>
-            <div class="d-flex align-items-center gap-2 text-muted small" style="font-size: 0.78rem;">
-                <span class="text-truncate"><i class="bi bi-building me-1"></i> {{ $companyName }}</span>
-                <span>&bull;</span>
-                <span class="text-truncate"><i class="bi bi-person me-1"></i> Verifikator: {{ $pmVerifier }}</span>
-            </div>
-            <div class="mt-2.5 pt-2 border-top d-flex align-items-center gap-2 text-success small" style="font-size: 0.76rem; font-weight: 600;">
-                <i class="bi bi-send-check fs-6"></i>
-                <span>Otomatis mengirim notifikasi ke Klien, PM, dan Presales</span>
-            </div>
-        </div>
-
-        {{-- Extra Notes inside Modal --}}
-        <div class="text-start mb-3">
-            <label class="form-label small fw-bold text-dark mb-1" style="font-size: 0.75rem;">
-                Catatan Persetujuan (Opsional):
-            </label>
-            <input type="text" id="modal_approve_notes" class="form-control form-control-sm"
-                   placeholder="Contoh: Telah ditinjau dan disetujui, harap segera proses penawaran harga."
-                   style="border-radius: 8px; font-size: 0.82rem; padding: 0.55rem 0.75rem; border: 1px solid #CBD5E1;">
-        </div>
-
-        {{-- Action Buttons --}}
-        <div class="d-flex justify-content-end align-items-center gap-2 pt-2">
-            <button type="button" id="btnCancelApproveModal" class="btn btn-light fw-semibold text-muted px-3 py-2" style="border-radius: 8px; font-size: 0.82rem; border: 1px solid #E2E8F0;" onclick="closePmhModals()">
-                Batal
-            </button>
-            <button type="button" id="btnConfirmApproveSubmit" class="btn btn-pmh-action btn-pmh-approve px-4 py-2" onclick="executePmhApprove()">
-                <span id="textConfirmApprove"><i class="bi bi-check-circle-fill me-1"></i> Ya, Setujui Sekarang</span>
-                <span id="spinnerConfirmApprove" class="d-none align-items-center gap-2">
-                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    <span>Memvalidasi CR...</span>
-                </span>
-            </button>
-        </div>
-    </div>
-</div>
-
-{{-- 2. REJECT / REVISION MODAL --}}
-<div id="pmhRejectModalContainer" class="pmh-modal-container" role="dialog" aria-modal="true" aria-labelledby="pmhRejectTitle">
-    <div class="pmh-modal-card">
-        <div class="pmh-icon-box danger shadow-sm">
-            <i class="bi bi-arrow-counterclockwise"></i>
-        </div>
-
-        <h4 id="pmhRejectTitle" class="fw-bold mb-1" style="font-size: 1.25rem; font-weight: 800; color: #0F172A; letter-spacing: -0.02em;">
-            Kembalikan CR untuk Revisi
-        </h4>
-        <p class="text-muted small mb-3" style="font-size: 0.84rem; line-height: 1.5;">
-            Permintaan perubahan akan dikembalikan ke Project Manager dengan status <strong>Revision Needed</strong>. Mohon berikan alasan dan arahan revisi.
-        </p>
-
-        {{-- CR Summary Card --}}
-        <div class="p-3 mb-3 text-start rounded-3" style="background: #FFF1F2; border: 1px solid #FECDD3;">
-            <div class="d-flex align-items-center justify-content-between mb-1">
-                <span class="badge bg-danger-subtle text-danger border border-danger-subtle px-2.5 py-1 font-monospace fw-bold" style="font-size: 0.74rem;">
-                    {{ $crCode }}
-                </span>
-                <span class="badge bg-danger text-white px-2 py-0.5 fw-bold" style="font-size: 0.70rem;">
-                    Revisi PM
-                </span>
-            </div>
-            <div class="fw-bold text-dark text-truncate mb-1" style="font-size: 0.90rem;">
-                {{ $crTitle }}
-            </div>
-            <div class="small text-danger" style="font-size: 0.76rem; font-weight: 600;">
-                <i class="bi bi-info-circle me-1"></i> Project Manager akan menerima notifikasi beserta catatan revisi Anda.
-            </div>
-        </div>
-
-        {{-- Mandatory Reason Textarea --}}
-        <div class="text-start mb-3">
-            <label class="form-label small fw-bold text-dark mb-1" style="font-size: 0.76rem;">
-                Alasan Penolakan / Catatan Revisi PM <span class="text-danger">*</span>
-            </label>
-            <textarea id="modal_reject_notes" class="form-control" rows="3"
-                      placeholder="Tuliskan poin-poin yang perlu direvisi atau disesuaikan oleh PM..."
-                      style="border-radius: 8px; font-size: 0.82rem; padding: 0.6rem 0.75rem; border: 1px solid #CBD5E1;"></textarea>
-            <div id="rejectErrorMsg" class="text-danger small mt-1.5 d-none" style="font-size: 0.76rem; font-weight: 600;">
-                <i class="bi bi-exclamation-octagon-fill me-1"></i> Alasan penolakan wajib diisi (minimal 5 karakter)!
-            </div>
-        </div>
-
-        {{-- Action Buttons --}}
-        <div class="d-flex justify-content-end align-items-center gap-2 pt-2">
-            <button type="button" id="btnCancelRejectModal" class="btn btn-light fw-semibold text-muted px-3 py-2" style="border-radius: 8px; font-size: 0.82rem; border: 1px solid #E2E8F0;" onclick="closePmhModals()">
-                Batal
-            </button>
-            <button type="button" id="btnConfirmRejectSubmit" class="btn btn-pmh-action btn-pmh-reject px-4 py-2" onclick="executePmhReject()">
-                <span id="textConfirmReject"><i class="bi bi-arrow-counterclockwise me-1"></i> Kembalikan ke PM</span>
-                <span id="spinnerConfirmReject" class="d-none align-items-center gap-2">
-                    <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>
-                    <span>Mengembalikan CR...</span>
-                </span>
-            </button>
-        </div>
-    </div>
-</div>
-
 <script>
-    function openPmhApproveModal() {
-        const mainNotes = document.getElementById('main_catatan_approval')?.value || '';
-        const modalNotes = document.getElementById('modal_approve_notes');
-        if (modalNotes && mainNotes.trim()) {
-            modalNotes.value = mainNotes.trim();
-        }
-        document.getElementById('pmhModalBackdrop')?.classList.add('show');
-        document.getElementById('pmhApproveModalContainer')?.classList.add('show');
-    }
+    function confirmReject(event) {
+        const notesInput = document.getElementById('catatan_approval');
+        const notes = notesInput ? notesInput.value.trim() : '';
+        const errorAlert = document.getElementById('rejectErrorAlert');
 
-    function openPmhRejectModal() {
-        const mainNotes = document.getElementById('main_catatan_approval')?.value || '';
-        const modalNotes = document.getElementById('modal_reject_notes');
-        if (modalNotes && mainNotes.trim()) {
-            modalNotes.value = mainNotes.trim();
-        }
-        document.getElementById('rejectErrorMsg')?.classList.add('d-none');
-        document.getElementById('modal_reject_notes')?.classList.remove('shake-error');
-        document.getElementById('pmhModalBackdrop')?.classList.add('show');
-        document.getElementById('pmhRejectModalContainer')?.classList.add('show');
-        setTimeout(() => {
-            modalNotes?.focus();
-        }, 150);
-    }
-
-    function closePmhModals() {
-        document.getElementById('pmhModalBackdrop')?.classList.remove('show');
-        document.getElementById('pmhApproveModalContainer')?.classList.remove('show');
-        document.getElementById('pmhRejectModalContainer')?.classList.remove('show');
-    }
-
-    function executePmhApprove() {
-        const form = document.getElementById('pmhDecisionForm');
-        if (!form) return;
-
-        const modalNotes = document.getElementById('modal_approve_notes')?.value || '';
-        const mainNotes = document.getElementById('main_catatan_approval');
-        if (mainNotes && modalNotes.trim()) {
-            mainNotes.value = modalNotes.trim();
-        }
-
-        const actionInput = document.getElementById('decision_action_input');
-        if (actionInput) actionInput.value = 'approve';
-
-        // Animate button spinner
-        const textSpan = document.getElementById('textConfirmApprove');
-        const spinnerSpan = document.getElementById('spinnerConfirmApprove');
-        const btnSubmit = document.getElementById('btnConfirmApproveSubmit');
-        const btnCancel = document.getElementById('btnCancelApproveModal');
-
-        if (textSpan) textSpan.classList.add('d-none');
-        if (spinnerSpan) spinnerSpan.classList.remove('d-none');
-        if (btnSubmit) btnSubmit.disabled = true;
-        if (btnCancel) btnCancel.disabled = true;
-
-        form.submit();
-    }
-
-    function executePmhReject() {
-        const form = document.getElementById('pmhDecisionForm');
-        if (!form) return;
-
-        const modalNotes = document.getElementById('modal_reject_notes');
-        const noteVal = modalNotes ? modalNotes.value.trim() : '';
-
-        if (!noteVal || noteVal.length < 5) {
-            const errorMsg = document.getElementById('rejectErrorMsg');
-            if (errorMsg) errorMsg.classList.remove('d-none');
-            if (modalNotes) {
-                modalNotes.classList.remove('shake-error');
-                void modalNotes.offsetWidth; // trigger reflow
-                modalNotes.classList.add('shake-error');
-                modalNotes.focus();
+        if (!notes) {
+            event.preventDefault();
+            if (errorAlert) {
+                errorAlert.classList.remove('d-none');
             }
-            return;
+            if (notesInput) {
+                notesInput.classList.add('is-invalid');
+                notesInput.focus();
+            }
+            alert('Alasan penolakan / pembatalan wajib diisi pada catatan CR Notes!');
+            return false;
         }
 
-        const mainNotes = document.getElementById('main_catatan_approval');
-        if (mainNotes) {
-            mainNotes.value = noteVal;
-        }
+        if (errorAlert) errorAlert.classList.add('d-none');
+        if (notesInput) notesInput.classList.remove('is-invalid');
 
-        const actionInput = document.getElementById('decision_action_input');
-        if (actionInput) actionInput.value = 'reject';
-
-        // Animate button spinner
-        const textSpan = document.getElementById('textConfirmReject');
-        const spinnerSpan = document.getElementById('spinnerConfirmReject');
-        const btnSubmit = document.getElementById('btnConfirmRejectSubmit');
-        const btnCancel = document.getElementById('btnCancelRejectModal');
-
-        if (textSpan) textSpan.classList.add('d-none');
-        if (spinnerSpan) spinnerSpan.classList.remove('d-none');
-        if (btnSubmit) btnSubmit.disabled = true;
-        if (btnCancel) btnCancel.disabled = true;
-
-        form.submit();
+        return confirm('Apakah Anda yakin ingin menolak / membatalkan Change Request ini?');
     }
 
-    document.addEventListener('keydown', function(e) {
-        if (e.key === 'Escape') {
-            closePmhModals();
+    document.getElementById('catatan_approval')?.addEventListener('input', function() {
+        if (this.value.trim()) {
+            this.classList.remove('is-invalid');
+            document.getElementById('rejectErrorAlert')?.classList.add('d-none');
         }
     });
 </script>

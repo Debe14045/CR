@@ -9,7 +9,7 @@
     <nav aria-label="breadcrumb" class="mb-2">
         <ol class="breadcrumb small mb-0" style="font-size: 0.8rem;">
             <li class="breadcrumb-item">
-                <a href="{{ route('change-requests.index') }}" class="text-decoration-none text-muted">
+                <a href="{{ route('dashboard') }}" class="text-decoration-none text-muted">
                     <i class="bi bi-house-door me-1"></i>Dashboard
                 </a>
             </li>

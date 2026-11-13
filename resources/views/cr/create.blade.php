@@ -26,7 +26,7 @@
         </div>
     </div>
 
-    <form method="POST" action="{{ !empty($isEdit) ? route('change-requests.update', $changeRequest) : route('change-requests.store') }}" enctype="multipart/form-data" id="figmaCrForm">
+    <form method="POST" action="{{ !empty($isEdit) ? route('change-requests.update', $changeRequest) : route('change-requests.store') }}" enctype="multipart/form-data" id="figmaCrForm" onsubmit="return validateFormBeforeSubmit()">
         @csrf
         @if (!empty($isEdit))
             @method('PUT')
@@ -34,14 +34,19 @@
 
         {{-- Hidden inputs for backend compatibility --}}
         @php
-            $defaultComp = old('nama_perusahaan', !empty($changeRequest) ? ($changeRequest->klien ?: '') : (Auth::user()?->client?->company ?? ''));
-            $defaultProj = old('nama_project', !empty($changeRequest) ? ($changeRequest->proyek_terkait ?: '') : '');
+            $currentClient = $client ?? (Auth::user()?->clientPic?->client ?? Auth::user()?->client);
+            $defaultComp = old('nama_perusahaan', !empty($changeRequest) ? ($changeRequest->client?->company ?: ($changeRequest->klien ?: '')) : ($currentClient?->company ?? ''));
+            $defaultCompId = old('client_id', !empty($changeRequest) ? ($changeRequest->client_id ?: '') : ($currentClient?->id ?? ''));
+            $defaultProj = old('nama_project', !empty($changeRequest) ? ($changeRequest->project?->nama_proyek ?: ($changeRequest->proyek_terkait ?: '')) : '');
+            $defaultProjId = old('project_id', !empty($changeRequest) ? ($changeRequest->project_id ?: '') : '');
             $defaultInitial = !empty($defaultComp) ? strtoupper(substr(trim(preg_replace('/^(pt\.?|cv\.?)\s+/i', '', $defaultComp)), 0, 2)) : '';
             if (!$defaultInitial && !empty($defaultComp)) $defaultInitial = strtoupper(substr($defaultComp, 0, 2));
             if (!$defaultInitial) $defaultInitial = '-';
         @endphp
+        <input type="hidden" name="client_id" id="client_id_input" value="{{ $defaultCompId }}">
         <input type="hidden" name="nama_perusahaan" id="nama_perusahaan_input" value="{{ $defaultComp }}">
         <input type="hidden" name="nama_project" id="nama_project_input" value="{{ $defaultProj }}">
+        <input type="hidden" name="project_id" id="project_id_input" value="{{ $defaultProjId }}">
         <input type="hidden" name="prioritas" id="prioritas_input" value="{{ old('prioritas', !empty($changeRequest) ? ($changeRequest->prioritas ?: 'normal') : 'normal') }}">
 
         {{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
@@ -73,50 +78,55 @@
                             Nama Perusahaan <span style="color: #EF4444;">*</span>
                         </label>
                         <div class="position-relative" id="companyDropdownWrapper" style="position: relative; z-index: 60;">
-                            <button type="button" class="btn w-100 d-flex align-items-center justify-content-between text-start"
-                                    id="companyDropdownBtn"
-                                    onclick="toggleCustomDropdown('companyDropdownMenu', event)"
-                                    style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; font-weight: 500; color: #1E293B; transition: all 0.15s ease;">
-                                <span id="selectedCompanyName">{{ $defaultComp ?: 'Pilih Nama Perusahaan' }}</span>
-                                <svg id="companyDropdownChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ms-2 flex-shrink-0" style="transition: transform 0.2s ease;">
-                                    <polyline points="6 9 12 15 18 9"></polyline>
-                                </svg>
-                            </button>
-                            
-                            <div class="position-absolute w-100 py-1" id="companyDropdownMenu"
-                                 style="display: none; top: calc(100% + 4px); left: 0; z-index: 9999; background: #FFFFFF; border: 1.5px solid #0098EA; border-radius: 8px; box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.18), 0 4px 8px -2px rgba(15, 23, 42, 0.08); max-height: 240px; overflow-y: auto;">
-                                @php
-                                    $companies = [];
-                                    if (isset($clients) && count($clients) > 0) {
-                                        foreach ($clients as $cl) {
-                                            $clName = is_object($cl) ? $cl->company : $cl;
-                                            $clClean = trim(preg_replace('/^(pt\.?|cv\.?)\s+/i', '', $clName));
-                                            $clInit = strtoupper(substr($clClean, 0, 2)) ?: 'CL';
-                                            $companies[] = ['name' => $clName, 'initial' => $clInit];
+                            @if(Auth::user()?->isClient())
+                                {{-- Klien terikat pada perusahaannya sendiri --}}
+                                <div class="w-100 d-flex align-items-center justify-content-between text-start"
+                                     style="background: #F8FAFC; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; font-weight: 600; color: #1E293B;">
+                                    <span id="selectedCompanyName">{{ $defaultComp ?: 'Perusahaan Klien' }}</span>
+                                    <span class="badge bg-light text-secondary border small" style="font-size: 0.72rem;">Klien Terdaftar</span>
+                                </div>
+                            @else
+                                {{-- PM / Admin dapat memilih perusahaan klien mitra --}}
+                                <button type="button" class="btn w-100 d-flex align-items-center justify-content-between text-start"
+                                        id="companyDropdownBtn"
+                                        onclick="toggleCustomDropdown('companyDropdownMenu', event)"
+                                        style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; font-weight: 500; color: #1E293B; transition: all 0.15s ease;">
+                                    <span id="selectedCompanyName">{{ $defaultComp ?: 'Pilih Nama Perusahaan' }}</span>
+                                    <svg id="companyDropdownChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ms-2 flex-shrink-0" style="transition: transform 0.2s ease;">
+                                        <polyline points="6 9 12 15 18 9"></polyline>
+                                    </svg>
+                                </button>
+                                
+                                <div class="position-absolute w-100 py-1" id="companyDropdownMenu"
+                                     style="display: none; top: calc(100% + 4px); left: 0; z-index: 9999; background: #FFFFFF; border: 1.5px solid #0098EA; border-radius: 8px; box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.18), 0 4px 8px -2px rgba(15, 23, 42, 0.08); max-height: 240px; overflow-y: auto;">
+                                    @php
+                                        $companies = [];
+                                        if (isset($clients) && count($clients) > 0) {
+                                            foreach ($clients as $cl) {
+                                                $clName = is_object($cl) ? $cl->company : $cl;
+                                                $clId = is_object($cl) ? $cl->id : '';
+                                                $clClean = trim(preg_replace('/^(pt\.?|cv\.?)\s+/i', '', $clName));
+                                                $clInit = strtoupper(substr($clClean, 0, 2)) ?: 'CL';
+                                                $companies[] = ['id' => $clId, 'name' => $clName, 'initial' => $clInit];
+                                            }
                                         }
-                                    } elseif (Auth::user()?->client?->company) {
-                                        $clName = Auth::user()->client->company;
-                                        $companies[] = ['name' => $clName, 'initial' => strtoupper(substr($clName, 0, 2))];
-                                    }
-                                @endphp
-                                @forelse ($companies as $comp)
-                                    <div class="dropdown-item py-2 px-3 cursor-pointer d-flex align-items-center justify-content-between"
-                                         onclick="selectCompany('{{ $comp['name'] }}', '{{ $comp['initial'] }}')"
-                                         style="font-size: 0.84rem; color: #1E293B; cursor: pointer; transition: background 0.15s ease;"
-                                         onmouseover="this.style.background='#F0F9FF'; this.style.color='#0098EA';"
-                                         onmouseout="this.style.background='transparent'; this.style.color='#1E293B';">
-                                        <span style="font-weight: 600;">{{ $comp['name'] }}</span>
-                                        <span style="background: #E0F2FE; color: #0284C7; font-size: 0.70rem; font-weight: 700; padding: 2px 8px; border-radius: 4px;">{{ $comp['initial'] }}</span>
-                                    </div>
-                                @empty
-                                    <div class="px-3 py-2 text-muted small">
-                                        Perusahaan Pengguna:
-                                        <div class="fw-bold text-dark mt-1" onclick="selectCompany('{{ Auth::user()?->name ?? 'Klien' }}', '{{ strtoupper(substr(Auth::user()?->name ?? 'KL', 0, 2)) }}')" style="cursor: pointer;">
-                                            {{ Auth::user()?->name ?? 'Klien Utama' }} (Pilih)
+                                    @endphp
+                                    @forelse ($companies as $comp)
+                                        <div class="dropdown-item py-2 px-3 cursor-pointer d-flex align-items-center justify-content-between"
+                                             onclick="selectCompany('{{ addslashes($comp['name']) }}', '{{ $comp['initial'] }}', '{{ $comp['id'] }}')"
+                                             style="font-size: 0.84rem; color: #1E293B; cursor: pointer; transition: background 0.15s ease;"
+                                             onmouseover="this.style.background='#F0F9FF'; this.style.color='#0098EA';"
+                                             onmouseout="this.style.background='transparent'; this.style.color='#1E293B';">
+                                            <span style="font-weight: 600;">{{ $comp['name'] }}</span>
+                                            <span style="background: #E0F2FE; color: #0284C7; font-size: 0.70rem; font-weight: 700; padding: 2px 8px; border-radius: 4px;">{{ $comp['initial'] }}</span>
                                         </div>
-                                    </div>
-                                @endforelse
-                            </div>
+                                    @empty
+                                        <div class="px-3 py-2 text-muted small fst-italic">
+                                            Belum ada perusahaan klien terdaftar.
+                                        </div>
+                                    @endforelse
+                                </div>
+                            @endif
                         </div>
                     </div>
 
@@ -128,7 +138,7 @@
                                 <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
                                     Inisial Klien
                                 </label>
-                                <input type="text" name="inisial_klien" id="inisial_klien"
+                                <input type="text" name="inisial_klien" id="inisial_klien" maxlength="50"
                                        value="{{ old('inisial_klien', $defaultInitial) }}" readonly
                                        style="background-color: #E9EDF1; color: #475569; font-weight: 600; border: none; border-radius: 8px; height: 42px; padding: 0 8px; font-size: 0.84rem; width: 100%; text-align: center;">
                             </div>
@@ -138,7 +148,7 @@
                                 <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
                                     Nama PIC
                                 </label>
-                                <input type="text" name="nama_pic" id="nama_pic"
+                                <input type="text" name="nama_pic" id="nama_pic" maxlength="255"
                                        value="{{ old('nama_pic', Auth::user()?->name ?? '') }}" readonly
                                        style="background-color: #E9EDF1; color: #475569; font-weight: 500; border: none; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; width: 100%; white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">
                             </div>
@@ -150,7 +160,7 @@
                         <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
                             CR Owner <span style="color: #EF4444;">*</span>
                         </label>
-                        <input type="text" name="cr_owner" id="cr_owner"
+                        <input type="text" name="cr_owner" id="cr_owner" maxlength="50"
                                value="{{ old('cr_owner', !empty($changeRequest) ? ($changeRequest->owner_cr ?: (Auth::user()?->name ?? '')) : (Auth::user()?->name ?? '')) }}" required
                                style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; color: #1E293B; width: 100%;">
                     </div>
@@ -194,7 +204,7 @@
                                     id="projectDropdownBtn"
                                     onclick="toggleCustomDropdown('projectDropdownMenu', event)"
                                     style="background: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; font-weight: 500; color: #1E293B; transition: all 0.15s ease;">
-                                <span id="selectedProjectName" class="text-truncate">{{ $defaultProj ?: 'Pilih atau Masukkan Project' }}</span>
+                                <span id="selectedProjectName" class="text-truncate">{{ $defaultProj ?: 'Pilih Project' }}</span>
                                 <svg id="projectDropdownChevron" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#0F172A" stroke-width="2.5" stroke-linecap="round" stroke-linejoin="round" class="ms-2 flex-shrink-0" style="transition: transform 0.2s ease;">
                                     <polyline points="6 9 12 15 18 9"></polyline>
                                 </svg>
@@ -203,25 +213,51 @@
                             <div class="position-absolute w-100 py-1" id="projectDropdownMenu"
                                  style="display: none; top: calc(100% + 4px); left: 0; z-index: 9999; background: #FFFFFF; border: 1.5px solid #0098EA; border-radius: 8px; box-shadow: 0 12px 28px -4px rgba(15, 23, 42, 0.18), 0 4px 8px -2px rgba(15, 23, 42, 0.08); max-height: 240px; overflow-y: auto;">
                                 @php
-                                    $projects = [
-                                        'Core System Enhancement',
-                                        'Sistem E-commerce',
-                                        'E-Procurement',
-                                        'Sistem Enterprise',
-                                        'E-Cooper',
-                                        'Data Integration',
-                                        'Payment Gateway Integration',
-                                        'Enterprise Portal',
-                                        'Mobile Application',
-                                    ];
+                                    $projectItems = collect();
+                                    if (isset($projects) && count($projects) > 0) {
+                                        foreach ($projects as $p) {
+                                            if (is_object($p)) {
+                                                $projectItems->push([
+                                                    'id' => $p->id,
+                                                    'name' => $p->nama_proyek,
+                                                    'client_id' => $p->client_id,
+                                                    'company' => strtolower($p->client?->company ?? '')
+                                                ]);
+                                            } else {
+                                                $projectItems->push([
+                                                    'id' => '',
+                                                    'name' => (string)$p,
+                                                    'client_id' => '',
+                                                    'company' => ''
+                                                ]);
+                                            }
+                                        }
+                                    }
+                                    if (!empty($changeRequest?->project) && !$projectItems->contains('id', $changeRequest->project->id)) {
+                                        $projectItems->prepend([
+                                            'id' => $changeRequest->project->id,
+                                            'name' => $changeRequest->project->nama_proyek,
+                                            'client_id' => $changeRequest->project->client_id,
+                                            'company' => strtolower($changeRequest->project->client?->company ?? '')
+                                        ]);
+                                    }
                                 @endphp
-                                @foreach ($projects as $proj)
-                                    <div class="dropdown-item py-2 px-3 cursor-pointer text-truncate"
-                                         onclick="selectProject('{{ $proj }}')"
+
+                                <div id="noProjectsMessage" class="px-3 py-2 text-muted small fst-italic" style="display: {{ $projectItems->isEmpty() ? 'block' : 'none' }};">
+                                    Belum ada proyek terdaftar untuk perusahaan ini.
+                                </div>
+
+                                @foreach ($projectItems as $pItem)
+                                    <div class="dropdown-item py-2 px-3 cursor-pointer text-truncate project-item"
+                                         data-project-id="{{ $pItem['id'] }}"
+                                         data-project-name="{{ $pItem['name'] }}"
+                                         data-client-id="{{ $pItem['client_id'] }}"
+                                         data-company="{{ $pItem['company'] }}"
+                                         onclick="selectProject('{{ addslashes($pItem['name']) }}', '{{ $pItem['id'] ?? '' }}')"
                                          style="font-size: 0.84rem; color: #1E293B; cursor: pointer; transition: background 0.15s ease;"
                                          onmouseover="this.style.background='#F0F9FF'; this.style.color='#0098EA';"
                                          onmouseout="this.style.background='transparent'; this.style.color='#1E293B';">
-                                        {{ $proj }}
+                                        {{ $pItem['name'] }}
                                     </div>
                                 @endforeach
                             </div>
@@ -275,10 +311,14 @@
                     <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
                         Nama CR <span style="color: #EF4444;">*</span>
                     </label>
-                    <input type="text" name="cr_name" id="cr_name"
+                    <input type="text" name="cr_name" id="cr_name" maxlength="255"
                            placeholder="Contoh: Integrasi API Pembayaran OVO"
-                           value="{{ old('cr_name', !empty($changeRequest) ? $changeRequest->judul : '') }}" required
+                           value="{{ old('cr_name', old('judul', !empty($changeRequest) ? $changeRequest->judul : '')) }}" required
+                           oninput="updateCrNameCounter()"
+                           onkeyup="updateCrNameCounter()"
+                           onpaste="setTimeout(updateCrNameCounter, 20);"
                            style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; height: 42px; padding: 0 14px; font-size: 0.84rem; color: #1E293B; width: 100%;">
+                    <input type="hidden" name="judul" id="judul_hidden" value="{{ old('judul', old('cr_name', !empty($changeRequest) ? $changeRequest->judul : '')) }}">
                 </div>
 
                 {{-- Row 3: Detail CR* (Interactive TinyMCE Style Editor) --}}
@@ -453,16 +493,26 @@
                         {{-- Contenteditable Area --}}
                         <div id="editorBody" contenteditable="true"
                              style="min-height: 220px; padding: 14px 16px; outline: none; font-size: 0.86rem; line-height: 1.6; color: #1E293B;"
-                             oninput="syncEditor()"
+                             onkeydown="handleEditorKeydown(event)"
+                             oninput="handleEditorInput(event)"
+                             onkeyup="syncEditor(); updateDetailWordCount();"
+                             onpaste="handleEditorPaste(event)"
                              data-placeholder="Tuliskan rincian kebutuhan perubahan sistem, spesifikasi fitur baru, atau alur kerja yang diinginkan...">
                             {!! old('detail_cr', old('deskripsi_cr', old('deskripsi', !empty($changeRequest) ? $changeRequest->deskripsi : ''))) !!}
                         </div>
-                        <textarea name="detail_cr" id="deskripsi_cr_hidden" class="d-none">{{ old('detail_cr', old('deskripsi_cr', old('deskripsi', !empty($changeRequest) ? $changeRequest->deskripsi : ''))) }}</textarea>
+                        <textarea name="detail_cr" id="deskripsi_cr_hidden" class="d-none" maxlength="25000">{{ old('detail_cr', old('deskripsi_cr', old('deskripsi', !empty($changeRequest) ? $changeRequest->deskripsi : ''))) }}</textarea>
+                        <textarea name="deskripsi" id="deskripsi_hidden" class="d-none" maxlength="25000">{{ old('deskripsi', old('detail_cr', !empty($changeRequest) ? $changeRequest->deskripsi : '')) }}</textarea>
 
-                        {{-- TinyMCE Statusbar at bottom --}}
-                        <div class="px-3 py-1 border-top d-flex justify-content-between align-items-center text-muted"
+                        {{-- TinyMCE Statusbar at bottom with Live Word Counter --}}
+                        <div class="px-3 py-1.5 border-top d-flex justify-content-between align-items-center text-muted"
                              style="background: #F8FAFC; font-size: 0.72rem; user-select: none; border-color: #F1F5F9 !important;">
-                            <span style="color: #64748B;">p</span>
+                            <div class="d-flex align-items-center gap-2">
+                                <span style="color: #64748B; font-weight: 600;">p</span>
+                                <span class="text-muted opacity-50">|</span>
+                                <span class="fw-medium text-dark" style="font-size: 0.72rem;">
+                                    <i class="bi bi-file-text me-1 text-secondary"></i><span id="editorWordCount">0</span> kata
+                                </span>
+                            </div>
                             <span style="color: #94A3B8; cursor: pointer;" onclick="openHelpModal()" title="Klik untuk bantuan shortcut">Press ⌥0 for help</span>
                             <div class="d-flex align-items-center gap-1" style="color: #64748B;">
                                 <span>Build with</span>
@@ -504,10 +554,10 @@
                 {{-- Row 1: Dokumen CR Upload (50%) & Prioritas CR (50%) --}}
                 <div class="row g-3 mb-3 align-items-stretch">
                     
-                    {{-- Left: Dokumen CR Upload Dropzone --}}
+                    {{-- Left: Dokumen CR Upload Dropzone (Hanya PDF) --}}
                     <div class="col-lg-6 col-12 d-flex flex-column">
                         <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
-                            Dokumen CR
+                            Dokumen CR <span class="badge bg-danger-subtle text-danger border border-danger-subtle ms-1" style="font-size: 0.68rem; font-weight: 600;">Hanya Format PDF</span>
                         </label>
                         
                         <div id="dropzoneBox"
@@ -520,13 +570,18 @@
                             
                             {{-- Upload Tray Icon matching Figma --}}
                             <div id="dropzonePlaceholder">
-                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#64748B" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="mb-1">
-                                    <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
-                                    <polyline points="17 8 12 3 7 8"></polyline>
-                                    <line x1="12" y1="3" x2="12" y2="15"></line>
+                                <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#DC2626" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="mb-1">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <polyline points="10 9 9 9 8 9"></polyline>
                                 </svg>
-                                <div id="dropzoneText" style="font-size: 0.82rem; color: #64748B; font-weight: 500;">
-                                    Klik untuk upload PDF
+                                <div id="dropzoneText" style="font-size: 0.82rem; color: #1E293B; font-weight: 600;">
+                                    Klik untuk upload PDF atau seret file ke sini
+                                </div>
+                                <div class="text-muted small mt-0.5" style="font-size: 0.7rem;">
+                                    Hanya file <strong>.pdf</strong> (Maksimal 5 MB, dokumen lain ditolak)
                                 </div>
                             </div>
 
@@ -548,7 +603,7 @@
                             </div>
 
                             <input type="file" name="dokumen_fsd" id="dokumen_fsd_file" class="d-none"
-                                   accept=".pdf,.doc,.docx,.zip"
+                                   accept="application/pdf,.pdf"
                                    onchange="handleFileChange(this)">
                         </div>
                     </div>
@@ -599,7 +654,7 @@
                     <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
                         CR Notes
                     </label>
-                    <textarea name="cr_notes" id="cr_notes" rows="3" class="form-control"
+                    <textarea name="cr_notes" id="cr_notes" rows="3" class="form-control" maxlength="25000"
                               style="background-color: #FFFFFF; border: 1px solid #CBD5E1; border-radius: 8px; font-size: 0.84rem; padding: 12px 14px; width: 100%; height: 90px; outline: none;"
                               placeholder="Catatan tambahan, prioritas, atau informasi lain yang perlu diketahui PM...">{{ old('cr_notes', !empty($changeRequest) ? $changeRequest->catatan_pengajuan : '') }}</textarea>
                 </div>
@@ -647,36 +702,41 @@
 {{-- ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
      DATE PICKER POPUP (Instant Click-to-Select & Close)
 ━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━ --}}
-<div id="customDatePickerModal" class="shadow-lg position-fixed"
-     style="display: none; z-index: 2000; background: #FFFFFF; border-radius: 12px; border: 1px solid #E2E8F0; width: 290px; padding: 14px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.12), 0 8px 10px -6px rgba(0, 0, 0, 0.08);">
+<div id="customDatePickerModal" class="shadow-lg" onclick="event.stopPropagation()"
+     style="display: none; position: absolute; z-index: 99999; background: #FFFFFF; border-radius: 12px; border: 1px solid #CBD5E1; width: 295px; padding: 14px; box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.16), 0 8px 10px -6px rgba(0, 0, 0, 0.08);">
     
     {{-- Header: [<<] [<] Month Year [>] [>>] --}}
-    <div class="d-flex align-items-center justify-content-between mb-3 px-1">
+    <div class="d-flex align-items-center justify-content-between mb-2 px-1">
         <div class="d-flex align-items-center gap-1">
-            <button type="button" class="btn btn-sm p-0 text-muted border d-flex align-items-center justify-content-center"
+            <button type="button" id="prevYearBtn" class="btn btn-sm p-0 text-muted border d-flex align-items-center justify-content-center"
                     onclick="prevYear(event)" title="Tahun Sebelumnya"
-                    style="width: 24px; height: 24px; border-radius: 6px; border-color: #E2E8F0 !important; background: #FFFFFF; font-size: 0.75rem; font-weight: bold;">
+                    style="width: 24px; height: 24px; border-radius: 6px; border-color: #E2E8F0 !important; background: #FFFFFF; font-size: 0.75rem; font-weight: bold; transition: all 0.15s ease;">
                 &laquo;
             </button>
-            <button type="button" class="btn btn-sm p-0 text-muted border d-flex align-items-center justify-content-center"
+            <button type="button" id="prevMonthBtn" class="btn btn-sm p-0 text-muted border d-flex align-items-center justify-content-center"
                     onclick="prevMonth(event)" title="Bulan Sebelumnya"
-                    style="width: 24px; height: 24px; border-radius: 6px; border-color: #E2E8F0 !important; background: #FFFFFF; font-size: 0.75rem; font-weight: bold;">
+                    style="width: 24px; height: 24px; border-radius: 6px; border-color: #E2E8F0 !important; background: #FFFFFF; font-size: 0.75rem; font-weight: bold; transition: all 0.15s ease;">
                 &lsaquo;
             </button>
         </div>
-        <div class="fw-bold text-dark" id="calendarMonthYear" style="font-size: 0.85rem; color: #18181B;">September 2026</div>
+        <div class="fw-bold text-dark text-truncate px-1" id="calendarMonthYear" style="font-size: 0.85rem; color: #18181B;">-</div>
         <div class="d-flex align-items-center gap-1">
-            <button type="button" class="btn btn-sm p-0 text-muted border d-flex align-items-center justify-content-center"
+            <button type="button" id="nextMonthBtn" class="btn btn-sm p-0 text-muted border d-flex align-items-center justify-content-center"
                     onclick="nextMonth(event)" title="Bulan Berikutnya"
-                    style="width: 24px; height: 24px; border-radius: 6px; border-color: #E2E8F0 !important; background: #FFFFFF; font-size: 0.75rem; font-weight: bold;">
+                    style="width: 24px; height: 24px; border-radius: 6px; border-color: #E2E8F0 !important; background: #FFFFFF; font-size: 0.75rem; font-weight: bold; transition: all 0.15s ease;">
                 &rsaquo;
             </button>
-            <button type="button" class="btn btn-sm p-0 text-muted border d-flex align-items-center justify-content-center"
+            <button type="button" id="nextYearBtn" class="btn btn-sm p-0 text-muted border d-flex align-items-center justify-content-center"
                     onclick="nextYear(event)" title="Tahun Berikutnya"
-                    style="width: 24px; height: 24px; border-radius: 6px; border-color: #E2E8F0 !important; background: #FFFFFF; font-size: 0.75rem; font-weight: bold;">
+                    style="width: 24px; height: 24px; border-radius: 6px; border-color: #E2E8F0 !important; background: #FFFFFF; font-size: 0.75rem; font-weight: bold; transition: all 0.15s ease;">
                 &raquo;
             </button>
         </div>
+    </div>
+
+    {{-- Subheader: Min Date Guidance Notice --}}
+    <div id="calendarMinNotice" class="text-center py-0.5 px-2 mb-2 rounded" style="font-size: 0.69rem; background: #F8FAFC; color: #64748B; border: 1px dashed #E2E8F0; display: none;">
+        <i class="bi bi-shield-check text-success me-1"></i><span>Pilih tanggal mulai hari ini</span>
     </div>
 
     {{-- Day names header (Mo, Tu, We, Th, Fr, Sa, Su) --}}
@@ -691,11 +751,11 @@
 
     {{-- Footer Actions: Cancel and Apply --}}
     <div class="d-flex align-items-center justify-content-end gap-2 mt-3 pt-2 border-top" style="border-color: #F1F5F9 !important;">
-        <button type="button" class="btn btn-sm px-3" onclick="closeDatePicker()"
+        <button type="button" class="btn btn-sm px-3" onclick="closeDatePicker(event)"
                 style="background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 6px; font-size: 0.76rem; color: #475569; font-weight: 500; height: 28px;">
             Cancel
         </button>
-        <button type="button" class="btn btn-sm px-3 text-white" onclick="applyDatePicker()"
+        <button type="button" class="btn btn-sm px-3 text-white" onclick="applyDatePicker(event)"
                 style="background: #18181B; border: none; border-radius: 6px; font-size: 0.76rem; font-weight: 600; height: 28px;">
             Apply
         </button>
@@ -828,19 +888,74 @@
         }
     }
 
-    function selectCompany(companyName, initial) {
+    function filterProjectsByClient(clientId, companyName) {
+        const items = document.querySelectorAll('.project-item');
+        const noProjMsg = document.getElementById('noProjectsMessage');
+        let visibleCount = 0;
+        const compLower = (companyName || '').toLowerCase().trim();
+
+        items.forEach(item => {
+            const itemClientId = item.getAttribute('data-client-id');
+            const itemCompany = (item.getAttribute('data-company') || '').trim();
+
+            let match = false;
+            if (clientId && itemClientId) {
+                match = (String(itemClientId) === String(clientId));
+            } else if (compLower && itemCompany) {
+                match = (itemCompany === compLower);
+            } else if (!clientId && !compLower) {
+                match = true;
+            }
+
+            if (match) {
+                item.style.display = 'block';
+                visibleCount++;
+            } else {
+                item.style.display = 'none';
+            }
+        });
+
+        if (noProjMsg) {
+            noProjMsg.style.display = visibleCount === 0 ? 'block' : 'none';
+        }
+
+        // Jika proyek yang sedang terpilih tidak cocok dengan client baru, reset pilihan proyek
+        const currentProjId = document.getElementById('project_id_input')?.value;
+        if (currentProjId) {
+            const activeItem = document.querySelector(`.project-item[data-project-id="${currentProjId}"]`);
+            if (!activeItem || activeItem.style.display === 'none') {
+                document.getElementById('selectedProjectName').innerText = 'Pilih Project';
+                document.getElementById('nama_project_input').value = '';
+                document.getElementById('project_id_input').value = '';
+            }
+        }
+    }
+
+    function selectCompany(companyName, initial, clientId = '') {
         document.getElementById('selectedCompanyName').innerText = companyName;
         document.getElementById('nama_perusahaan_input').value = companyName;
+        const clientInput = document.getElementById('client_id_input');
+        if (clientInput && clientId) {
+            clientInput.value = clientId;
+        }
         document.getElementById('inisial_klien').value = initial;
+
+        // Filter dropdown proyek agar HANYA proyek milik PT tersebut yang ditampilkan
+        filterProjectsByClient(clientId, companyName);
+
         const m1 = document.getElementById('companyDropdownMenu');
         const c1 = document.getElementById('companyDropdownChevron');
         if (m1) m1.style.display = 'none';
         if (c1) c1.style.transform = 'rotate(0deg)';
     }
 
-    function selectProject(projectName) {
+    function selectProject(projectName, projectId = '') {
         document.getElementById('selectedProjectName').innerText = projectName;
         document.getElementById('nama_project_input').value = projectName;
+        const idInput = document.getElementById('project_id_input');
+        if (idInput && projectId) {
+            idInput.value = projectId;
+        }
         const m2 = document.getElementById('projectDropdownMenu');
         const c2 = document.getElementById('projectDropdownChevron');
         if (m2) m2.style.display = 'none';
@@ -909,9 +1024,81 @@
         syncEditor();
     }
 
+    const MAX_DETAIL_CHARS = 25000;
+
+    function getEditorPlainLength(editor) {
+        if (!editor) return 0;
+        return (editor.innerText || editor.textContent || '').replace(/\r/g, '').length;
+    }
+
+    function handleEditorKeydown(e) {
+        const editor = document.getElementById('editorBody');
+        if (!editor) return;
+
+        // Jangan cegah tombol kombinasi shortcut / kontrol
+        if (e.ctrlKey || e.metaKey || e.altKey) return;
+        const allowedNavKeys = [
+            'Backspace', 'Delete', 'ArrowLeft', 'ArrowRight', 'ArrowUp', 'ArrowDown',
+            'Home', 'End', 'PageUp', 'PageDown', 'Tab', 'Escape'
+        ];
+        if (allowedNavKeys.includes(e.key)) return;
+
+        const sel = window.getSelection();
+        const selectedLength = sel ? sel.toString().replace(/\r/g, '').length : 0;
+        const currentLength = getEditorPlainLength(editor);
+
+        // Jika tombol menghasilkan karakter input baru (huruf, angka, simbol, Enter)
+        if (e.key.length === 1 || e.key === 'Enter') {
+            if ((currentLength - selectedLength) >= MAX_DETAIL_CHARS) {
+                e.preventDefault();
+            }
+        }
+    }
+
+    function handleEditorPaste(e) {
+        const editor = document.getElementById('editorBody');
+        if (!editor) return;
+
+        const pastedText = (e.clipboardData || window.clipboardData)?.getData('text') || '';
+        if (!pastedText) return;
+
+        const sel = window.getSelection();
+        const selectedLength = sel ? sel.toString().replace(/\r/g, '').length : 0;
+        const currentLength = getEditorPlainLength(editor);
+        const roomLeft = MAX_DETAIL_CHARS - (currentLength - selectedLength);
+
+        if (roomLeft <= 0) {
+            e.preventDefault();
+            return;
+        }
+
+        if (pastedText.length > roomLeft) {
+            e.preventDefault();
+            const allowedSnippet = pastedText.substring(0, roomLeft);
+            document.execCommand('insertText', false, allowedSnippet);
+            syncEditor();
+            updateDetailWordCount();
+        } else {
+            setTimeout(function() {
+                syncEditor();
+                updateDetailWordCount();
+            }, 10);
+        }
+    }
+
+    function handleEditorInput(e) {
+        syncEditor();
+        updateDetailWordCount();
+    }
+
     function syncEditor() {
-        const content = document.getElementById('editorBody').innerHTML;
-        document.getElementById('deskripsi_cr_hidden').value = content;
+        const editor = document.getElementById('editorBody');
+        const content = editor ? editor.innerHTML : '';
+        const h1 = document.getElementById('deskripsi_cr_hidden');
+        const h2 = document.getElementById('deskripsi_hidden');
+        if (h1) h1.value = content;
+        if (h2) h2.value = content;
+        updateDetailWordCount();
     }
 
     function insertLinkPrompt() {
@@ -994,14 +1181,34 @@
         }
     }
 
-    // 4. File Upload & Dropzone Handling
+    // 4. File Upload & Dropzone Handling (Khusus Dokumen PDF Saja)
     function triggerFileInput() {
         document.getElementById('dokumen_fsd_file').click();
     }
 
+    function validatePdfFile(file) {
+        if (!file) return false;
+        const fileName = (file.name || '').toLowerCase();
+        const isPdf = file.type === 'application/pdf' || fileName.endsWith('.pdf');
+        if (!isPdf) {
+            alert('Format dokumen tidak didukung!\nSistem hanya menerima file berekstensi PDF (.pdf).\nDokumen selain PDF (seperti Word, Excel, ZIP) tidak diperbolehkan.');
+            return false;
+        }
+        if (file.size > 5 * 1024 * 1024) {
+            alert('Ukuran file melebihi batas maksimal 5 MB!');
+            return false;
+        }
+        return true;
+    }
+
     function handleFileChange(input) {
         if (input.files && input.files[0]) {
-            displaySelectedFile(input.files[0]);
+            const file = input.files[0];
+            if (!validatePdfFile(file)) {
+                input.value = '';
+                return;
+            }
+            displaySelectedFile(file);
         }
     }
 
@@ -1017,7 +1224,7 @@
     }
 
     function removeSelectedFile(event) {
-        event.stopPropagation();
+        if (event) event.stopPropagation();
         const input = document.getElementById('dokumen_fsd_file');
         input.value = '';
         
@@ -1025,7 +1232,7 @@
         document.getElementById('dropzoneFilePreview').style.display = 'none';
         
         const box = document.getElementById('dropzoneBox');
-        box.style.borderColor = '#93C5FD';
+        box.style.borderColor = '#CBD5E1';
         box.style.background = '#FFFFFF';
     }
 
@@ -1046,7 +1253,7 @@
             box.style.borderColor = '#50CD89';
             box.style.background = '#F0FDF4';
         } else {
-            box.style.borderColor = '#93C5FD';
+            box.style.borderColor = '#CBD5E1';
             box.style.background = '#FFFFFF';
         }
     }
@@ -1056,6 +1263,9 @@
         e.stopPropagation();
         if (e.dataTransfer && e.dataTransfer.files && e.dataTransfer.files.length > 0) {
             const file = e.dataTransfer.files[0];
+            if (!validatePdfFile(file)) {
+                return;
+            }
             const fileInput = document.getElementById('dokumen_fsd_file');
             
             const dt = new DataTransfer();
@@ -1066,7 +1276,7 @@
         }
     }
 
-    // 5. Draft submission helper
+    // 5. Draft submission helper & Form Validation (Maks 5.000 Kata & Wajib PDF)
     function prepareDraftSubmit() {
         syncEditor();
         const crNameInput = document.getElementById('cr_name');
@@ -1075,56 +1285,241 @@
         }
     }
 
-    // 6. Custom Date Picker Logic matching Figma
+    function validateFormBeforeSubmit() {
+        syncEditor();
+
+        const projId = document.getElementById('project_id_input')?.value;
+        const projName = document.getElementById('nama_project_input')?.value;
+        if (!projId && !projName) {
+            alert('Silakan pilih Nama Project yang tersedia untuk perusahaan ini sebelum mengirim pengajuan.');
+            const btn = document.getElementById('projectDropdownBtn');
+            if (btn) btn.focus();
+            return false;
+        }
+
+        const editor = document.getElementById('editorBody');
+        const text = (editor ? (editor.innerText || editor.textContent || '') : '').replace(/\r/g, '').trim();
+        const chars = text.length;
+
+        if (chars > 25000) {
+            alert('Detail CR melebihi batas maksimal 25.000 karakter (saat ini terdeteksi: ' + chars.toLocaleString('id-ID') + ' karakter)!\nHarap kurangi atau ringkas penjelasan Anda sebelum mengirimkan.');
+            if (editor) editor.focus();
+            return false;
+        }
+
+        const crNotes = document.getElementById('cr_notes');
+        if (crNotes && crNotes.value.length > 25000) {
+            alert('Catatan pengajuan (CR Notes) melebihi batas maksimal 25.000 karakter!\nHarap kurangi catatan Anda sebelum mengirimkan.');
+            crNotes.focus();
+            return false;
+        }
+
+        const fileInput = document.getElementById('dokumen_fsd_file');
+        if (fileInput && fileInput.files && fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            if (!validatePdfFile(file)) {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    // 6. Real-time Counter & Limit Reminder for Judul CR & Detail CR (Sesuai Kolom Database)
+    function updateCrNameCounter() {
+        const input = document.getElementById('cr_name');
+        const hiddenJudul = document.getElementById('judul_hidden');
+        if (!input) return;
+
+        const val = input.value || '';
+        const len = val.length;
+        if (hiddenJudul) hiddenJudul.value = val;
+
+        const counterWrap = document.getElementById('crNameCounter');
+        if (!counterWrap) return;
+
+        if (len >= 255) {
+            counterWrap.style.color = '#DC2626';
+            counterWrap.innerHTML = `<span class="badge bg-danger text-white me-1" style="font-size: 0.68rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Maksimal 255 Tercapai</span> <span>255 / 255 karakter</span>`;
+        } else if (len >= 220) {
+            counterWrap.style.color = '#D97706';
+            counterWrap.innerHTML = `<span class="badge bg-warning text-dark me-1" style="font-size: 0.68rem;">Mendekati Batas</span> <span>${len} / 255 karakter</span>`;
+        } else {
+            counterWrap.style.color = '#64748B';
+            counterWrap.innerHTML = `<span>${len}</span> / 255 karakter`;
+        }
+    }
+
+    function updateDetailWordCount() {
+        const editor = document.getElementById('editorBody');
+        const wordEl = document.getElementById('editorWordCount');
+        const charEl = document.getElementById('editorCharCount');
+        const badge = document.getElementById('editorWordBadge');
+        const wrapper = document.getElementById('editorWrapper');
+        if (!editor) return;
+
+        // Ambil plain text tanpa tag HTML
+        const text = (editor.innerText || editor.textContent || '').replace(/\u00a0/g, ' ').trim();
+        const words = text ? text.split(/\s+/).filter(Boolean).length : 0;
+        const chars = text.length;
+
+        if (wordEl) wordEl.innerText = words;
+        if (charEl) charEl.innerText = chars;
+
+        if (badge) {
+            if (words === 0) {
+                badge.className = 'badge bg-secondary-subtle text-secondary border px-2 py-1';
+                badge.innerHTML = '<i class="bi bi-chat-left-text me-1"></i>0 / 5.000 kata (Belum ada konten)';
+                if (wrapper) wrapper.style.borderColor = '#CBD5E1';
+            } else if (words > 5000) {
+                badge.className = 'badge bg-danger text-white px-2 py-1';
+                badge.innerHTML = `<i class="bi bi-exclamation-octagon-fill me-1"></i>${words} / 5.000 kata (Maksimal 5.000 Kata Terlampaui!)`;
+                if (wrapper) wrapper.style.borderColor = '#EF4444';
+            } else if (words >= 4500) {
+                badge.className = 'badge bg-warning text-dark px-2 py-1';
+                badge.innerHTML = `<i class="bi bi-exclamation-triangle-fill me-1"></i>${words} / 5.000 kata (Mendekati Batas Maksimal)`;
+                if (wrapper) wrapper.style.borderColor = '#F59E0B';
+            } else if (words < 10) {
+                badge.className = 'badge bg-warning-subtle text-warning-emphasis border border-warning-subtle px-2 py-1';
+                badge.innerHTML = `<i class="bi bi-exclamation-circle me-1"></i>${words} / 5.000 kata (Disarankan min. 10 kata)`;
+                if (wrapper) wrapper.style.borderColor = '#CBD5E1';
+            } else {
+                badge.className = 'badge bg-success-subtle text-success border border-success-subtle px-2 py-1';
+                badge.innerHTML = `<i class="bi bi-check-circle-fill me-1"></i>${words} / 5.000 kata (Deskripsi Memadai)`;
+                if (wrapper) wrapper.style.borderColor = '#CBD5E1';
+            }
+        }
+    }
+
+    // 7. Custom Date Picker Logic (Stay Tepat Di Bawah Input Tanggal & Larangan Tanggal Mundur)
     let currentActiveDateInputId = null;
-    let pickerDate = new Date(2026, 8, 4); // Default Sept 2026
-    let selectedDay = 4;
+    let pickerDate = new Date();
+    let selectedDay = pickerDate.getDate();
 
     const monthNames = [
-        "January", "February", "March", "April", "May", "June",
-        "July", "August", "September", "October", "November", "December"
+        "Januari", "Februari", "Maret", "April", "Mei", "Juni",
+        "Juli", "Agustus", "September", "Oktober", "November", "Desember"
     ];
     const monthShortNames = [
         "Jan", "Feb", "Mar", "Apr", "Mei", "Jun",
         "Jul", "Agu", "Sep", "Okt", "Nov", "Des"
     ];
 
+    function parseMonthIndex(str) {
+        if (!str) return -1;
+        const s = str.trim().toLowerCase();
+        const map = {
+            'jan': 0, 'januari': 0, 'january': 0,
+            'feb': 1, 'februari': 1, 'february': 1,
+            'mar': 2, 'maret': 2, 'march': 2,
+            'apr': 3, 'april': 3,
+            'mei': 4, 'may': 4,
+            'jun': 5, 'juni': 5, 'june': 5,
+            'jul': 6, 'juli': 6, 'july': 6,
+            'agu': 7, 'aug': 7, 'agustus': 7, 'august': 7,
+            'sep': 8, 'september': 8,
+            'okt': 9, 'oct': 9, 'oktober': 9, 'october': 9,
+            'nov': 10, 'november': 10,
+            'des': 11, 'dec': 11, 'desember': 11, 'december': 11
+        };
+        return map[s] !== undefined ? map[s] : -1;
+    }
+
+    function parseDateString(str) {
+        if (!str) return null;
+        const parts = str.trim().split(/\s+/);
+        if (parts.length === 3) {
+            const day = parseInt(parts[0], 10);
+            const mIdx = parseMonthIndex(parts[1]);
+            const yr = parseInt(parts[2], 10);
+            if (!isNaN(day) && mIdx !== -1 && !isNaN(yr)) {
+                const d = new Date(yr, mIdx, day);
+                d.setHours(0, 0, 0, 0);
+                return d;
+            }
+        }
+        return null;
+    }
+
+    function getMinSelectableDate(inputId) {
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+
+        if (inputId === 'date_input_2') {
+            // Request Date tidak boleh lebih awal dari Tanggal Pengajuan (date_input_1)
+            const input1 = document.getElementById('date_input_1');
+            if (input1 && input1.value) {
+                const parsed1 = parseDateString(input1.value);
+                if (parsed1 && parsed1 >= today) {
+                    return parsed1;
+                }
+            }
+        }
+        return today;
+    }
+
     function openDatePicker(inputId, event) {
         if (event) event.stopPropagation();
         currentActiveDateInputId = inputId;
         const targetInput = document.getElementById(inputId);
         const modal = document.getElementById('customDatePickerModal');
+        if (!targetInput || !modal) return;
         
-        // Parse current input date if available
-        if (targetInput && targetInput.value) {
-            const parts = targetInput.value.split(' ');
-            if (parts.length === 3) {
-                const day = parseInt(parts[0]);
-                const mIdx = monthShortNames.findIndex(m => m.toLowerCase() === parts[1].toLowerCase());
-                const yr = parseInt(parts[2]);
-                if (!isNaN(day) && mIdx !== -1 && !isNaN(yr)) {
-                    pickerDate = new Date(yr, mIdx, day);
-                    selectedDay = day;
-                }
+        // POSISI: PINDAHKAN MODAL LANGSUNG KE DALAM WRAPPER INPUT AGAR SELALU STAY TEPAT DI BAWAH KOLOM TANGGAL
+        const wrapper = targetInput.closest('.position-relative') || targetInput.parentElement;
+        if (wrapper) {
+            wrapper.appendChild(modal);
+            modal.style.position = 'absolute';
+            modal.style.top = 'calc(100% + 4px)';
+            modal.style.zIndex = '99999';
+
+            if (inputId === 'date_input_2') {
+                modal.style.left = 'auto';
+                modal.style.right = '0px';
+            } else {
+                modal.style.left = '0px';
+                modal.style.right = 'auto';
             }
         }
-
-        const rect = targetInput.getBoundingClientRect();
-        // Position right below the input box
-        modal.style.top = (rect.bottom + window.scrollY + 6) + 'px';
-        modal.style.left = Math.max(16, (rect.right + window.scrollX - 290)) + 'px';
         modal.style.display = 'block';
+
+        const minDate = getMinSelectableDate(inputId);
+
+        // Parse current input date if available
+        if (targetInput.value) {
+            const parsed = parseDateString(targetInput.value);
+            if (parsed && parsed >= minDate) {
+                pickerDate = new Date(parsed);
+                selectedDay = parsed.getDate();
+            } else {
+                pickerDate = new Date(minDate);
+                selectedDay = minDate.getDate();
+            }
+        } else {
+            pickerDate = new Date(minDate);
+            selectedDay = minDate.getDate();
+        }
 
         renderCalendar();
     }
 
-    function closeDatePicker() {
-        document.getElementById('customDatePickerModal').style.display = 'none';
+    function closeDatePicker(e) {
+        if (e) e.stopPropagation();
+        const modal = document.getElementById('customDatePickerModal');
+        if (modal) modal.style.display = 'none';
         currentActiveDateInputId = null;
     }
 
     function prevMonth(e) {
         if (e) e.stopPropagation();
+        const minDate = getMinSelectableDate(currentActiveDateInputId);
+        const curYear = pickerDate.getFullYear();
+        const curMonth = pickerDate.getMonth();
+
+        // Cegah mundur ke bulan sebelum minDate
+        if (curYear < minDate.getFullYear() || (curYear === minDate.getFullYear() && curMonth <= minDate.getMonth())) {
+            return;
+        }
+
         pickerDate.setMonth(pickerDate.getMonth() - 1);
         renderCalendar();
     }
@@ -1137,7 +1532,19 @@
 
     function prevYear(e) {
         if (e) e.stopPropagation();
+        const minDate = getMinSelectableDate(currentActiveDateInputId);
+        const curYear = pickerDate.getFullYear();
+
+        // Cegah mundur ke tahun sebelum minDate
+        if (curYear <= minDate.getFullYear()) {
+            return;
+        }
+
         pickerDate.setFullYear(pickerDate.getFullYear() - 1);
+        // Pastikan tidak jatuh sebelum minDate
+        if (pickerDate < minDate) {
+            pickerDate = new Date(minDate);
+        }
         renderCalendar();
     }
 
@@ -1150,7 +1557,43 @@
     function renderCalendar() {
         const year = pickerDate.getFullYear();
         const month = pickerDate.getMonth();
-        document.getElementById('calendarMonthYear').innerText = monthNames[month] + " " + year;
+        const minDate = getMinSelectableDate(currentActiveDateInputId);
+
+        // Header Title
+        const monthYearEl = document.getElementById('calendarMonthYear');
+        if (monthYearEl) {
+            monthYearEl.innerText = monthNames[month] + " " + year;
+        }
+
+        // Subheader Notice Batas Tanggal
+        const noticeEl = document.getElementById('calendarMinNotice');
+        if (noticeEl) {
+            const minDayStr = String(minDate.getDate()).padStart(2, '0') + ' ' + monthShortNames[minDate.getMonth()] + ' ' + minDate.getFullYear();
+            if (currentActiveDateInputId === 'date_input_2') {
+                noticeEl.innerHTML = `<i class="bi bi-shield-check text-primary me-1"></i><span>Min. Target: <strong>${minDayStr}</strong></span>`;
+            } else {
+                noticeEl.innerHTML = `<i class="bi bi-shield-check text-success me-1"></i><span>Min. Pengajuan: <strong>${minDayStr}</strong></span>`;
+            }
+            noticeEl.style.display = 'block';
+        }
+
+        // Kontrol Disabled pada Tombol Prev
+        const prevMonthBtn = document.getElementById('prevMonthBtn');
+        const prevYearBtn = document.getElementById('prevYearBtn');
+
+        const isAtMinYear = year <= minDate.getFullYear();
+        const isAtMinMonth = isAtMinYear && (month <= minDate.getMonth());
+
+        if (prevMonthBtn) {
+            prevMonthBtn.disabled = isAtMinMonth;
+            prevMonthBtn.style.opacity = isAtMinMonth ? '0.25' : '1';
+            prevMonthBtn.style.cursor = isAtMinMonth ? 'not-allowed' : 'pointer';
+        }
+        if (prevYearBtn) {
+            prevYearBtn.disabled = isAtMinYear;
+            prevYearBtn.style.opacity = isAtMinYear ? '0.25' : '1';
+            prevYearBtn.style.cursor = isAtMinYear ? 'not-allowed' : 'pointer';
+        }
 
         const firstDay = new Date(year, month, 1).getDay(); // 0 is Sun
         const startOffset = (firstDay === 0 ? 6 : firstDay - 1); // Monday is 0
@@ -1160,7 +1603,7 @@
         const grid = document.getElementById('calendarDaysGrid');
         grid.innerHTML = '';
 
-        // Trailing days from previous month (grayed out)
+        // Hari dari bulan sebelumnya (Dinonaktifkan)
         for (let i = startOffset - 1; i >= 0; i--) {
             const prevCell = document.createElement('div');
             prevCell.innerText = prevMonthDays - i;
@@ -1168,44 +1611,78 @@
             prevCell.style.height = '28px';
             prevCell.style.width = '28px';
             prevCell.style.margin = '0 auto';
-            prevCell.style.color = '#CBD5E1';
-            prevCell.style.fontSize = '0.78rem';
+            prevCell.style.color = '#E2E8F0';
+            prevCell.style.fontSize = '0.76rem';
+            prevCell.style.userSelect = 'none';
             grid.appendChild(prevCell);
         }
 
-        // Current month days
+        // Hari-hari bulan berjalan
         for (let day = 1; day <= daysInMonth; day++) {
+            const cellDate = new Date(year, month, day);
+            cellDate.setHours(0, 0, 0, 0);
+
+            // Validasi: Apakah tanggal berada di masa lalu sebelum batas minimal?
+            const isPastDate = cellDate < minDate;
+
             const cell = document.createElement('div');
             cell.innerText = day;
-            cell.className = 'py-1 rounded cursor-pointer d-flex align-items-center justify-content-center';
-            cell.style.transition = 'all 0.15s ease';
+            cell.className = 'py-1 rounded d-flex align-items-center justify-content-center';
             cell.style.height = '28px';
             cell.style.width = '28px';
             cell.style.margin = '0 auto';
             cell.style.fontSize = '0.78rem';
-            
-            if (day === selectedDay) {
-                // Black circular pill matching Figma #18181B
-                cell.style.background = '#18181B';
-                cell.style.color = '#FFFFFF';
-                cell.style.fontWeight = 'bold';
-                cell.style.borderRadius = '50%';
-            } else {
-                cell.style.color = '#1E293B';
-                cell.onmouseover = function() { this.style.background = '#F1F5F9'; this.style.borderRadius = '50%'; };
-                cell.onmouseout = function() { if (day !== selectedDay) this.style.background = 'transparent'; };
-            }
+            cell.style.userSelect = 'none';
 
-            cell.onclick = function(e) {
-                e.stopPropagation();
-                selectedDay = day;
-                renderCalendar();
-            };
+            if (isPastDate) {
+                // TANGGAL MUNDUR DINONAKTIFKAN (Tidak bisa diklik)
+                cell.style.color = '#CBD5E1';
+                cell.style.backgroundColor = '#F8FAFC';
+                cell.style.cursor = 'not-allowed';
+                cell.style.pointerEvents = 'none';
+                cell.title = 'Tanggal tidak dapat dipilih (tidak boleh tanggal mundur)';
+            } else {
+                // TANGGAL VALID (Bisa dipilih)
+                cell.style.cursor = 'pointer';
+                cell.style.transition = 'all 0.15s ease';
+
+                if (day === selectedDay && year === pickerDate.getFullYear() && month === pickerDate.getMonth()) {
+                    // Lingkaran hitam solid (#18181B) sesuai desain Figma
+                    cell.style.background = '#18181B';
+                    cell.style.color = '#FFFFFF';
+                    cell.style.fontWeight = 'bold';
+                    cell.style.borderRadius = '50%';
+                } else {
+                    cell.style.color = '#1E293B';
+                    cell.onmouseover = function() {
+                        this.style.background = '#F1F5F9';
+                        this.style.borderRadius = '50%';
+                    };
+                    cell.onmouseout = function() {
+                        if (day !== selectedDay || year !== pickerDate.getFullYear() || month !== pickerDate.getMonth()) {
+                            this.style.background = 'transparent';
+                        }
+                    };
+                }
+
+                cell.onclick = function(e) {
+                    e.stopPropagation();
+                    selectedDay = day;
+                    renderCalendar();
+                };
+
+                // Dobel klik langsung terapkan tanggal
+                cell.ondblclick = function(e) {
+                    e.stopPropagation();
+                    selectedDay = day;
+                    applyDatePicker();
+                };
+            }
 
             grid.appendChild(cell);
         }
 
-        // Remaining cells for neat grid
+        // Sisa grid untuk baris rapi
         const totalRendered = startOffset + daysInMonth;
         const remainder = (7 - (totalRendered % 7)) % 7;
         for (let nextDay = 1; nextDay <= remainder; nextDay++) {
@@ -1215,29 +1692,73 @@
             nextCell.style.height = '28px';
             nextCell.style.width = '28px';
             nextCell.style.margin = '0 auto';
-            nextCell.style.color = '#CBD5E1';
-            nextCell.style.fontSize = '0.78rem';
+            nextCell.style.color = '#E2E8F0';
+            nextCell.style.fontSize = '0.76rem';
+            nextCell.style.userSelect = 'none';
             grid.appendChild(nextCell);
         }
     }
 
-    function applyDatePicker() {
+    function applyDatePicker(e) {
+        if (e) e.stopPropagation();
         if (!currentActiveDateInputId) return;
+        const minDate = getMinSelectableDate(currentActiveDateInputId);
+        const targetDate = new Date(pickerDate.getFullYear(), pickerDate.getMonth(), selectedDay);
+        targetDate.setHours(0, 0, 0, 0);
+
+        if (targetDate < minDate) {
+            alert('Tanggal tidak boleh lebih awal dari batas minimal yang diizinkan!');
+            return;
+        }
+
         const dayStr = String(selectedDay).padStart(2, '0');
         const monthStr = monthShortNames[pickerDate.getMonth()];
         const yearStr = pickerDate.getFullYear();
-        
         const formatted = dayStr + " " + monthStr + " " + yearStr;
-        document.getElementById(currentActiveDateInputId).value = formatted;
-        closeDatePicker();
+
+        const activeInput = document.getElementById(currentActiveDateInputId);
+        if (activeInput) {
+            activeInput.value = formatted;
+        }
+
+        // Jika mengubah Tanggal Pengajuan (date_input_1), sinkronkan Request Date (date_input_2) agar tidak lebih awal
+        if (currentActiveDateInputId === 'date_input_1') {
+            const input2 = document.getElementById('date_input_2');
+            if (input2 && input2.value) {
+                const parsed2 = parseDateString(input2.value);
+                if (!parsed2 || parsed2 < targetDate) {
+                    // Set minimal +14 hari atau sama dengan tanggal pengajuan
+                    const autoTarget = new Date(targetDate);
+                    autoTarget.setDate(autoTarget.getDate() + 14);
+                    const d2 = String(autoTarget.getDate()).padStart(2, '0');
+                    const m2 = monthShortNames[autoTarget.getMonth()];
+                    const y2 = autoTarget.getFullYear();
+                    input2.value = d2 + " " + m2 + " " + y2;
+                }
+            }
+        }
+
+        closeDatePicker(e);
     }
+
+    // Inisialisasi Counter & Filter Proyek saat halaman selesai dimuat
+    document.addEventListener('DOMContentLoaded', function() {
+        updateCrNameCounter();
+        updateDetailWordCount();
+
+        const initialClientId = document.getElementById('client_id_input')?.value;
+        const initialCompanyName = document.getElementById('nama_perusahaan_input')?.value;
+        if (initialClientId || initialCompanyName) {
+            filterProjectsByClient(initialClientId, initialCompanyName);
+        }
+    });
 
     // Close calendar on outside click
     document.addEventListener('click', function(e) {
         const modal = document.getElementById('customDatePickerModal');
         if (modal && modal.style.display === 'block') {
             if (!e.target.closest('#customDatePickerModal') && !e.target.closest('#date_input_1') && !e.target.closest('#date_input_2')) {
-                closeDatePicker();
+                closeDatePicker(e);
             }
         }
     });
