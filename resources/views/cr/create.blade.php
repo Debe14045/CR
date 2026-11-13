@@ -311,7 +311,7 @@
                     <label class="form-label fw-bold mb-1" style="font-size: 0.78rem; color: #0F172A;">
                         Nama CR <span style="color: #EF4444;">*</span>
                     </label>
-                    <input type="text" name="cr_name" id="cr_name" maxlength="255"
+                    <input type="text" name="cr_name" id="cr_name" maxlength="155"
                            placeholder="Contoh: Integrasi API Pembayaran OVO"
                            value="{{ old('cr_name', old('judul', !empty($changeRequest) ? $changeRequest->judul : '')) }}" required
                            oninput="updateCrNameCounter()"
@@ -1297,6 +1297,13 @@
             return false;
         }
 
+        const crName = document.getElementById('cr_name');
+        if (crName && crName.value.length > 155) {
+            alert('Judul / Nama CR melebihi batas maksimal 155 karakter!\nHarap ringkas judul CR Anda sebelum mengirimkan.');
+            crName.focus();
+            return false;
+        }
+
         const editor = document.getElementById('editorBody');
         const text = (editor ? (editor.innerText || editor.textContent || '') : '').replace(/\r/g, '').trim();
         const chars = text.length;
@@ -1337,15 +1344,15 @@
         const counterWrap = document.getElementById('crNameCounter');
         if (!counterWrap) return;
 
-        if (len >= 255) {
+        if (len >= 155) {
             counterWrap.style.color = '#DC2626';
-            counterWrap.innerHTML = `<span class="badge bg-danger text-white me-1" style="font-size: 0.68rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Maksimal 255 Tercapai</span> <span>255 / 255 karakter</span>`;
-        } else if (len >= 220) {
+            counterWrap.innerHTML = `<span class="badge bg-danger text-white me-1" style="font-size: 0.68rem;"><i class="bi bi-exclamation-triangle-fill me-1"></i>Maksimal 155 Tercapai</span> <span>155 / 155 karakter</span>`;
+        } else if (len >= 140) {
             counterWrap.style.color = '#D97706';
-            counterWrap.innerHTML = `<span class="badge bg-warning text-dark me-1" style="font-size: 0.68rem;">Mendekati Batas</span> <span>${len} / 255 karakter</span>`;
+            counterWrap.innerHTML = `<span class="badge bg-warning text-dark me-1" style="font-size: 0.68rem;">Mendekati Batas</span> <span>${len} / 155 karakter</span>`;
         } else {
             counterWrap.style.color = '#64748B';
-            counterWrap.innerHTML = `<span>${len}</span> / 255 karakter`;
+            counterWrap.innerHTML = `<span>${len}</span> / 155 karakter`;
         }
     }
 

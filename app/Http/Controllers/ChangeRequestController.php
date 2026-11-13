@@ -180,7 +180,7 @@ class ChangeRequestController extends Controller
 
         $request->validate([
             'project_id' => 'required|exists:projects,id',
-            'judul' => 'required|string|max:255',
+            'judul' => 'required|string|max:155',
             'prioritas' => 'required|in:normal,urgent',
             'deskripsi' => $isDraft ? 'nullable|string' : 'required|string',
             'catatan_pengajuan' => 'nullable|string|max:25000',
@@ -191,6 +191,7 @@ class ChangeRequestController extends Controller
             'dokumen_fsd' => 'nullable|mimes:pdf|max:5120',
             'dokumen_lainnya' => 'nullable|mimes:pdf|max:5120',
         ], [
+            'judul.max' => 'Judul CR maksimal 155 karakter.',
             'dokumen_cr.mimes' => 'Format file ditolak! Dokumen CR wajib berformat PDF (.pdf). Dokumen selain PDF tidak diperbolehkan.',
             'dokumen_fsd.mimes' => 'Format file ditolak! Dokumen CR wajib berformat PDF (.pdf). Dokumen selain PDF tidak diperbolehkan.',
             'dokumen_lainnya.mimes' => 'Hanya file berformat PDF (.pdf) yang diperbolehkan.',
@@ -373,7 +374,7 @@ class ChangeRequestController extends Controller
 
         $request->validate([
             'project_id' => 'required|exists:projects,id',
-            'judul' => 'required|string|max:255',
+            'judul' => 'required|string|max:155',
             'prioritas' => 'required|in:normal,urgent',
             'deskripsi' => $isDraft ? 'nullable|string' : 'required|string',
             'catatan_pengajuan' => 'nullable|string|max:25000',
@@ -384,6 +385,7 @@ class ChangeRequestController extends Controller
             'dokumen_fsd' => 'nullable|mimes:pdf|max:5120',
             'dokumen_lainnya' => 'nullable|mimes:pdf|max:5120',
         ], [
+            'judul.max' => 'Judul CR maksimal 155 karakter.',
             'dokumen_cr.mimes' => 'Format file ditolak! Dokumen CR wajib berformat PDF (.pdf). Dokumen selain PDF tidak diperbolehkan.',
             'dokumen_fsd.mimes' => 'Format file ditolak! Dokumen CR wajib berformat PDF (.pdf). Dokumen selain PDF tidak diperbolehkan.',
             'dokumen_lainnya.mimes' => 'Hanya file berformat PDF (.pdf) yang diperbolehkan.',
